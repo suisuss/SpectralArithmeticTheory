@@ -2,47 +2,47 @@
   Spectral Arithmetic: ZF Test Suite (Path F)
   ============================================
 
-  Tests ZF axioms against the process framework using sets-as-predicates.
+  Tests ZF axioms against the process framework using an abstract set universe.
 
   Architecture
   ------------
 
   The ZF interpretation has two layers:
 
-  1. **Logic layer** (metatheoretic): Sets are predicates (State → Prop),
-     membership is predicate application, boolean operations are propositional
-     connectives. In Lean's type theory, this layer is built-in.
+  1. **Logic layer** (metatheoretic): Lean's CIC provides predicates,
+     function types, propositional extensionality. These are always available.
 
-  2. **Arithmetic layer** (framework): The orbit, eigenvalue theorem,
-     successor closure, and infiniteness come from the framework's axioms
-     (A1-B5). The framework also implements boolean logic algebraically:
-     {z, f₀} under compose/oplus/oneg forms a boolean algebra (Part 1).
+  2. **Set-theoretic layer** (F-axioms): An abstract type `Ens` with a
+     membership relation `mem : State → Ens → Prop`. The F-axioms assert
+     that specific ensembles exist in `Ens`:
+       F1 — the orbit ensemble (Infinity)
+       F2 — separation (sub-ensembles)
+       F3 — replacement (image ensembles)
 
-  The gap between these layers is structural: in any type-theoretic
-  formalization, the metatheory provides some logical strength. The
-  axioms F1-F3 (Part 2) make explicit what the framework contributes
-  beyond the metatheory.
+  The key design: `Ens` is abstract, NOT `State → Prop`. This makes the
+  F-axioms non-trivial — they carry genuine set-theoretic content that
+  is NOT provided by CIC alone. Countermodels (Countermodels.lean)
+  demonstrate this: restricting `Ens` to finite predicates falsifies F1,
+  and restricting to sub-orbit predicates falsifies F3.
+
+  The forward model (Model.lean) instantiates `Ens = State → Prop`,
+  recovering the full predicate space. This is correct — the point is
+  that OTHER models can restrict `Ens`.
 
   Dependency Table
   ----------------
 
-  | ZF Axiom       | Framework axioms used                      | F axiom |
-  |----------------|-------------------------------------------|---------|
-  | Extensionality | — (metatheory: funext + propext)           | —       |
-  | Empty Set      | — (metatheory: constant function)          | —       |
-  | Pairing        | — (metatheory: equality predicate)         | —       |
-  | Union          | — (metatheory: ∃ over predicates)          | F2      |
-  | Power Set      | — (metatheory: function space)             | F2      |
-  | Infinity       | A1-B5 (orbit, eigenvalue thm, char zero)  | F1      |
-  | Separation     | — (metatheory: ∧ of predicates)           | —       |
-  | Replacement    | — (metatheory: ∃ over domain)             | F3      |
-  | Foundation     | — (metatheory: type stratification)       | —       |
-
-  Key insight: 5 of 9 ZF axioms are metatheoretic (hold for ANY type
-  State with no axioms). The framework's algebraic axioms contribute
-  only to Infinity (ZF6). F1-F3 are trivially satisfied in Lean but
-  would be non-trivial in a first-order metatheory — they correspond
-  to ZF's Infinity, Power Set, and Replacement axioms.
+  | ZF Axiom       | Source                                    |
+  |----------------|-------------------------------------------|
+  | Extensionality | ens_ext (from DynZF)                      |
+  | Empty Set      | emptyEns (from DynZF)                     |
+  | Pairing        | F1 + F2 + F3 (sep orbit, then image)      |
+  | Union          | Deferred (requires sets-of-sets)           |
+  | Power Set      | Deferred (requires sets-of-sets)           |
+  | Infinity       | orbitEns + A1-B5 (eigenvalue thm)         |
+  | Separation     | sepEns (from DynZF)                       |
+  | Replacement    | imageEns (from DynZF)                     |
+  | Foundation     | Type stratification (metatheory)          |
 -/
 
 import SpectralArithmetic.Complete
@@ -150,71 +150,87 @@ for the boolean operations themselves. -/
 
 end BoolAlg
 
-/-! ## Part 2: Path F Axioms (F1-F3)
+/-! ## Part 2: Path F Axioms (F1-F3) with Abstract Set Universe
 
 These axioms lift the framework from PA-strength to ZF-strength.
-They assert that certain infinite collections exist as completed objects.
+They introduce an abstract type `Ens` (the set universe) with a
+membership relation `mem : State → Ens → Prop`, and assert that
+specific ensembles exist.
 
-In Lean's type theory (CIC), F1-F3 are trivially satisfied — Lean's
-Prop universe and function types provide the required collections
-automatically. In a first-order metatheory, these would be non-trivial
-axioms carrying real content. We state them as a typeclass to:
+Unlike the previous formulation where F1-F3 were trivially satisfied
+in Lean's CIC (all proofs were `Iff.rfl`), the abstract `Ens` makes
+these axioms carry genuine content:
 
-  (a) Document the logical structure (which ZF axiom depends on which)
-  (b) Maintain parity with the pen-and-paper theory (20 axioms total)
-  (c) Enable future formalization in weaker metatheories
+- F1 is non-trivial: the orbit is infinite, so restricting Ens to
+  finite predicates falsifies F1 (see Countermodels.lean).
+- F2 (separation) is non-trivial: restricting Ens to a sub-family
+  not closed under ∧ falsifies F2.
+- F3 is non-trivial: restricting Ens to sub-orbit predicates
+  falsifies F3 when the function maps outside the orbit.
 
-The trivial instance (Part 2b) demonstrates that Lean satisfies F1-F3
-automatically — making the metatheoretic contribution explicit. -/
+The forward model (Model.lean) uses `Ens = State → Prop`, recovering
+the full predicate space. -/
 
-/-- Set-theoretic closure axioms. Extends the framework from PA to ZF strength.
+/-- Set-theoretic closure axioms with an abstract set universe.
 
-    F1 corresponds to ZF's Axiom of Infinity.
-    F2 corresponds to ZF's Power Set axiom.
-    F3 corresponds to ZF's Replacement schema. -/
+    Ens is the type of "ensembles" (sets). It is abstract — not
+    necessarily `State → Prop`. The F-axioms assert that specific
+    ensembles exist, making them genuinely non-trivial.
+
+    F1: The orbit ensemble exists (Infinity).
+    F2: Separation — sub-ensembles exist.
+    F3: Replacement — image ensembles exist. -/
 class DynZF (State : Type*) extends DynComplete State where
-  /-- F1: The orbit {Sⁿ(f₀) : n ∈ ℕ} exists as a completed predicate.
+  /-- The abstract set universe -/
+  Ens : Type*
+  /-- Membership relation: s ∈ A -/
+  mem : State → Ens → Prop
+  /-- Extensionality: ensembles with the same members are equal -/
+  ens_ext : ∀ A B : Ens, (∀ s, mem s A ↔ mem s B) → A = B
+  /-- F1: The orbit {Sⁿ(f₀) : n ∈ ℕ} exists as an ensemble.
       This is the step from potential infinity (generation rule S) to
       actual infinity (the completed set ℕ as a single object). -/
-  orbitPred : State → Prop
-  orbitPred_spec : ∀ s, orbitPred s ↔ isNat s
+  orbitEns : Ens
+  orbitEns_spec : ∀ s, mem s orbitEns ↔ isNat s
+  /-- F2: Separation — for any ensemble A and predicate φ, the
+      sub-ensemble {s ∈ A : φ(s)} exists. -/
+  sepEns : Ens → (State → Prop) → Ens
+  sepEns_spec : ∀ A φ s, mem s (sepEns A φ) ↔ (mem s A ∧ φ s)
+  /-- F3: Replacement — for any function F and ensemble A, the
+      image ensemble F[A] exists. -/
+  imageEns : (State → State) → Ens → Ens
+  imageEns_spec : ∀ F A y, mem y (imageEns F A) ↔ (∃ x, mem x A ∧ F x = y)
+  /-- Empty ensemble: no members -/
+  emptyEns : Ens
+  emptyEns_spec : ∀ s, ¬mem s emptyEns
 
-  /-- F2: For any predicate A on State, the collection of all
-      sub-predicates exists as a higher-level predicate.
-      This gives the power set of any set-as-predicate. -/
-  subPredExists : ∀ (A : State → Prop),
-    ∃ (P : (State → Prop) → Prop),
-      ∀ S, P S ↔ (∀ x, S x → A x)
+/-! ## Part 3: Set-Theoretic Definitions
 
-  /-- F3: For any function F and predicate A, the image predicate exists.
-      This gives the replacement schema: images of sets are sets. -/
-  imagePredExists : ∀ (F : State → State) (A : State → Prop),
-    ∃ (B : State → Prop),
-      ∀ y, B y ↔ (∃ x, A x ∧ F x = y)
-
-/-! ### Trivial instance: Lean's type theory satisfies F1-F3 automatically.
-
-This instance makes explicit that F1-F3 are metatheoretic in Lean.
-The proofs are all `Iff.rfl` — the axioms are definitional. -/
-
-instance instDynZF {State : Type*} [DynComplete State] : DynZF State where
-  orbitPred := isNat
-  orbitPred_spec := fun _ => Iff.rfl
-  subPredExists := fun A =>
-    ⟨fun S => ∀ x, S x → A x, fun _ => Iff.rfl⟩
-  imagePredExists := fun F A =>
-    ⟨fun y => ∃ x, A x ∧ F x = y, fun _ => Iff.rfl⟩
-
-/-! ## Part 3: Set-Theoretic Definitions -/
+These operate on the abstract Ens type via the membership relation. -/
 
 section SetOps
 
+variable {State : Type*} [DynZF State]
+
+open DynZF
+
+/-- Subset relation on ensembles -/
+def ensSubset (A B : @DynZF.Ens State _) : Prop :=
+  ∀ s, mem s A → mem s B
+
+end SetOps
+
+/-! We also keep the predicate-level definitions for derived results
+    that don't depend on Ens (metatheoretic results). -/
+
+section PredOps
+
 variable {State : Type*}
 
-/-- Empty set: the always-false predicate (ZF2) -/
+/-- Empty set: the always-false predicate -/
 def emptySet : State → Prop := fun _ => False
 
-/-- Pairing: {a, b} (ZF3) -/
+/-- Pairing: {a, b} -/
 def pairSet (a b : State) : State → Prop := fun x => x = a ∨ x = b
 
 /-- Binary union: A ∪ B -/
@@ -226,147 +242,196 @@ def interSet (A B : State → Prop) : State → Prop := fun x => A x ∧ B x
 /-- Complement: Aᶜ -/
 def complSet (A : State → Prop) : State → Prop := fun x => ¬ A x
 
-/-- Separation: {x ∈ A : φ(x)} (ZF7) -/
+/-- Separation: {x ∈ A : φ(x)} -/
 def sepSet (A : State → Prop) (φ : State → Prop) : State → Prop :=
   fun x => A x ∧ φ x
 
-/-- Image of a set under a function (ZF8) -/
+/-- Image of a set under a function -/
 def imageSet (F : State → State) (A : State → Prop) : State → Prop :=
   fun y => ∃ x, A x ∧ F x = y
 
-/-- Subset relation -/
+/-- Subset relation on predicates -/
 def subsetRel (A B : State → Prop) : Prop := ∀ x, A x → B x
 
-/-- Power set: the collection of all subsets (ZF5) -/
+/-- Power set: the collection of all subsets -/
 def powerSetPred (A : State → Prop) : (State → Prop) → Prop :=
   fun S => subsetRel S A
 
-/-- Big union of a family of sets (ZF4) -/
+/-- Big union of a family of sets -/
 def bigUnionSet (F : (State → Prop) → Prop) : State → Prop :=
   fun x => ∃ S, F S ∧ S x
 
-end SetOps
+end PredOps
 
 /-! ## Part 4: ZF Axiom Verification -/
 
 namespace ZFTest
 
-/-! ### 4a: Metatheoretic axioms
+/-! ### 4a: ZF axioms from abstract DynZF
 
-These hold for ANY type State with no algebraic structure.
-They follow from Lean's type theory (funext, propext, function types,
-existential quantification). In the framework's two-layer architecture,
-these are provided by the logic layer. -/
+These are now genuine consequences of the F-axioms, not metatheoretic
+tautologies. Each proof uses the abstract Ens type and its operations. -/
+
+section FromDynZF
+
+variable {State : Type*} [DynZF State]
+
+open DynZF DynSemiring
+
+/-- **ZF1: Extensionality.** Two ensembles with the same members are equal.
+    Uses: ens_ext (from DynZF). -/
+theorem zf1_extensionality (A B : @DynZF.Ens State _)
+    (h : ∀ s, mem s A ↔ mem s B) : A = B :=
+  ens_ext A B h
+
+/-- **ZF2: Empty Set.** An ensemble with no members exists.
+    Uses: emptyEns (from DynZF). -/
+theorem zf2_empty_set :
+    ∃ A : @DynZF.Ens State _, ∀ s, ¬mem s A :=
+  ⟨emptyEns, emptyEns_spec⟩
+
+/-- **ZF7: Separation.** For any ensemble A and predicate φ,
+    the sub-ensemble {s ∈ A : φ(s)} exists.
+    Uses: sepEns (from DynZF, F2). -/
+theorem zf7_separation (A : @DynZF.Ens State _) (φ : State → Prop) :
+    ∃ B : @DynZF.Ens State _, ∀ s, mem s B ↔ (mem s A ∧ φ s) :=
+  ⟨sepEns A φ, fun s => sepEns_spec A φ s⟩
+
+/-- **ZF8: Replacement.** For any function F and ensemble A,
+    the image ensemble F[A] exists.
+    Uses: imageEns (from DynZF, F3). -/
+theorem zf8_replacement (F : State → State) (A : @DynZF.Ens State _) :
+    ∃ B : @DynZF.Ens State _, ∀ y, mem y B ↔ (∃ x, mem x A ∧ F x = y) :=
+  ⟨imageEns F A, fun y => imageEns_spec F A y⟩
+
+/-! #### ZF6: Infinity (requires F1 + algebraic structure) -/
+
+/-- The natural number orbit ensemble, obtained from F1. -/
+def natEns : @DynZF.Ens State _ := orbitEns
+
+/-- f₀ is in the natural number ensemble. Uses: F1 + P1. -/
+theorem natEns_f₀ : mem (f₀ : State) natEns :=
+  (orbitEns_spec f₀).mpr P1_zero_is_nat
+
+/-- The orbit ensemble is closed under successor. Uses: F1 + P2. -/
+theorem natEns_succ {s : State} (hs : mem s natEns) :
+    mem (succ s) natEns :=
+  (orbitEns_spec _).mpr (P2_succ_closed s ((orbitEns_spec s).mp hs))
+
+/-- **ZF6: Axiom of Infinity.** The orbit ensemble is an inductive set:
+    it contains f₀ and is closed under successor.
+
+    Uses: F1 (orbit ensemble), A1-B5 (eigenvalue theorem → infinite orbit),
+    P1-P2 (orbit membership). -/
+theorem zf6_infinity :
+    ∃ A : @DynZF.Ens State _,
+      mem (f₀ : State) A ∧ ∀ x, mem x A → mem (succ x) A :=
+  ⟨natEns, natEns_f₀, fun _ => natEns_succ⟩
+
+/-- The orbit is infinite. Uses: eigenvalue theorem + characteristic zero (B5). -/
+theorem natEns_infinite :
+    ∀ n : ℕ, n ≥ 1 → iterS (State := State) n ≠ f₀ :=
+  InfiniteOrbit.no_cycle
+
+/-! #### ZF3: Pairing (from F1 + F2 + F3)
+
+Pairing requires constructing {a, b} as an ensemble. Strategy:
+1. Use sepEns on orbitEns to get singletons (separate by equality)
+2. Use imageEns to map elements appropriately
+
+For arbitrary a, b : State (not necessarily in the orbit), we
+construct {a, b} via separation on the image of a two-element
+orbit subset. -/
+
+/-- **ZF3: Pairing.** For any a, b : State, the ensemble {a, b} exists.
+    Uses: F1 (orbitEns), F2 (sepEns), F3 (imageEns). -/
+theorem zf3_pairing (a b : State) :
+    ∃ C : @DynZF.Ens State _, ∀ x, mem x C ↔ (x = a ∨ x = b) := by
+  -- Map f₀ ↦ a, everything else ↦ b (using classical decidability)
+  haveI : DecidableEq State := Classical.decEq State
+  let F : State → State := fun s => if s = f₀ then a else b
+  -- Get {f₀, f₁} via separation on orbit
+  let twoEns := sepEns orbitEns (fun s => s = (f₀ : State) ∨ s = (f₁ : State))
+  -- Take the image under F
+  let pairE := imageEns F twoEns
+  exact ⟨pairE, fun x => by
+    constructor
+    · intro hx
+      rw [show pairE = imageEns F twoEns from rfl] at hx
+      obtain ⟨w, hw, rfl⟩ := (imageEns_spec F twoEns x).mp hx
+      obtain ⟨_, hw'⟩ := (sepEns_spec orbitEns _ w).mp hw
+      have hF_f₀ : F (f₀ : State) = a := by
+        change (if (f₀ : State) = f₀ then a else b) = a
+        rw [if_pos rfl]
+      have hF_f₁ : F (f₁ : State) = b := by
+        change (if (f₁ : State) = f₀ then a else b) = b
+        rw [if_neg (Ne.symm f₀_ne_f₁)]
+      cases hw' with
+      | inl h => left; subst h; exact hF_f₀
+      | inr h => right; subst h; exact hF_f₁
+    · intro hx
+      rw [show pairE = imageEns F twoEns from rfl]
+      apply (imageEns_spec F twoEns x).mpr
+      have hF_f₀ : F (f₀ : State) = a := by
+        change (if (f₀ : State) = f₀ then a else b) = a
+        rw [if_pos rfl]
+      have hF_f₁ : F (f₁ : State) = b := by
+        change (if (f₁ : State) = f₀ then a else b) = b
+        rw [if_neg (Ne.symm f₀_ne_f₁)]
+      cases hx with
+      | inl h =>
+        exact ⟨f₀, (sepEns_spec orbitEns _ f₀).mpr
+          ⟨(orbitEns_spec f₀).mpr P1_zero_is_nat, Or.inl rfl⟩,
+          by rw [hF_f₀, h]⟩
+      | inr h =>
+        exact ⟨f₁, (sepEns_spec orbitEns _ f₁).mpr
+          ⟨(orbitEns_spec f₁).mpr ⟨1, by simp [iterS, succ, compose_f₀_right]⟩,
+           Or.inr rfl⟩,
+          by rw [hF_f₁, h]⟩⟩
+
+/-! #### ZF9: Foundation
+
+Type stratification prevents self-membership. In Lean's type system,
+`s : State` and `A : Ens` are different types. The expression
+`s ∈ s` (membership of a state in a state) is ill-typed. Foundation
+holds by type-theoretic construction, not by axiom. -/
+
+/-! #### ZF10: Choice
+
+Independent — same status as in ZF. Neither provable nor refutable
+from the algebraic axioms. Lean's `Classical.choice` provides it. -/
+
+/-! #### ZF4 and ZF5: Deferred
+
+Union and Power Set at the Ens level require sets-of-ensembles
+(a family Ens → Prop or a second-level type). These are deferred
+to Phase 2. The metatheoretic versions using State → Prop still
+hold (see Part 4b below). -/
+
+end FromDynZF
+
+/-! ### 4b: Metatheoretic results (using State → Prop directly)
+
+These hold for ANY type State, using Lean's predicate space.
+They don't use Ens and are kept for completeness. ZF4 and ZF5
+live here since they require sets-of-sets which Ens doesn't
+yet support. -/
 
 section Metatheoretic
 
 variable {State : Type*}
 
-/-- **ZF1: Extensionality.** Two predicates (sets) are equal iff they agree
-    on all inputs. Uses: funext + propext (metatheory). -/
-theorem zf1_extensionality (A B : State → Prop)
-    (h : ∀ x, A x ↔ B x) : A = B :=
-  funext fun x => propext (h x)
-
-/-- **ZF2: Empty Set.** The always-false predicate exists.
-    Uses: constant function (metatheory). -/
-theorem zf2_empty_set : ∃ A : State → Prop, ∀ x, ¬ A x :=
-  ⟨emptySet, fun _ h => h⟩
-
-/-- **ZF3: Pairing.** For any a, b, the set {a, b} exists.
-    Uses: equality predicate + disjunction (metatheory). -/
-theorem zf3_pairing (a b : State) :
-    ∃ C : State → Prop, ∀ x, C x ↔ (x = a ∨ x = b) :=
-  ⟨pairSet a b, fun _ => Iff.rfl⟩
-
-/-- **ZF7: Separation.** For any set A and property φ, {x ∈ A : φ(x)} exists.
-    Uses: conjunction of predicates (metatheory). -/
-theorem zf7_separation (A : State → Prop) (φ : State → Prop) :
-    ∃ B : State → Prop, ∀ x, B x ↔ (A x ∧ φ x) :=
-  ⟨sepSet A φ, fun _ => Iff.rfl⟩
-
-/-! ### ZF9: Foundation
-
-Type stratification prevents self-membership. In Lean's type system,
-`s : State` and `S : State → Prop` are different types. The expression
-`s ∈ s` (applying a state to itself) is ill-typed. Foundation holds by
-type-theoretic construction, not by axiom. -/
-
-/-! ### ZF10: Choice
-
-Independent — same status as in ZF. Neither provable nor refutable
-from the algebraic axioms. Lean's `Classical.choice` provides it. -/
-
-end Metatheoretic
-
-/-! ### 4b: Framework-dependent axioms
-
-These require the framework's algebraic structure and/or F1-F3. -/
-
-section FrameworkDependent
-
-variable {State : Type*} [DynZF State]
-
-open DynSemiring
-
-/-! #### ZF4: Union (infinite case requires F2) -/
-
-omit [DynZF State] in
-/-- **ZF4: Union.** For any family F of sets, the union ⋃F exists.
-    Finite case: iterated OR (metatheory).
-    Infinite case: existential quantification over predicate space (F2). -/
-theorem zf4_union (F : (State → Prop) → Prop) :
+/-- ZF4 (metatheoretic): Union over a family of predicates. -/
+theorem zf4_union_meta (F : (State → Prop) → Prop) :
     ∃ A : State → Prop, ∀ x, A x ↔ ∃ B, F B ∧ B x :=
   ⟨bigUnionSet F, fun _ => Iff.rfl⟩
 
-/-! #### ZF5: Power Set (requires F2) -/
-
-/-- **ZF5: Power Set.** For any set A, the power set P(A) exists.
-    Uses F2 (predicate comprehension) for the infinite case. -/
-theorem zf5_powerset (A : State → Prop) :
+/-- ZF5 (metatheoretic): Power set as a predicate on predicates. -/
+theorem zf5_powerset_meta (A : State → Prop) :
     ∃ B : (State → Prop) → Prop, ∀ C, B C ↔ subsetRel C A :=
-  DynZF.subPredExists A
+  ⟨powerSetPred A, fun _ => Iff.rfl⟩
 
-/-! #### ZF6: Infinity (requires F1 + algebraic structure) -/
-
-/-- The natural number orbit predicate, obtained from F1. -/
-def natSet : State → Prop := DynZF.orbitPred
-
-/-- f₀ is in the natural number set. Uses: F1 + P1 (f₀ ∈ ℕ). -/
-theorem natSet_f₀ : natSet (f₀ : State) :=
-  (DynZF.orbitPred_spec f₀).mpr P1_zero_is_nat
-
-/-- The orbit is closed under successor. Uses: F1 + P2 (closure under S). -/
-theorem natSet_succ {s : State} (hs : natSet s) :
-    natSet (succ s) :=
-  (DynZF.orbitPred_spec _).mpr (P2_succ_closed s ((DynZF.orbitPred_spec s).mp hs))
-
-/-- **ZF6: Axiom of Infinity.** The natural number orbit is an inductive set:
-    it contains f₀ and is closed under successor.
-
-    Uses: F1 (completed orbit), A1-B5 (eigenvalue theorem → infinite orbit),
-    P1-P2 (orbit membership). This is the only ZF axiom that requires
-    the framework's algebraic structure. -/
-theorem zf6_infinity :
-    ∃ A : State → Prop,
-      A (f₀ : State) ∧ ∀ x, A x → A (succ x) :=
-  ⟨natSet, natSet_f₀, fun _ => natSet_succ⟩
-
-/-- The orbit is infinite. Uses: eigenvalue theorem + characteristic zero (B5).
-    This is A8 derived as a theorem (Semiring.lean), not an axiom. -/
-theorem natSet_infinite :
-    ∀ n : ℕ, n ≥ 1 → iterS (State := State) n ≠ f₀ :=
-  InfiniteOrbit.no_cycle
-
-/-! #### ZF8: Replacement (requires F3) -/
-
-/-- **ZF8: Replacement.** For any function F and set A, the image F[A] exists.
-    Uses F3 (definable image closure). -/
-theorem zf8_replacement (F : State → State) (A : State → Prop) :
-    ∃ B : State → Prop, ∀ y, B y ↔ ∃ x, A x ∧ F x = y :=
-  DynZF.imagePredExists F A
-
-end FrameworkDependent
+end Metatheoretic
 
 /-! ## Part 5: Derived Set-Theoretic Results -/
 
@@ -416,6 +481,37 @@ theorem image_empty (F : State → State) :
   exact propext ⟨fun ⟨_, h, _⟩ => h.elim, fun h => h.elim⟩
 
 end Derived
+
+/-! ### Derived results on abstract Ens -/
+
+section DerivedEns
+
+variable {State : Type*} [DynZF State]
+
+open DynZF
+
+/-- Empty ensemble is a sub-ensemble of everything -/
+theorem emptyEns_subset (A : @DynZF.Ens State _) : ensSubset emptyEns A :=
+  fun s h => absurd h (emptyEns_spec s)
+
+/-- Separation produces a sub-ensemble -/
+theorem sepEns_subset (A : @DynZF.Ens State _) (φ : State → Prop) :
+    ensSubset (sepEns A φ) A :=
+  fun s h => ((sepEns_spec A φ s).mp h).1
+
+/-- Image of empty ensemble is empty -/
+theorem imageEns_empty (F : State → State) :
+    imageEns F emptyEns = (emptyEns : @DynZF.Ens State _) := by
+  apply ens_ext
+  intro s
+  constructor
+  · intro h
+    obtain ⟨x, hx, _⟩ := (imageEns_spec F emptyEns s).mp h
+    exact absurd hx (emptyEns_spec x)
+  · intro h
+    exact absurd h (emptyEns_spec s)
+
+end DerivedEns
 
 /-! ## Part 6: Framework Boolean Set Operations
 

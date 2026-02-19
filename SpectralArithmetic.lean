@@ -7,3 +7,4 @@ import SpectralArithmetic.PeanoTest
 import SpectralArithmetic.ZFTest
 import SpectralArithmetic.Complex
 import SpectralArithmetic.Model
+import SpectralArithmetic.Countermodels

@@ -38,8 +38,10 @@ The eigenvalue theorem is proved by induction using the Leibniz rule. The infini
 | Eigenvalue 1/q for q-th roots | Rational.lean |
 | Torsion-freeness and generalized cancellation | Rational.lean |
 | Boolean algebra on {z, f₀} via compose/oplus/oneg | ZFTest.lean |
-| F1-F3 axiom class (set-theoretic closure) | ZFTest.lean |
-| ZF axioms verified (sets as predicates, dependency-tracked) | ZFTest.lean |
+| F1-F3 with abstract set universe Ens (non-trivial axioms) | ZFTest.lean |
+| ZF1-ZF3, ZF6-ZF8 from abstract Ens; ZF4-ZF5 metatheoretic | ZFTest.lean |
+| Countermodel: F1 fails for finite Ens (orbit is infinite) | Countermodels.lean |
+| Countermodel: F3 fails for sub-orbit Ens (π maps outside orbit) | Countermodels.lean |
 | Complex extension: j⁴ = f₀, quarter-turn periodicity | Complex.lean |
 | ℝ eigenvalue theorem (axiomatized, not derived) | Complete.lean |
 | ℂ eigenvalue theorem (axiomatized, not derived) | Complex.lean |
@@ -84,7 +86,7 @@ A distinctive feature: axioms that appear necessary at one level become theorems
 | **C (Integral domain)** | + inverses, no zero divisors | C1-C3 | **A7** (cancellation) |
 | **D (ℚ-algebra)** | + q-th roots, unique divisibility | D1-D2 | — |
 | **E (ℝ-algebra)** | + Cauchy completeness | E1 | — |
-| **F (Predicates)** | + completed orbit, comprehension, replacement | F1-F3 | — |
+| **F (Set universe)** | + abstract Ens, orbit/separation/replacement ensembles | F1-F3 | — |
 | **G (ℂ-algebra)** | + imaginary unit j | G1 | — |
 
 Total: 21 axioms, 4 primitives. The number tower ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂ ℂ in a single eigenvalue space.
@@ -100,8 +102,9 @@ SpectralArithmetic/
 ├── Complete.lean        ← E1 (axiomatized), ℝ eigenvalue theorem (axiomatized)
 ├── Complex.lean         ← G1, j⁴ = f₀, ℂ eigenvalue theorem (axiomatized)
 ├── PeanoTest.lean       ← PA1-PA9 verification, recursion theorem
-├── ZFTest.lean          ← ZF1-ZF9 verification (sets as predicates)
-└── Model.lean           ← Forward model: AddMonoidAlgebra ℝ ℝ satisfies A1–F3
+├── ZFTest.lean          ← ZF axioms from abstract set universe Ens (F1-F3 non-trivial)
+├── Model.lean           ← Forward model: AddMonoidAlgebra ℝ ℝ satisfies A1–F3
+└── Countermodels.lean   ← F1/F3 separation: countermodels proving non-triviality
 ```
 
 Build: `lake build` (requires Lean 4 v4.28.0 + Mathlib v4.28.0)
