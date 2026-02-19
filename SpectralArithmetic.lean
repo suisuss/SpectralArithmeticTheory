@@ -3,3 +3,4 @@ import SpectralArithmetic.Semiring
 import SpectralArithmetic.IntegralDomain
 import SpectralArithmetic.Rational
 import SpectralArithmetic.Complete
+import SpectralArithmetic.PeanoTest
