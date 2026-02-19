@@ -43,6 +43,7 @@ The eigenvalue theorem is proved by induction using the Leibniz rule. The infini
 | Complex extension: j⁴ = f₀, quarter-turn periodicity | Complex.lean |
 | ℝ eigenvalue theorem (axiomatized, not derived) | Complete.lean |
 | ℂ eigenvalue theorem (axiomatized, not derived) | Complex.lean |
+| Forward model: AddMonoidAlgebra ℝ ℝ satisfies all 20 axioms (A1–F3) | Model.lean |
 
 ### Pen-and-paper (theory documents, not formalized)
 
@@ -99,7 +100,8 @@ SpectralArithmetic/
 ├── Complete.lean        ← E1 (axiomatized), ℝ eigenvalue theorem (axiomatized)
 ├── Complex.lean         ← G1, j⁴ = f₀, ℂ eigenvalue theorem (axiomatized)
 ├── PeanoTest.lean       ← PA1-PA9 verification, recursion theorem
-└── ZFTest.lean          ← ZF1-ZF9 verification (sets as predicates)
+├── ZFTest.lean          ← ZF1-ZF9 verification (sets as predicates)
+└── Model.lean           ← Forward model: AddMonoidAlgebra ℝ ℝ satisfies A1–F3
 ```
 
 Build: `lake build` (requires Lean 4 v4.28.0 + Mathlib v4.28.0)
