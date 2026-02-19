@@ -1,2 +1,3 @@
 import SpectralArithmetic.Basic
 import SpectralArithmetic.Semiring
+import SpectralArithmetic.IntegralDomain
