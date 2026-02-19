@@ -37,7 +37,9 @@ The eigenvalue theorem is proved by induction using the Leibniz rule. The infini
 | Eigenvalue theorem for ℤ (negative eigenvalues) | IntegralDomain.lean |
 | Eigenvalue 1/q for q-th roots | Rational.lean |
 | Torsion-freeness and generalized cancellation | Rational.lean |
-| ZF axioms verified (sets as predicates) | ZFTest.lean |
+| Boolean algebra on {z, f₀} via compose/oplus/oneg | ZFTest.lean |
+| F1-F3 axiom class (set-theoretic closure) | ZFTest.lean |
+| ZF axioms verified (sets as predicates, dependency-tracked) | ZFTest.lean |
 | Complex extension: j⁴ = f₀, quarter-turn periodicity | Complex.lean |
 | ℝ eigenvalue theorem (axiomatized, not derived) | Complete.lean |
 | ℂ eigenvalue theorem (axiomatized, not derived) | Complex.lean |

@@ -547,6 +547,8 @@ The group algebra is the minimal model that satisfies everything.
 
 4. **No transfinite ordinals demonstrated.** The equiconsistency proof shows the framework CAN handle ordinals beyond ω (via F3), but the actual constructions (ω+1, ω·2, ε₀) haven't been carried out. This is a verification gap, not a theoretical one.
 
+5. **The Lean formalization has a two-layer architecture.** The backward direction (Framework → ZF) in `ZFTest.lean` uses a sets-as-predicates interpretation (`State → Prop`). In this interpretation, 5 of 9 ZF axioms (Extensionality, Empty Set, Pairing, Separation, Foundation) are satisfied by Lean's type theory alone — they hold for ANY type `State` with no algebraic axioms. Only ZF6 (Infinity) genuinely uses the framework's algebraic structure (eigenvalue theorem + characteristic zero). F1-F3 are trivially satisfied in Lean's CIC. This is an inherent feature of working in a type-theoretic metatheory: the metatheory provides logical strength that a first-order metatheory would not. The Lean code documents this dependency structure explicitly (see `ZFTest.lean` Part 4). The framework does contribute boolean logic algebraically: {z, f₀} under compose/oplus/oneg forms a boolean algebra (see `ZFTest.lean` Part 1), establishing that the framework CAN express set operations through its own algebra, even though the ZF axiom verification takes the simpler path through Lean's `Prop`.
+
 ---
 
 ## Part 14: Comparison with PA Equiconsistency
