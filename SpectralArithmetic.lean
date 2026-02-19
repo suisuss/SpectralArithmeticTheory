@@ -4,3 +4,4 @@ import SpectralArithmetic.IntegralDomain
 import SpectralArithmetic.Rational
 import SpectralArithmetic.Complete
 import SpectralArithmetic.PeanoTest
+import SpectralArithmetic.ZFTest
