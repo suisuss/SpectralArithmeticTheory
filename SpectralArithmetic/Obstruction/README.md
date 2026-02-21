@@ -27,11 +27,13 @@ The general results (Obstruction repo) are independent of SpectralArithmeticTheo
 
 ## General results (Obstruction repo)
 
-The standalone [Obstruction](https://github.com/suisuss/Obstruction) repository formalizes the crux as a self-contained Lean project, applicable to any formal system with arithmetic:
+The standalone [Obstruction](https://github.com/suisuss/Obstruction) repository formalizes the crux as a self-contained Lean project, applicable to any formal system with arithmetic. The central result is the **encoding trilemma**: three properties — injectivity, homomorphism, non-trivial semantics — any two compatible, all three impossible.
 
-- **`Encoding.lean`** — The general encoding obstruction: for any term algebra with compose + obs + Leibniz rule, no injective encoding commutes with observation. Instantiated for PA terms (successor, addition, multiplication) and ZF terms (membership, pairing, union). The Leibniz rule extensionalizes observation of composed forms, introducing addition, which is structurally distinct from the original — and any injective encoding must reflect the distinction.
-- **`Arithmetic.lean`** — Bool characteristic-2 impossibility, pairing unboundedness (pigeonhole), carry propagation witnesses for any base b ≥ 2. These establish the mechanism: the oplus that extensionalization introduces is inherently non-local.
 - **`General.lean`** — `Obstruction`, `ConditionalObstruction`, `InjectiveObstruction` structures. Framework for stating and proving obstruction results parametrically over arbitrary atom types.
+- **`Encoding.lean`** — The structural obstruction: for any term algebra with compose + obs + Leibniz rule, no injective encoding commutes with observation. The Leibniz rule extensionalizes observation of composed forms, introducing addition, which is structurally distinct from the original — and any injective encoding must reflect the distinction.
+- **`Peano.lean`** — Both corners of the trilemma for PA. Corner 1: `eval` is a homomorphism but not injective (`S(S(0))` and `S(0)+S(0)` both map to 2). Corner 2: any injective encoding cannot respect PA semantics (three `InjectiveObstruction` witnesses for succ/add, mul/zero, succ/mul).
+- **`ZF.lean`** — Both corners of the trilemma for ZF. Four set-theoretic identities (⋃∅ = ∅, {a,a} = {a}, ⋃{a} = a, 𝒫(∅) = {∅}) each independently produce both corners: any function respecting the identity is not injective; any injective encoding cannot respect the identity.
+- **`Arithmetic.lean`** — Bool characteristic-2 impossibility, pairing unboundedness (pigeonhole), carry propagation witnesses. These close off representation-level escape routes: the oplus that extensionalization introduces is inherently non-local.
 
 ## Encoding-specific results (this directory)
 
@@ -81,9 +83,11 @@ SpectralArithmetic/Obstruction/  WHY self-encoding fails:
 Convergence.lean                 OPEN: is there a non-divergent variant?
                                  WeakConvergence vs TotalDivergence
 
-suisuss/Obstruction              The same crux, generalized:
-                                 proved for PA, ZF, and all term algebras
-                                 with Leibniz observation
+suisuss/Obstruction              The encoding trilemma, generalized:
+                                 injectivity ∧ homomorphism ∧ non-trivial = ⊥
+                                 proved for PA (eval collisions),
+                                 ZF (set-theoretic identities),
+                                 and all term algebras with Leibniz obs
 ```
 
 All results are sorry-free.
