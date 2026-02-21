@@ -1,8 +1,36 @@
 # Plan: Encoding Obstruction — Formalizable Results
 
-## Date: 2026-02-20
+## Date: 2026-02-20 (HISTORICAL — plan completed 2026-02-21)
 
-## Context
+## Status: COMPLETED
+
+This plan was written before formalization. All targets have been met or exceeded:
+
+| Planned | Status | Actual |
+|---|---|---|
+| Theorem 1 (existential: some term breaks morphism) | **EXCEEDED** | `no_coalgebra_morphism`: universal over ALL encodings AND ALL compound terms |
+| Theorem 2 (trajectory divergence) | **DONE** | `extensionalize_more_than_doubles`: >2× growth, `trajectory_divergence` |
+| Theorem 3 (addition not injective) | **DONE** | `add_not_injective_on_pairs` |
+| Theorem 4 (pairing unbounded) | **DONE** | `injective_pairing_unbounded` (pigeonhole via Fin) |
+| Theorem 5 (⊕ impossibility) | **DONE** | `oplus_bitwise_impossible` + `bitwise_diagonal_char_two` (Bool→ℕ bridge) |
+| Theorem 6 (unique preimage) | **DONE** | `injective_unique_preimage` |
+| Theorem 7 (carry propagation) | **EXCEEDED** | `carry_propagation_general`: any base b ≥ 2 |
+| ~450 lines estimated | **EXCEEDED** | 1229 lines across 5 files |
+| 0 sorry target | **MET** | 0 sorry, 90 defs/theorems |
+
+Additional results not in the original plan:
+- `substitution_chain_distinct`: no fixed point (three levels provably distinct)
+- `semantic_invariance_general`: meaning preserved universally
+- `deepRewrite`: iterated extensionalization with bottom-up recursion
+- `termSize` + growth theorems: exact size computation and >2× bound
+- `Convergence.lean`: formalized open conjecture (WeakConvergence vs TotalDivergence)
+- Intension/extension reframing of all theory documents
+
+The plan below is preserved as a historical record of the original approach.
+
+---
+
+## Original Context
 
 The encoding-obstruction branch has five theory documents developing a chain of arguments from the trilemma through carry non-locality to the impossibility hierarchy. Per the honest assessment, most of this is interpretive scaffolding around known results. **Three claims are concretely provable**. This plan focuses on those.
 
