@@ -2,20 +2,24 @@
 
 ## Overview
 
-Four Lean files prove, sorry-free, that no injective encoding of terms as eigenstates can serve as a coalgebra morphism for the observation operator. The eval-quote diagram does not commute. This is the **trilemma** reduced to a machine-checked theorem.
+Four Lean files prove, sorry-free, that no injective encoding of terms as eigenstates can serve as a coalgebra morphism for the observation operator. The eval-quote diagram does not commute. This is the **intension/extension gap** made machine-checkable.
 
 ```
         eval
 Terms --------→ State
   |                |
   | ε (encode)     | obs (eigenvalue scaling)
-  |                |
+  |   [intensional:|   [intensional:
+  |    naming]     |    reads eigenvalue]
   ↓                ↓
   ℕ  --------→  State
      obs_code (rewrite + re-encode)
+     [extensional: Leibniz unfolds, then re-names]
 ```
 
 **The diagram does not commute:** `ε(obsRewrite(obs(t))) ≠ ε(obs(t))` for any injective ε, witnessed by the term `compose(f₁, f₁)`.
+
+**What the proof really shows:** The Leibniz rewrite **extensionalizes** — it unfolds `obs(compose(f₁, f₁))` into its parts, making the internal structure visible. The original term is **intensional** — a named, opaque unit. These are structurally different terms (by `DecidableEq`). Any injective encoding must give them different codes. The diagram fails because the extensional (unfolded) and intensional (folded) views of the same form are irreducibly distinct — and this is exactly the intension/extension gap that encoding-obstruction.md identifies as the fundamental obstruction.
 
 ---
 
@@ -44,9 +48,9 @@ Total: ~372 lines, 0 sorry, all machine-checked.
 
 **Proof:** The Leibniz rewrite transforms `obs(compose(f₁, f₁))` into `oplus(compose(obs(f₁), f₁), compose(f₁, obs(f₁)))` — a structurally different term. Since `Term` has `DecidableEq`, these are provably distinct. Any injective `ε` maps distinct terms to distinct values. QED.
 
-**Key insight:** The proof works at the Term level, not the State level. We don't need to show eigenvalues differ in abstract State (which would require additional assumptions). We show the TERMS differ, and injectivity does the rest.
+**Key insight:** The proof works at the Term level, not the State level. We don't need to show eigenvalues differ in abstract State (which would require additional assumptions). We show the TERMS differ, and injectivity does the rest. This is the right level to work at, because the obstruction IS about terms — about the fact that the intensional form and its extensional unfolding are structurally distinct.
 
-**Why this proves the trilemma:** If the encoding were a coalgebra morphism, the diagram would commute — encoding then observing would equal observing then encoding. It doesn't, because the Leibniz rule changes the term structure. The change is the introduction of `oplus` (addition) into the observation dynamics, which is exactly the ⊕ obstruction identified in the theory documents.
+**Why this proves the intension/extension gap:** If the encoding were a coalgebra morphism, the diagram would commute — naming (intensionalizing) then observing would equal observing then re-naming. It doesn't, because the Leibniz rule extensionalizes: it substitutes the product rule into the term, introducing `oplus` (addition) and making implicit structure explicit. The extensionalized form is a different term. Any injective naming (encoding) must give it a different name (code). The code of the unfolded form ≠ the unfolding of the coded form. This is substitution failing to reach a fixed point, witnessed by one concrete term.
 
 ### Theorem 3: Addition Not Injective on Pairs (Pairing.lean)
 
@@ -108,7 +112,7 @@ OplusImpossibility.lean (standalone)
 
 ---
 
-## Proof Strategy: Why Term-Level Works
+## Proof Strategy: Why Term-Level Is the Right Level
 
 The original plan attempted to prove the obstruction at the State level:
 
@@ -118,17 +122,17 @@ smul n (iterS n) ≠ smul 2 (iterS 2)  for n ≠ 2
 
 This requires showing that distinct eigenvalues give distinct scaled eigenstates in abstract `DynSemiring` — which needs additional assumptions (integral domain, no zero divisors, or a concrete model).
 
-The solution: work at the **Term level** instead. The Leibniz rewrite transforms `obs(compose(f₁, f₁))` into a structurally different term:
+The solution — and the conceptually correct approach — is to work at the **Term level**. The intension/extension gap IS a gap between terms: the intensional term (folded, named) and the extensional term (unfolded by substitution) are structurally different:
 
 ```
-obs(compose(f₁, f₁))
+obs(compose(f₁, f₁))                                    ← intensional: the form as a unit
   ≠  (by decide, using DecidableEq on Term)
-oplus(compose(obs(f₁), f₁), compose(f₁, obs(f₁)))
+oplus(compose(obs(f₁), f₁), compose(f₁, obs(f₁)))      ← extensional: the form unfolded by Leibniz
 ```
 
-Any injective `ε` maps distinct terms to distinct codes. No assumptions about State needed. The obstruction is purely syntactic — the Leibniz rule changes the term, and the change is the introduction of `oplus`, which is exactly the addition that the theory documents identify as the source of the obstruction.
+Any injective `ε` maps distinct terms to distinct codes. No assumptions about State needed. The obstruction IS syntactic — it's about the fact that **substitution changes the form**, and any faithful naming (injective encoding) must reflect that change. The introduction of `oplus` into the extensionalized form is exactly the point where addition enters through the Leibniz rule, which is where the carry propagation mechanism (addition-non-locality.md) begins for executable encodings.
 
-This is arguably a cleaner result than the State-level version: it shows the obstruction is **structural** (inherent in the term rewriting) rather than **semantic** (dependent on properties of the model).
+Working at the Term level is cleaner because the intension/extension gap is fundamentally about expressions (terms), not about their denotations (states). The `obsRewrite_eval` theorem confirms this: at the State level, the two sides ARE equal (semantics is preserved). The gap is in the naming, not in the meaning.
 
 ---
 
@@ -136,12 +140,12 @@ This is arguably a cleaner result than the State-level version: it shows the obs
 
 | Theory document | What it claims | What the Lean proves |
 |---|---|---|
-| `encoding-obstruction.md` | The trilemma: eigenvalue arithmetic + self-encoding + coalgebra morphism jointly unsatisfiable | `encoding_obstruction_term`: for any injective ε, ε(rewrite) ≠ ε(original) |
-| `information-domain.md` | ⊕ is the real obstruction | `oplus_bitwise_impossible`: no bitwise op satisfies ⊕'s requirements |
-| `addition-non-locality.md` | Carry propagation forces external state | `carry_propagation_witness`: concrete witness of carry from bit 0 to bit k |
-| `impossibility-hierarchy.md` | Addition → state → halting → incompleteness | Only the algebraic level is formalized; the halting/incompleteness connection is NOT proved (it's Turing 1936) |
-| `observer-as-register.md` | Observer = register | NOT formalized (physical interpretation) |
+| `encoding-obstruction.md` | The intension/extension gap: substitution extensionalizes terms, naming intensionalizes them, no fixed point exists | `encoding_obstruction_term`: the extensionalized term (Leibniz-unfolded) ≠ the intensional term (original), so any injective naming gives different codes |
+| `information-domain.md` | ⊕ is the operation that enters through extensionalization and can't be removed | `oplus_bitwise_impossible`: no bitwise op satisfies ⊕'s requirements (characteristic 2 vs. characteristic 0) |
+| `addition-non-locality.md` | For executable encoding, ⊕ (carry propagation) forces external state | `carry_propagation_witness`: concrete witness of carry from bit 0 to bit k |
+| `impossibility-hierarchy.md` | Substitution → ⊕ → carry → register → halting → incompleteness as one chain | Only the algebraic level (obstruction) is formalized; the logical level (halting/incompleteness) is Turing 1936 |
+| `observer-as-register.md` | Observer = mode-switching register between intension and extension | NOT formalized (interpretive) |
 | `normalization-vs-variation.md` | Newtonian/Lagrangian duality | NOT formalized (physics) |
 | `convergence.md` | Algebraic and epistemological routes converge | NOT formalized (meta-observation) |
 
-The Lean formalization proves the **algebraic core** of the theory. Everything above (computation, physics, philosophy) rests on this core but is not machine-checked.
+The Lean formalization proves the **algebraic core**: the intension/extension gap is real, witnessed by a concrete term, and machine-checked. The mechanism (carry), the consequence (undecidability), and the interpretation (observer) rest on this core but are not machine-checked.

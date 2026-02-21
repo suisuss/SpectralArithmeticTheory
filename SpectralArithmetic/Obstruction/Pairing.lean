@@ -1,12 +1,22 @@
 /-
-  Spectral Arithmetic: Pairing Lower Bounds
-  ==========================================
+  Spectral Arithmetic: Pairing Lower Bounds and Carry Propagation
+  ===============================================================
 
-  Proves fundamental limitations of pairing functions:
-  - Theorem 3: Addition is not injective on pairs
-  - Theorem 4: Injective pairings are unbounded on the diagonal
-  - Theorem 6: Injective encoding implies unique preimages
-  - Theorem 7: Non-redundant base-2 addition has carry propagation
+  The encoding obstruction shows that intensionalization (naming/encoding)
+  and extensionalization (unfolding/execution) don't commute. These theorems
+  establish the mechanism for WHY, in executable encodings:
+
+  - Theorem 3: Addition is not injective on pairs — so encoding structured
+    terms (which have parts) cannot use addition as its pairing function.
+    The encoding must be super-additive.
+  - Theorem 4: Injective pairings are unbounded — the encoding of
+    extensionalized forms (which contain oplus, i.e., addition) grows
+    without bound relative to the intensional forms.
+  - Theorem 6: Injective encoding implies unique preimages — uniqueness
+    of naming is required for self-encoding (Gödel decoding).
+  - Theorem 7: Non-redundant base-2 addition has carry propagation —
+    the concrete mechanism by which addition introduces non-locality,
+    forcing external state (registers) in executable encodings.
 -/
 
 import Mathlib.Tactic
@@ -59,7 +69,15 @@ theorem injective_unique_preimage {α β : Type*} (f : α → β) (hf : Function
     (a b : α) (h : f a = f b) : a = b :=
   hf h
 
-/-! ## Theorem 7: Non-redundant addition has carry -/
+/-! ## Theorem 7: Non-redundant addition has carry
+
+    Carry propagation is the MECHANISM by which the intension/extension
+    gap forces external state in executable encodings. The Leibniz rule
+    extensionalizes into a sum (oplus), and computing that sum on a
+    positional representation requires carry — non-local state that
+    the encoding cannot absorb.
+
+    We prove carry exists in base 2, then generalize to any base b ≥ 2. -/
 
 /-- In base 2, the sum (2^k - 1) + 1 = 2^k.
     For k ≥ 1, neither input has a nonzero bit at position k,
@@ -74,4 +92,28 @@ theorem carry_propagation_witness (k : ℕ) (hk : k ≥ 1) :
   · exact Nat.div_eq_of_lt (by omega)
   · have : 1 < 2 ^ k := Nat.one_lt_two_pow_iff.mpr (by omega)
     exact Nat.div_eq_of_lt (by omega)
+  · exact Nat.div_self (by omega)
+
+/-- **General carry propagation (any base b ≥ 2):**
+    In base b, adding (b^k - 1) + 1 = b^k.
+    Neither input has a nonzero digit at position k (both are < b^k),
+    but the output is exactly b^k (digit 1 at position k).
+    Carry propagates from position 0 to position k.
+
+    This shows carry is not an artifact of binary — it occurs in
+    ANY non-redundant positional representation with base ≥ 2. -/
+theorem carry_propagation_general (b k : ℕ) (hb : b ≥ 2) (hk : k ≥ 1) :
+    b ^ k - 1 + 1 = b ^ k
+    ∧ (b ^ k - 1) / b ^ k = 0
+    ∧ 1 / b ^ k = 0
+    ∧ b ^ k / b ^ k = 1 := by
+  have hpow : b ^ k ≥ 1 := Nat.one_le_pow k b (by omega)
+  have hpow_gt : b ^ k > 1 := by
+    calc b ^ k ≥ 2 ^ k := Nat.pow_le_pow_left (by omega) k
+    _ ≥ 2 ^ 1 := Nat.pow_le_pow_right (by omega) hk
+    _ = 2 := by ring
+    _ > 1 := by omega
+  refine ⟨by omega, ?_, ?_, ?_⟩
+  · exact Nat.div_eq_of_lt (by omega)
+  · exact Nat.div_eq_of_lt (by omega)
   · exact Nat.div_self (by omega)

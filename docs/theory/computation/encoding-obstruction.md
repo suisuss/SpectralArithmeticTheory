@@ -1,20 +1,59 @@
-# The Encoding Obstruction: A Trilemma at the Heart of Self-Representing Eigenvalue Systems
+# The Encoding Obstruction: Intension, Extension, and the Limits of Executable Self-Representation
 
-## Date: 2026-02-19
+## Date: 2026-02-19 (revised 2026-02-21)
 
 ## Summary
 
-The bisimulation conjecture (self-representation.md, Part 10) asks whether the Gödel encoding creates a behavioral equivalence between syntactic rewriting and semantic observation. This document argues that the obstruction is not an artifact of the standard prime-factorization encoding but a **structural impossibility** arising from a three-way incompatibility between eigenvalue arithmetic, self-encoding, and coalgebra morphism.
+The bisimulation conjecture (self-representation.md, Part 10) asks whether the Gödel encoding creates a behavioral equivalence between syntactic rewriting and semantic observation. This document argues that the obstruction is **not** an artifact of growth rates or any particular encoding, but a structural consequence of the **intension/extension duality** in any system powerful enough for self-representation.
 
-The core result is a **trilemma**: any self-representing eigenvalue system must have (1) linear eigenvalues to produce arithmetic, (2) super-linear encoding to achieve self-representation, and (3) matching growth rates for coalgebra morphism — but no system can satisfy all three simultaneously. The system's power (PA-strength arithmetic from linear eigenvalues) is precisely what creates the gap (encoding must be non-linear, breaking the morphism). The obstruction is self-referential in the same way as Gödel's theorem.
+The fundamental insight: **mathematics is substitution.** Substitution moves between two irreducible modes — the **intensional** (a form named, treated as a unit: `obs(compose(f₁, f₁))`) and the **extensional** (the same form unfolded, all parts visible: `oplus(compose(obs(f₁), f₁), compose(f₁, obs(f₁)))`). A final substitution cannot be proven, because any completed extensional form can be given a new symbol — re-intensionalized — and the process begins again. The encoding of execution cannot equal the execution of encoding, because encoding is intensional (naming) while execution is extensional (substituting), and these never reach a fixed point.
 
-**Key result (conjectured):** No primitive recursive injection from the term algebra to eigenstates is a coalgebra morphism for obs. The syntax-semantics gap is not a feature of any particular encoding — it is a structural property of self-representing arithmetic systems with eigenvalue observation.
+This gap has different consequences depending on what the encoding is for:
+
+- **Passive encoding** (Gödel numbering as inert labels): the gap gives Gödel incompleteness. The system can name but not resolve self-referential propositions. This is standard and well-understood.
+
+- **Executable encoding** (the encoding runs itself — self-executing representation): the gap forces **external state**. To actually perform the intension/extension switching, the system must manipulate positions (bits, eigenvalues). Positional manipulation requires carry propagation. Carry propagation is non-local. Non-locality requires a register external to the encoding. This is the new content.
+
+The **trilemma** maps cleanly onto this:
+
+| Property | What it really is |
+|---|---|
+| **Eigenvalue arithmetic** | Positions exist — obs reads off eigenvalues, giving ℕ |
+| **Self-encoding** | The encoding is executable — not just naming, but running |
+| **Coalgebra morphism** | Intension/extension switching commutes with execution |
+
+The third fails because executable encoding requires positional manipulation, positional manipulation requires carry, and carry requires external state that breaks self-containment. The system can name itself (passive encoding works) but cannot execute its own encoding faithfully (the morphism fails at the point where addition enters through the Leibniz rule).
+
+**Key result (proved, sorry-free in Lean):** For any injective `ε : Term → ℕ`, the Leibniz rewrite extensionalizes `obs(compose(f₁, f₁))` into a structurally different term. By injectivity, the codes differ. The eval-quote diagram does not commute. See [obstruction/README.md](obstruction/README.md) for the formalization.
 
 ---
 
-## Part 1: The Standard Framing and Its Limitation
+## Part 1: The Fundamental Obstruction — Substitution Never Terminates
 
-### The naive obstacle
+### Intension and extension
+
+Every formal expression has two faces:
+
+- **Intensional**: the expression as a named unit, opaque, treated as a single thing. `obs(compose(f₁, f₁))` — you see the name, not the internals.
+- **Extensional**: the expression unfolded by substitution, all parts visible. `oplus(compose(obs(f₁), f₁), compose(f₁, obs(f₁)))` — the Leibniz rule has been applied, every sub-operation is explicit.
+
+The `obsRewrite` operation moves from intensional to extensional: it substitutes the Leibniz rule into the expression, making the implicit structure explicit. But then you can **re-intensionalize** — give the entire unfolded form a new name, a new symbol — and the process begins again.
+
+This is not a quirk of this framework. It is what mathematics IS. Mathematics operates by substitution. Every definition is an intensional compression of an extensional form. Every proof step is an extensional unfolding. And every completed unfolding can be re-named, because **any form can be given a symbol.**
+
+A coalgebra morphism between syntax and semantics would require a fixed point: a point where the extensional (unfolded, syntactic) and intensional (folded, semantic) representations agree through the encoding. No such fixed point exists, because naming is always one step behind substitution.
+
+### The distinction: passive vs. executable encoding
+
+This matters differently depending on what the encoding does:
+
+**Passive encoding** (standard Gödel numbering): the encoding assigns inert labels to terms. The label `⌜obs(compose(f₁, f₁))⌝` is just a number — it doesn't *do* anything. The intension/extension gap produces Gödel incompleteness: the system can name self-referential propositions but cannot resolve them. This is Gödel 1931.
+
+**Executable encoding** (self-executing representation): the encoding is not just a label — it is meant to be *run*. The system operates on its own codes using its own operations. Now the intension/extension switching must actually be *performed*, not just described. Performing it requires manipulating positional representations (eigenvalues, bits), which requires addition (carry propagation), which requires external state (a register). The morphism fails not just abstractly (naming can't catch substitution) but concretely (the execution machinery introduces state that breaks self-containment).
+
+The encoding obstruction is about the second case: why no self-executing encoding can faithfully represent its own execution.
+
+### The technical framing
 
 The bisimulation conjecture defines two coalgebra structures on the same carrier:
 
@@ -183,11 +222,15 @@ Without linear eigenvalues → without ℕ → without PA → without self-encod
 
 Any system combining eigenvalue observation with self-representation faces a three-way impossibility:
 
-| Property | What it requires | What it provides |
+| Property | What it requires | What it really is |
 |---|---|---|
-| **Eigenvalue arithmetic** | Linear eigenvalues (Leibniz rule / derivation) | ℕ with semiring structure, PA, induction |
-| **Self-encoding** | Injective pairing function (super-linear) | Gödel numbering, syntactic predicates, self-reference |
-| **Coalgebra morphism** | Encoding preserves obs trajectories (matching growth rates) | Bisimulation between syntax and semantics |
+| **Eigenvalue arithmetic** | Linear eigenvalues (Leibniz rule / derivation) | **Positions exist** — obs reads off eigenvalues, giving ℕ with PA |
+| **Self-encoding** | Injective pairing function (super-linear) | **The encoding is executable** — not just passive naming, but self-running code |
+| **Coalgebra morphism** | Encoding preserves obs trajectories | **Intension/extension switching commutes with execution** — naming and unfolding are consistent through the encoding |
+
+The obstruction, stated in terms of intension and extension: **executable self-encoding requires that the intensional view (the code) and the extensional view (the execution) agree at every step. They cannot, because execution is substitution (extensionalizing), and any extensional result can be re-intensionalized (given a new name), and the encoding of the new name has no fixed relationship to the encoding of the unfolded form.**
+
+In the growth-rate language: eigenvalue observation is linear (intensional — reads off a single number), encoding is super-linear (extensional — must represent structure), and no map between these regimes commutes with both. But the growth-rate mismatch is the *symptom*. The intension/extension gap is the *cause*.
 
 **You can have any two, but not all three:**
 
@@ -248,17 +291,20 @@ The obstruction is **self-referential**: the system's ability to encode itself (
 
 ### Comparison to Gödel's incompleteness
 
-The structural parallel to Gödel's theorem is precise:
+Both Gödel's theorem and the encoding obstruction are consequences of the intension/extension gap in self-naming systems:
 
 | | Gödel's incompleteness | Encoding obstruction |
 |---|---|---|
 | **The system's power** | PA-strength arithmetic enables self-reference | Linear eigenvalues produce ℕ, enabling Gödel encoding |
 | **What self-reference creates** | The Gödel sentence G ("I am not provable") | The eval-quote diagram (encoding as candidate coalgebra morphism) |
-| **The impossibility** | G cannot be both true and provable | The encoding cannot be both injective and growth-rate-compatible |
-| **The structural reason** | Diagonalization: self-reference + negation | Pairing-linearity: self-encoding + eigenvalue structure |
-| **What survives** | The system is powerful but incomplete | The system self-represents but the representation distorts dynamics |
+| **The intension/extension gap** | G names (intensionalizes) its own unprovability; unfolding (extensionalizing) the name never resolves it | The encoding names (intensionalizes) terms; the Leibniz rule unfolds (extensionalizes) them into structurally different forms |
+| **Why it can't close** | The resolved form can be re-named, producing a new unresolvable sentence | The unfolded form can be re-named (re-encoded), but the new code has no fixed relationship to the old |
+| **Passive consequence** | Incompleteness — true but unprovable sentences exist | The encoding exists but distorts dynamics |
+| **Executable consequence** | The halting problem — self-executing code can't decide its own termination | The register — self-executing encoding requires external state for addition's carry propagation |
 
-In both cases, the system is powerful *enough* to create a self-referential construction, but the construction reveals a limitation that is *inherent to* the power that enabled it.
+Gödel's theorem is about **passive** self-reference: the system names a proposition about itself but cannot resolve it. The encoding obstruction extends this to **executable** self-reference: the system not only names itself but tries to run its own encoding, and the execution step (which requires addition, which requires carry) introduces machinery the encoding cannot absorb.
+
+In both cases: substitution is open-ended, naming is always one step behind unfolding, and no fixed point exists.
 
 ---
 
@@ -395,12 +441,14 @@ The trilemma says: verification (eigenvalue observation) is linear, construction
 
 ### The intensional/extensional connection
 
-The trilemma also maps onto the intensional/extensional distinction:
+The trilemma is the intension/extension gap made algebraically precise:
 
-- **Extensional** (what a state does): eigenvalue observation, obs(f_n) = n · f_n, linear
-- **Intensional** (what a state is made of): encoding, ε(compose(a,b)) = π(ε(a), ε(b)), super-linear
+- **Intensional** (the form as a unit): `obs(compose(f₁, f₁))` — named, opaque, eigenvalue read off as a single number. This is the semantic side: what the state *does*. Linear.
+- **Extensional** (the form unfolded): `oplus(compose(obs(f₁), f₁), compose(f₁, obs(f₁)))` — substituted, all structure visible, requiring pairing to encode. This is the syntactic side: what the state *is made of*. Super-linear.
 
-The trilemma says extensional identity (eigenvalue) and intensional identity (code) live in incompatible growth regimes. You can read off what something *does* (linearly) or describe what it *is* (super-linearly), but the two operations can't be the same map.
+The Leibniz rule IS the substitution that extensionalizes: it unfolds `obs(compose(a,b))` into its parts. The encoding must represent these parts (extensional), while the observation reads off a single value (intensional). The two live in incompatible regimes because they are opposite directions of the same duality.
+
+For a passive encoding, this is just the familiar fact that syntax and semantics differ. For an **executable** encoding — where the code must actually perform the substitution — the mismatch becomes operational: the extensionalization step introduces addition (the ⊕ in the Leibniz sum), addition requires carry propagation, and carry requires external state. The executable encoding cannot be self-contained because substitution (extensionalization) crosses information boundaries that the encoding (intensionalization) keeps separate.
 
 ---
 
@@ -497,9 +545,13 @@ The original conjecture asked: does the self-referential loop close? The trilemm
 
 ### The deepest reading
 
-The trilemma says: **a system that can fully observe its own states (eigenvalue arithmetic) cannot fully encode its own structure (self-representation) in a way that preserves observation (coalgebra morphism).** Self-knowledge and self-description are both possible, but they use incompatible mechanisms. You can know what you are (eigenvalue) or describe what you're made of (encoding), but the description necessarily distorts the knowledge.
+The trilemma says: **mathematics is substitution, and substitution is open-ended.** Any formal system powerful enough to name its own expressions can unfold those names (substitute), producing new expressions that can themselves be named. The intensional and extensional views of a form are irreducible to each other in any self-naming system.
 
-This is a precise algebraic version of a philosophical intuition: the map is not the territory, and the reason is not philosophical but mathematical — mapping requires pairing (super-linear), while the territory's structure is eigenvalue-indexed (linear).
+For passive encoding, this gives incompleteness: the Gödel sentence names its own unprovability, and the system can substitute into that name (unfold it) but can never reach a final substitution that resolves it — because the resolution would itself be a form that can be named and substituted again.
+
+For executable encoding, this gives the register: to actually *perform* the intension/extension switching (not just describe it), the system must manipulate positions, addition crosses positional boundaries, and the boundary-crossing requires external state. The "map is not the territory" not because mapping is lossy (it's injective), but because **the act of mapping introduces operations (addition, carry) that the territory doesn't contain (eigenvalue scaling is multiplicative, not additive).**
+
+The key distinction between this framework and raw PA: in the eigenvalue framework, the intensional side (obs reads eigenvalue n, multiplicative, local) and the extensional side (Leibniz rule introduces ⊕, additive, non-local) produce *visibly different operations*. In PA, both sides are already arithmetic, so the gap is harder to see. The framework makes the obstruction visible as two different kinds of operation where there should be one.
 
 ### Refinement: the information domain and ⊕
 

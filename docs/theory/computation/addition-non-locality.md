@@ -1,14 +1,24 @@
-# Addition Non-Locality: Why Self-Encoding Systems With Addition Require External State
+# Addition Non-Locality: The Mechanism Layer of the Encoding Obstruction
 
-## Date: 2026-02-20
+## Date: 2026-02-20 (revised 2026-02-21)
 
 ## Summary
 
-The encoding obstruction trilemma (encoding-obstruction.md) and its refinement (information-domain.md) localize the impossibility to **⊕** — the additive operation in the Leibniz rule. This document argues that the obstruction has a deeper root: **carry propagation in addition is non-local in any unique positional encoding**, and this non-locality forces any self-encoding, self-executing system with addition to maintain external state (registers, accumulators) for normalization.
+The encoding obstruction (encoding-obstruction.md) identifies the **intension/extension gap** as the fundamental reason self-representing systems cannot faithfully encode their own execution. This document describes the **mechanism** by which that gap manifests in any concrete executable encoding: **carry propagation**.
 
-The claim, stated precisely: **no mathematical system that self-encodes and self-executes can perform addition without intermediate normalization state, provided the encoding is unique (non-redundant) and positional.** This is because unique positional encodings require carry propagation for addition, carry propagation is non-local (output at position k depends on all inputs at positions 0 through k), and non-local operations cannot be absorbed into a local (position-independent) encoding.
+The chain is:
+1. The intension/extension gap means substitution never reaches a fixed point (the obstruction — see encoding-obstruction.md)
+2. For an **executable** encoding (not just passive labeling), the system must actually *perform* the intension/extension switching — it must manipulate its own positional representations
+3. The Leibniz rule introduces addition (⊕) into the switching: extensionalizing `obs(compose(a,b))` produces a sum of terms
+4. Addition on unique positional representations requires carry propagation
+5. Carry propagation is non-local — output at position k depends on all inputs at positions 0..k
+6. Non-local operations require **external state** (a register) that the encoding cannot absorb
 
-**Novelty assessment:** The specific framing — "addition forces registers as a mathematical necessity for self-encoding systems" — does not appear in the literature. The individual components (carry non-locality, self-encoding limitations, necessity of state for algorithms) are well-established. The synthesis is new, but the claim requires careful restriction to avoid known counterexamples (redundant number systems, residue number systems).
+The claim, stated precisely: **no mathematical system that self-encodes and self-executes can perform addition without intermediate normalization state, provided the encoding is unique (non-redundant) and positional.** The derivative of position is existence (obs reads off eigenvalues, which ARE the positions), and to manipulate existence (bits) for an auditable and executable self-encoding requires carry.
+
+**Why this matters:** For passive Gödel encoding (inert labels), carry propagation is irrelevant — the numbers just sit there. The moment the encoding becomes executable (the code runs itself), carry becomes load-bearing. This is the distinction between Gödel's incompleteness (passive self-reference) and the encoding obstruction (executable self-reference).
+
+**Novelty assessment:** The specific framing — "carry propagation is the mechanism by which the intension/extension gap forces external state in executable encodings" — does not appear in the literature. The individual components are well-established. The synthesis is new.
 
 ---
 
@@ -157,15 +167,15 @@ Conditions (1)-(4) together force: the system must perform addition on its own p
 
 ### Relationship to the trilemma
 
-This theorem, if proved, would be the **foundation** under the trilemma:
+This theorem describes the **mechanism** by which the intension/extension gap (the obstruction) manifests in executable encodings:
 
 | Level | Result | What it says |
 |---|---|---|
-| **Foundation** | Addition non-locality theorem (this document) | ⊕ on self-encoding requires external state |
-| **Trilemma** | Encoding obstruction (encoding-obstruction.md) | Eigenvalue arithmetic + self-encoding + coalgebra morphism are jointly unsatisfiable |
-| **Refinement** | Information domain analysis (information-domain.md) | The obstruction is specifically ⊕ in the Leibniz rule |
+| **Obstruction** | Intension/extension gap (encoding-obstruction.md) | Substitution is open-ended; naming never catches unfolding; the coalgebra morphism has no fixed point |
+| **Mechanism** | Addition non-locality (this document) | For executable encodings, the intension/extension switch introduces ⊕ via Leibniz; ⊕ requires carry; carry requires external state |
+| **Refinement** | Information domain analysis (information-domain.md) | In the bit domain, ⊕ becomes tropical max (destroying PA), confirming the obstruction can't be worked around |
 
-The foundation explains WHY the trilemma holds: the coalgebra morphism requires encoding to preserve dynamics, but ⊕ dynamics (carry propagation) are non-local and cannot be preserved by any position-local encoding.
+The mechanism explains HOW the trilemma fails concretely: the coalgebra morphism requires the encoding to commute with execution, but execution extensionalizes through the Leibniz rule, extensionalization introduces addition, and addition's carry chain requires state outside the encoding.
 
 ---
 
@@ -286,7 +296,7 @@ The specific synthesis: **carry non-locality + self-encoding uniqueness + Leibni
 
 ## Part 9: The Deeper Reading
 
-### Why addition is special
+### Why addition is special — the point where intension meets extension
 
 Addition is the operation that **creates information interaction across layers**. All other basic operations (bitwise, shift, single-digit multiplication) keep each layer independent. Addition is the unique operation where the result at one layer depends on the process at all lower layers.
 
@@ -295,9 +305,14 @@ In the eigenvalue framework:
 - obs (derivative / layer read) is local — reads one layer at a time
 - **⊕ (addition of eigenstates) is non-local** — carry propagation crosses all layers
 
-The Leibniz rule forces ⊕ into the dynamics of obs. Without Leibniz, observation would be purely local, and the encoding could preserve dynamics. With Leibniz, observation produces sums, sums require carry propagation, and the encoding breaks.
+The Leibniz rule forces ⊕ into the dynamics of obs. The Leibniz rule IS the extensionalization step: it unfolds `obs(compose(a,b))` into its parts. Without Leibniz, observation would be purely intensional (read off a single eigenvalue, local), and the encoding could preserve dynamics. With Leibniz, observation extensionalizes (produces the sum of cross-terms), and the sum requires carry propagation, which requires external state.
 
-The Leibniz rule is the **product rule for differentiation**. It says: observing a composed system requires summing the observations of the parts. The sum is the non-local step. The product rule is the structural reason that differentiation of products requires addition, and addition requires external state.
+This is why carry propagation is specifically the mechanism of the intension/extension gap in executable encodings:
+- **Intensional observation** (reading an eigenvalue): multiplicative, local, no carry needed
+- **Extensional observation** (unfolding via Leibniz): introduces addition, which is non-local, requiring carry
+- **The gap**: to switch from intensional to extensional and back, the system must perform addition, and addition's non-locality requires state that the encoding cannot contain
+
+The Leibniz rule is the **product rule for differentiation**. It says: observing a composed system requires summing the observations of the parts. The sum is the non-local step — the point where intension (opaque composition) becomes extension (explicit sum of parts), and the encoding must confront the carry chain.
 
 ### The position-velocity-acceleration connection
 

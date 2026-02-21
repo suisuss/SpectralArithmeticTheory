@@ -1,22 +1,24 @@
-# The Observer as Register: Addition, Normalization, and the Structure of Observation
+# The Observer as Register: Intension/Extension Mode-Switching and the Structure of Observation
 
-## Date: 2026-02-20
+## Date: 2026-02-20 (revised 2026-02-21)
 
 ## Summary
 
-The impossibility hierarchy (impossibility-hierarchy.md) establishes that any self-encoding system with addition requires external normalization state — a register. This document explores the physical and philosophical consequences of that result.
+The encoding obstruction establishes that the intension/extension gap is irreducible in self-naming systems (encoding-obstruction.md), and that for executable encodings, the gap forces external state — a register — through carry propagation (addition-non-locality.md, impossibility-hierarchy.md). This document explores what the register IS, physically and conceptually.
 
-Three readings of the impossibility are developed:
+The register is the entity that **tracks the switching between intensional and extensional modes** when the encoding is executable. When a system extensionalizes (unfolds a form via the Leibniz rule), addition enters. When it re-intensionalizes (re-encodes the result), the addition must be normalized (carry resolved). The register holds the intermediate state during this mode-switch. It is external to the encoding because the mode-switch crosses positional boundaries that the encoding keeps separate.
 
-1. **Conservative:** Computation and representation are necessarily separate. The register is the boundary between them. This is the von Neumann bottleneck, revealed as mathematical necessity.
+Three readings:
 
-2. **Structural:** The register IS the observer. In any system where states can be added (superposed) and eigenvalues can be read off (observed), the register that normalizes addition is the structural definition of "observer." This grounds the observer in arithmetic, not in quantum mechanics.
+1. **Conservative:** The register is the boundary between naming (intension) and unfolding (extension) in any executable self-encoding system. This is the von Neumann bottleneck — memory (encoding, intensional) vs. processor (execution, extensional) — revealed as mathematical necessity.
 
-3. **Radical:** There is no encoding of the universe. Reality is not a computation on a representation — it IS the normalization process. The universe is the perpetual carry chain, never halting, with observation as local readoff of partially-normalized state.
+2. **Structural:** The register IS the observer. Observation is the act of re-intensionalizing: taking an extensional state (a superposition, a sum of cross-terms) and producing an intensional result (a single eigenvalue, a definite measurement outcome). The observer is whatever performs this mode-switch — whatever resolves the addition (carry chain) and produces a named, readable result.
 
-**Novelty assessment:** The destination (reality as process, observers as relational) has been reached through other routes (Whitehead, Rovelli, Zurek). The route through carry non-locality — observer = register = normalization step forced by addition — does not appear in the literature. The route makes the conclusion algebraically necessary rather than philosophically motivated.
+3. **Radical:** There is no encoding of the universe. Reality is perpetual mode-switching — the never-halting alternation between extensional unfolding and intensional re-naming. Observation is local re-intensionalization of a partially-unfolded state.
 
-**Status:** This document is interpretive and speculative. The mathematical grounding (carry non-locality → register → observer) is precise. The physical interpretation is an extrapolation that requires scrutiny.
+**Novelty assessment:** The destination (reality as process, observers as relational) has been reached through other routes (Whitehead, Rovelli, Zurek). The route through intension/extension mode-switching and carry non-locality does not appear in the literature. The route makes the conclusion algebraically necessary rather than philosophically motivated.
+
+**Status:** This document is interpretive and speculative. The mathematical grounding (intension/extension gap → executable encoding → carry → register) is precise. The physical interpretation is an extrapolation that requires scrutiny.
 
 ---
 
@@ -107,7 +109,7 @@ The impossibility hierarchy offers a structural answer:
 
 - **When does collapse happen?** When the carry chain completes — when the non-local propagation of addition resolves into a locally-readable state. This is physically determined by the interaction dynamics, not by consciousness or some metaphysical trigger.
 
-**What this reading claims:** The observer is not fundamental — it is derived. It is the register that addition's carry non-locality forces into existence. Any system with addition and observation must have observers, as a structural consequence of arithmetic, not as a postulate of physics.
+**What this reading claims:** The observer is not fundamental — it is derived. It is the register that the intension/extension mode-switch forces into existence when the encoding is executable. Observation IS re-intensionalization: taking an extensional state (sum of cross-terms, superposition) and producing an intensional result (a single eigenvalue, a definite outcome). Any system with executable self-encoding and addition must have observers — entities that perform the mode-switch — as a structural consequence of substitution's open-endedness, not as a postulate of physics.
 
 **What this reading does NOT claim:** It doesn't explain specific quantum mechanical phenomena (interference patterns, entanglement, Bell violations). It provides a structural framework for WHY observers exist, not a complete physical theory.
 
@@ -169,22 +171,22 @@ In each case: inputs are combined (addition/superposition), something resolves t
 
 ### Why observers can't observe themselves
 
-The impossibility hierarchy's halting-problem level explains self-observation:
+The impossibility hierarchy's halting-problem level explains self-observation through the intension/extension lens:
 
-A register normalizes the output of addition. To observe ITSELF, the register would need to:
-1. Encode its own state (self-encoding)
-2. Include its own normalization in the encoding (self-reference)
-3. Determine whether its own normalization is complete (halting problem)
-4. This is undecidable
+An observer re-intensionalizes: it takes an extensional state (unfolded, addition-bearing) and produces an intensional result (named, eigenvalue-readable). To observe ITSELF, the observer would need to:
+1. Extensionalize its own state (unfold its own naming operation — substitution)
+2. Re-intensionalize the result (re-name the unfolded form — but the unfolded form now includes the unfolding operation itself)
+3. Determine whether the re-intensionalization is complete (has the mode-switching reached a fixed point?)
+4. But substitution is open-ended — the re-named form can be unfolded again — so no fixed point exists
 
-Therefore: **an observer cannot fully observe itself.** It can observe other systems (normalize their additions), but its own normalization status is undecidable from within.
+Therefore: **an observer cannot fully observe itself.** It can re-intensionalize other systems (perform the mode-switch for them), but its own mode-switching is an open-ended substitution chain that never reaches a fixed point.
 
-This is:
-- **Gödel's incompleteness** applied to observation: the system can't prove its own consistency (= can't verify its own normalization is correct)
-- **The measurement problem** internalized: you can't measure the measurement apparatus with itself
-- **Heisenberg uncertainty** in structural form: to observe your own state precisely, you'd need to normalize your own carry chain, but that normalization changes the state you're trying to observe
+This is the intension/extension gap applied reflexively:
+- **Gödel's incompleteness**: the system can name (intensionalize) its own unprovability, but unfolding (extensionalizing) the name never resolves it
+- **The measurement problem**: the measurement apparatus performs the intension/extension switch for the measured system, but cannot perform it for itself
+- **Heisenberg uncertainty**: to intensionalize (observe, read off a value) your own extensional state, you'd need to perform a mode-switch, but the mode-switch changes the state you're trying to read
 
-The self-observation limitation is not a quantum-specific phenomenon. It's a consequence of addition's non-locality in any self-encoding system. Any universe with addition has observers that can't fully observe themselves.
+The self-observation limitation is not a quantum-specific phenomenon. It's a consequence of substitution's open-endedness in any self-naming system. Any universe with executable self-encoding has observers that can't fully observe themselves — because observation is re-intensionalization, and re-intensionalization of the re-intensionalizer is an infinite regress of substitutions.
 
 ---
 

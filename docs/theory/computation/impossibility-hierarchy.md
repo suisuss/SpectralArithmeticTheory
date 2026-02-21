@@ -1,17 +1,17 @@
-# The Impossibility Hierarchy: Addition, State, and Undecidability
+# The Impossibility Hierarchy: From Substitution to Undecidability
 
-## Date: 2026-02-20
+## Date: 2026-02-20 (revised 2026-02-21)
 
 ## Summary
 
-The encoding obstruction (encoding-obstruction.md), the information-domain analysis (information-domain.md), and the addition non-locality theorem (addition-non-locality.md) are not three separate results — they are three levels of a single impossibility that traces from algebra through computation to logic. This document unifies them into a hierarchy:
+The encoding obstruction is one impossibility viewed at four levels. This document unifies them into a hierarchy, starting from the fundamental insight that **mathematics is substitution** and substitution is open-ended:
 
-1. Self-encoding requires addition
-2. Addition requires external state (the register)
-3. The register is the same state whose normalization is undecidable (the halting problem)
-4. Undecidability of normalization is Gödel's incompleteness applied to the system's own computational state
+1. **Philosophical**: Substitution never reaches a fixed point — the intension/extension gap is irreducible in any self-naming system (encoding-obstruction.md)
+2. **Information-theoretic**: For executable encoding (not just passive labeling), the intension/extension switch must be *performed* — this requires manipulating positions, and the Leibniz rule introduces addition (⊕) into the switch
+3. **Computational**: Addition on unique positional encodings requires carry propagation; carry is non-local; non-locality requires external state (the register) — (addition-non-locality.md)
+4. **Logical**: The register's normalization is undecidable (the halting problem); the system can represent but cannot decide its own state is final (Gödel/Turing)
 
-The common object across all four levels is the **register** — the normalization buffer that addition's carry propagation forces into existence, and that the system can represent but cannot decide is "done." The impossibility is self-referential: the system needs addition to encode itself, addition needs state to normalize, and the system cannot decide when its own state normalization is complete.
+The common thread: **a self-naming system whose substitution operation (extensionalization) introduces addition, and addition introduces state whose termination is undecidable.** The register that carry propagation forces into existence is the same state whose normalization the system cannot decide. The impossibility is self-referential: the system needs addition to execute its own encoding, addition needs state to normalize, and the system cannot decide when its own state normalization is complete.
 
 Every attempt to avoid the register — redundant number systems, residue number systems, tropical algebra — sacrifices a property (uniqueness, ordering, cancellation) that is itself required for self-encoding. The exits are blocked, and they are blocked for specific, identifiable algebraic reasons.
 
@@ -193,19 +193,21 @@ Every exit reintroduces either carry propagation (at a different point in the co
 
 ### Four levels, one impossibility
 
-| Level | Domain | Impossibility | Common object |
+| Level | Domain | Impossibility | What it says |
 |---|---|---|---|
-| **Algebraic** | Coalgebra, eigenvalue theory | Encoding obstruction trilemma: eigenvalue arithmetic + self-encoding + coalgebra morphism are jointly unsatisfiable | ⊕ (addition in the Leibniz rule) |
-| **Information-theoretic** | Tropical algebra, bit representations | Growth rates match in the information domain, but ⊕ becomes tropical max, destroying PA | ⊕ (transforms to max under log) |
-| **Computational** | Circuit complexity, hardware | Carry propagation in addition is non-local; self-encoding systems with addition require external normalization state | The register (carry chain buffer) |
-| **Logical** | Computability, metamathematics | The register's normalization is undecidable (halting problem); the system can't prove its own state is final (incompleteness) | The state whose termination is undecidable |
+| **Philosophical** | Intension/extension, substitution | Substitution never reaches a fixed point; any form can be re-named; the encoding of execution ≠ execution of encoding | The gap between naming and unfolding is irreducible |
+| **Information-theoretic** | Positions, bits, eigenvalues | For executable encoding, the intension/extension switch introduces ⊕ (Leibniz rule); in the bit domain, ⊕ becomes tropical max, destroying PA | Addition enters through extensionalization and can't be removed |
+| **Computational** | Circuit complexity, hardware | Carry propagation in ⊕ is non-local; self-encoding systems with executable addition require external normalization state (the register) | The mechanism: carry crosses positional boundaries |
+| **Logical** | Computability, metamathematics | The register's normalization is undecidable (halting problem); the system can name its own state but can't decide when it's final | The consequence: self-referential state termination is undecidable |
 
-Each level explains WHY the level above fails:
+Each level explains WHY the level above manifests concretely:
 
-- The trilemma fails because ⊕ is non-local (information-theoretic level)
-- ⊕ is non-local because carry propagation requires state (computational level)
-- State can't be self-normalized because that's the halting problem (logical level)
-- The halting problem is undecidable because of self-reference + negation (Gödel/Turing)
+- The intension/extension gap is irreducible (philosophical) because substitution is open-ended
+- The gap introduces ⊕ in any executable realization (information-theoretic) because the Leibniz rule extensionalizes through addition
+- ⊕ requires external state (computational) because carry propagation is non-local in unique positional encodings
+- External state can't self-normalize (logical) because that's the halting problem
+
+The hierarchy separates the **obstruction** (philosophical: substitution never terminates) from the **mechanism** (information-theoretic + computational: carry propagation) from the **consequence** (logical: undecidable normalization).
 
 ### The common thread
 
@@ -380,35 +382,34 @@ The hierarchy isn't a bug in any particular system. It's a structural theorem ab
 
 ## Part 8: The Document Stack
 
-This document completes a four-document stack, from foundation to capstone:
+This document unifies a four-document stack, from obstruction through mechanism to consequence:
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  impossibility-hierarchy.md  (this document)          │
-│  The unified view: addition → state → halting →       │
-│  incompleteness as one impossibility at four levels   │
-├──────────────────────────────────────────────────────┤
-│  addition-non-locality.md                             │
-│  Carry propagation is non-local; self-encoding with   │
-│  addition requires external state (registers)         │
+│  encoding-obstruction.md                              │
+│  THE OBSTRUCTION: intension/extension gap;            │
+│  substitution is open-ended; no fixed point exists    │
 ├──────────────────────────────────────────────────────┤
 │  information-domain.md                                │
-│  Growth rates match in bits; the real obstruction     │
-│  is ⊕ (becomes tropical max, destroying PA)           │
+│  The refinement: in bits, ⊕ becomes tropical max;     │
+│  the gap can't be worked around in any domain         │
 ├──────────────────────────────────────────────────────┤
-│  encoding-obstruction.md                              │
-│  The trilemma: eigenvalue arithmetic + self-encoding  │
-│  + coalgebra morphism are jointly unsatisfiable       │
+│  addition-non-locality.md                             │
+│  THE MECHANISM: for executable encoding, the gap      │
+│  introduces ⊕ via Leibniz; carry is non-local;        │
+│  external state (register) is forced                  │
+├──────────────────────────────────────────────────────┤
+│  impossibility-hierarchy.md  (this document)          │
+│  THE CONSEQUENCE: the register's normalization is     │
+│  undecidable; all four levels are one impossibility   │
 └──────────────────────────────────────────────────────┘
 ```
 
-Each document adds a layer:
-1. **encoding-obstruction.md** identifies the trilemma
-2. **information-domain.md** localizes the obstruction to ⊕
-3. **addition-non-locality.md** explains WHY ⊕ is the obstruction (carry non-locality)
-4. **impossibility-hierarchy.md** (this document) shows that the register forced by carry non-locality is the same state whose normalization is undecidable
-
-The capstone connects to the base: the algebraic trilemma (document 1) fails because of undecidable state normalization (document 4), which exists because addition is non-local (document 3), which is the refined obstruction identified by information-domain analysis (document 2).
+The reading order follows the logical chain:
+1. **encoding-obstruction.md** identifies the fundamental obstruction: intension/extension irreducibility in self-naming systems, the passive/executable distinction
+2. **information-domain.md** confirms the gap can't be resolved by domain change: ⊕ becomes tropical max, destroying the arithmetic needed for self-encoding
+3. **addition-non-locality.md** identifies the mechanism for executable encodings: carry propagation is non-local, forcing external state
+4. **impossibility-hierarchy.md** (this document) shows the consequence: the forced state's normalization is undecidable, connecting to Gödel/Turing
 
 ---
 
