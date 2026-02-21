@@ -142,10 +142,12 @@ theorem obsRewrite_t_f₂_has_obs :
     substitution never reaches a fixed point — each extensionalization
     produces a new form that can be further unfolded or re-named. -/
 
-/-- Apply obsRewrite to all obs sub-terms at one level of depth.
-    This performs extensionalization "one layer deeper." -/
+/-- Apply obsRewrite throughout a term, bottom-up.
+    Recurses into all sub-terms first, then applies obsRewrite
+    at each obs node. This ensures nested obs (e.g., obs(obs(compose(a,b))))
+    are handled: the inner obs is rewritten first, then the outer. -/
 def deepRewrite : Term → Term
-  | .obs t => obsRewrite (.obs t)
+  | .obs t => obsRewrite (.obs (deepRewrite t))
   | .compose a b => .compose (deepRewrite a) (deepRewrite b)
   | .oplus a b => .oplus (deepRewrite a) (deepRewrite b)
   | t => t
@@ -200,7 +202,16 @@ theorem substitution_chain_distinct :
 theorem deepRewrite_eval {State : Type*} [DynSemiring State] (t : Term) :
     eval (deepRewrite t) = (eval t : State) := by
   match t with
-  | .obs t' => exact obsRewrite_eval (.obs t')
+  | .obs t' =>
+    -- deepRewrite(.obs t') = obsRewrite(.obs (deepRewrite t'))
+    -- eval of that = eval(.obs (deepRewrite t'))  [by obsRewrite_eval]
+    --              = obs(eval(deepRewrite t'))     [by eval def]
+    --              = obs(eval t')                  [by induction]
+    --              = eval(.obs t')                 [by eval def]
+    simp only [deepRewrite, eval]
+    rw [obsRewrite_eval (.obs (deepRewrite t'))]
+    simp only [eval]
+    rw [deepRewrite_eval t']
   | .compose a b =>
     simp only [deepRewrite, eval]
     rw [deepRewrite_eval a, deepRewrite_eval b]
