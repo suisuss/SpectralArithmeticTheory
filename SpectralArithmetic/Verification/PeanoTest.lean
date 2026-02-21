@@ -30,7 +30,7 @@
   - Multiplication: smul (n-fold oplus)
 -/
 
-import SpectralArithmetic.Semiring
+import SpectralArithmetic.Core.Semiring
 
 namespace SpectralMonoid
 

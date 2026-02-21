@@ -16,7 +16,7 @@
   the full metric space + continuity machinery, which is a separate project.
 -/
 
-import SpectralArithmetic.Rational
+import SpectralArithmetic.Core.Rational
 
 namespace SpectralMonoid
 
