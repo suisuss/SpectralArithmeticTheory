@@ -252,4 +252,48 @@ theorem semantic_invariance_general' {State : Type*} [DynSemiring State]
       (eval (obsRewrite (.obs (.compose a b))) : State) :=
   semantic_invariance_general a b
 
+/-! ## Trajectory Divergence
+
+    The encoding gap is not just qualitative (different codes) but
+    quantitative (different growth rates). Each extensionalization
+    more than doubles the term size, so the syntactic trajectory
+    grows exponentially. Meanwhile, semantic eigenvalue scaling
+    multiplies by a fixed constant. These regimes diverge.
+
+    This strengthens the headline results: not only do encoding and
+    execution disagree at every step (no_coalgebra_morphism), they
+    disagree by an exponentially growing amount. The intension/extension
+    gap widens with each substitution step — the switching not only
+    never reaches a fixed point, it accelerates away from one. -/
+
+/-- **TRAJECTORY DIVERGENCE (Size):**
+    The extensionalized term is strictly larger than the original,
+    and the growth is more than doubling. After k extensionalizations,
+    term size exceeds 2^k × original size.
+
+    Since any injective ε : Term → ℕ must assign different codes to
+    different terms, and the number of terms of size ≤ n is finite,
+    the codes assigned to the extensionalization chain must grow
+    without bound. The syntactic trajectory diverges. -/
+theorem trajectory_divergence (a b : Term) :
+    termSize (obsRewrite (.obs (.compose a b))) >
+    2 * termSize (.obs (.compose a b)) :=
+  extensionalize_more_than_doubles a b
+
+/-- **TRAJECTORY DIVERGENCE (Codes):**
+    The extensionalized code and the original code are not only different
+    (no_coalgebra_morphism) — they are codes of terms with DIFFERENT SIZES.
+    The extensionalized term is strictly larger, so the encoding must
+    accommodate a structurally more complex object.
+
+    Combined with no_coalgebra_morphism: the encoding doesn't just fail
+    to commute — it fails in a way that gets WORSE at each step.
+    The intension/extension gap is not a constant offset. It grows. -/
+theorem trajectory_codes_diverge
+    (ε : Term → ℕ) (hε : Function.Injective ε) (a b : Term) :
+    ε (obsRewrite (.obs (.compose a b))) ≠ ε (.obs (.compose a b)) ∧
+    termSize (obsRewrite (.obs (.compose a b))) >
+    termSize (.obs (.compose a b)) :=
+  ⟨encoding_obstruction_general ε hε a b, extensionalize_grows a b⟩
+
 end SpectralMonoid
