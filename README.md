@@ -28,22 +28,22 @@ The eigenvalue theorem is proved by induction using the Leibniz rule. The infini
 
 | Result | File |
 |---|---|
-| Peano axioms P1-P5 from A1-A7 + InfiniteOrbit | Basic.lean |
-| Eigenvalue theorem: obs(fₙ) = n · fₙ | Semiring.lean |
-| A8 (infinite orbit) as theorem from char zero | Semiring.lean |
-| All nine PA axioms (PA1-PA9) | PeanoTest.lean |
-| A7 (cancellation) as theorem from integral domain | IntegralDomain.lean |
-| Power rule: obs(gⁿ⁺¹) = (n+1) · gⁿ · obs(g) | IntegralDomain.lean |
-| Eigenvalue theorem for ℤ (negative eigenvalues) | IntegralDomain.lean |
-| Eigenvalue 1/q for q-th roots | Rational.lean |
-| Torsion-freeness and generalized cancellation | Rational.lean |
-| Boolean algebra on {z, f₀} via compose/oplus/oneg | ZFTest.lean |
-| F1-F3 axiom class (set-theoretic closure) | ZFTest.lean |
-| ZF axioms verified (sets as predicates, dependency-tracked) | ZFTest.lean |
-| Complex extension: j⁴ = f₀, quarter-turn periodicity | Complex.lean |
-| ℝ eigenvalue theorem (axiomatized, not derived) | Complete.lean |
-| ℂ eigenvalue theorem (axiomatized, not derived) | Complex.lean |
-| Forward model: AddMonoidAlgebra ℝ ℝ satisfies all 20 axioms (A1–F3) | Model.lean |
+| Peano axioms P1-P5 from A1-A7 + InfiniteOrbit | Core/Basic.lean |
+| Eigenvalue theorem: obs(fₙ) = n · fₙ | Core/Semiring.lean |
+| A8 (infinite orbit) as theorem from char zero | Core/Semiring.lean |
+| All nine PA axioms (PA1-PA9) | Verification/PeanoTest.lean |
+| A7 (cancellation) as theorem from integral domain | Core/IntegralDomain.lean |
+| Power rule: obs(gⁿ⁺¹) = (n+1) · gⁿ · obs(g) | Core/IntegralDomain.lean |
+| Eigenvalue theorem for ℤ (negative eigenvalues) | Core/IntegralDomain.lean |
+| Eigenvalue 1/q for q-th roots | Core/Rational.lean |
+| Torsion-freeness and generalized cancellation | Core/Rational.lean |
+| Boolean algebra on {z, f₀} via compose/oplus/oneg | Verification/ZFTest.lean |
+| F1-F3 axiom class (set-theoretic closure) | Verification/ZFTest.lean |
+| ZF axioms verified (sets as predicates, dependency-tracked) | Verification/ZFTest.lean |
+| Complex extension: j⁴ = f₀, quarter-turn periodicity | Core/Complex.lean |
+| ℝ eigenvalue theorem (axiomatized, not derived) | Core/Complete.lean |
+| ℂ eigenvalue theorem (axiomatized, not derived) | Core/Complex.lean |
+| Forward model: AddMonoidAlgebra ℝ ℝ satisfies all 20 axioms (A1–F3) | Verification/Model.lean |
 
 ### Pen-and-paper (theory documents, not formalized)
 
@@ -93,21 +93,23 @@ Total: 21 axioms, 4 primitives. The number tower ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂
 
 ```
 SpectralArithmetic/
-├── Basic.lean           ← A1-A7, Peano axioms P1-P5, iterS arithmetic
-├── Semiring.lean        ← B1-B5, eigenvalue theorem, A8 as theorem
-├── IntegralDomain.lean  ← C1-C3, A7 as theorem, power rule, ℤ eigenvalues
-├── Rational.lean        ← D1-D2, eigenvalue 1/q, torsion-freeness
-├── Complete.lean        ← E1 (axiomatized), ℝ eigenvalue theorem (axiomatized)
-├── Complex.lean         ← G1, j⁴ = f₀, ℂ eigenvalue theorem (axiomatized)
-├── PeanoTest.lean       ← PA1-PA9 verification, recursion theorem
-├── ZFTest.lean          ← ZF1-ZF9 verification (sets as predicates)
-├── Model.lean           ← Forward model: AddMonoidAlgebra ℝ ℝ satisfies A1–F3
-└── Obstruction/         ← Encoding obstruction (see suisuss/Obstruction for general version)
-    ├── Encoding.lean    ← Term algebra, obsRewrite, trajectory divergence
-    ├── Main.lean        ← no_coalgebra_morphism, compilation ≠ execution
-    ├── Oplus.lean       ← Bitwise ⊕ impossibility
-    ├── Pairing.lean     ← Pairing unboundedness, carry propagation
-    └── Convergence.lean ← WeakConvergence vs TotalDivergence (open)
+├── Core/
+│   ├── Basic.lean           ← A1-A7, Peano axioms P1-P5, iterS arithmetic
+│   ├── Semiring.lean        ← B1-B5, eigenvalue theorem, A8 as theorem
+│   ├── IntegralDomain.lean  ← C1-C3, A7 as theorem, power rule, ℤ eigenvalues
+│   ├── Rational.lean        ← D1-D2, eigenvalue 1/q, torsion-freeness
+│   ├── Complete.lean        ← E1 (axiomatized), ℝ eigenvalue theorem (axiomatized)
+│   └── Complex.lean         ← G1, j⁴ = f₀, ℂ eigenvalue theorem (axiomatized)
+├── Verification/
+│   ├── PeanoTest.lean       ← PA1-PA9 verification, recursion theorem
+│   ├── ZFTest.lean          ← ZF1-ZF9 verification (sets as predicates)
+│   └── Model.lean           ← Forward model: AddMonoidAlgebra ℝ ℝ satisfies A1–F3
+└── Obstruction/             ← Encoding obstruction (see suisuss/Obstruction for general version)
+    ├── Encoding.lean        ← Term algebra, obsRewrite, trajectory divergence
+    ├── Main.lean            ← no_coalgebra_morphism, compilation ≠ execution
+    ├── Oplus.lean           ← Bitwise ⊕ impossibility
+    ├── Pairing.lean         ← Pairing unboundedness, carry propagation
+    └── Convergence.lean     ← WeakConvergence vs TotalDivergence (open)
 ```
 
 Build: `lake build` (requires Lean 4 v4.28.0 + Mathlib v4.28.0)
@@ -179,7 +181,7 @@ This is a synthesis of ideas from several fields:
 
 ## Reading Order
 
-For the core results: **Semiring.lean** (eigenvalue theorem) → **PeanoTest.lean** (PA verification) → **pa-equiconsistency** (why these axioms and not others).
+For the core results: **Core/Semiring.lean** (eigenvalue theorem) → **Verification/PeanoTest.lean** (PA verification) → **pa-equiconsistency** (why these axioms and not others).
 
 For the full theory: **spectral-arithmetic-complete** gives everything in one document.
 
