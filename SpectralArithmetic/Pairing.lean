@@ -4,12 +4,13 @@
 
   Proves fundamental limitations of pairing functions:
   - Theorem 3: Addition is not injective on pairs
-  - Theorem 4: Injective pairings are super-linear (sorry)
+  - Theorem 4: Injective pairings are unbounded on the diagonal
   - Theorem 6: Injective encoding implies unique preimages
   - Theorem 7: Non-redundant base-2 addition has carry propagation
 -/
 
 import Mathlib.Tactic
+import Mathlib.Data.Fintype.Card
 
 /-! ## Theorem 3: Addition is not injective on pairs -/
 
@@ -21,14 +22,35 @@ theorem add_not_injective_on_pairs :
   have := h 3 5 4 4 (by omega)
   omega
 
-/-! ## Theorem 4: Injective pairings are super-linear (sorry budget) -/
+/-! ## Theorem 4: Injective pairings are unbounded -/
 
-/-- If π : ℕ × ℕ → ℕ is injective, then for any c, there exists n
-    with π(n, n) > c * n. (Super-linearity on the diagonal.) -/
-theorem injective_pairing_superlinear (π : ℕ × ℕ → ℕ) (hπ : Function.Injective π)
-    (c : ℕ) : ∃ n : ℕ, π (n, n) > c * n := by
-  -- Pigeonhole: (n+1)² pairs in [0,n]² can't all map to [0, c·n]
-  sorry
+/-- The diagonal map n ↦ (n, n) is injective. -/
+theorem diag_injective : Function.Injective (fun n : ℕ => (n, n)) :=
+  fun _ _ h => (Prod.mk.inj h).1
+
+/-- **Theorem 4:** An injective pairing is unbounded on the diagonal.
+    For any B, there exists n with π(n, n) > B.
+
+    Note: the stronger claim "π(n,n) ≥ n for all n" is FALSE for
+    non-monotone injective functions (e.g. transpositions). -/
+theorem injective_pairing_unbounded (π : ℕ × ℕ → ℕ) (hπ : Function.Injective π)
+    (B : ℕ) : ∃ n : ℕ, π (n, n) > B := by
+  -- The B+2 pairs (0,0),(1,1),...,(B+1,B+1) have B+2 distinct images.
+  -- If all images were ≤ B, that's B+2 distinct values in {0,...,B} (only B+1 slots).
+  -- Contradiction by pigeonhole.
+  by_contra h
+  push_neg at h
+  -- h : ∀ n, π(n, n) ≤ B
+  -- Define g : Fin (B+2) → Fin (B+1) by g(k) = π(k, k)
+  have hg : ∀ k : Fin (B + 2), π (↑k, ↑k) < B + 1 := fun k => by
+    have := h k.val; omega
+  let g : Fin (B + 2) → Fin (B + 1) := fun k => ⟨π (↑k, ↑k), hg k⟩
+  have hg_inj : Function.Injective g := by
+    intro a b hab
+    simp only [g, Fin.mk.injEq] at hab
+    have hab' : (a.val, a.val) = (b.val, b.val) := hπ hab
+    exact Fin.ext (Prod.mk.inj hab').1
+  exact absurd (Fintype.card_le_of_injective g hg_inj) (by simp)
 
 /-! ## Theorem 6: Injective encoding implies unique preimages -/
 
@@ -43,13 +65,9 @@ theorem injective_unique_preimage {α β : Type*} (f : α → β) (hf : Function
     For k ≥ 1, neither input has a nonzero bit at position k,
     but the output does. This witnesses carry propagation from bit 0 to bit k. -/
 theorem carry_propagation_witness (k : ℕ) (hk : k ≥ 1) :
-    -- The sum equals 2^k
     2 ^ k - 1 + 1 = 2 ^ k
-    -- Input 1 has no bit at position k
     ∧ (2 ^ k - 1) / 2 ^ k = 0
-    -- Input 2 has no bit at position k
     ∧ 1 / 2 ^ k = 0
-    -- Output has a bit at position k
     ∧ 2 ^ k / 2 ^ k = 1 := by
   have hpow : 2 ^ k ≥ 1 := Nat.one_le_two_pow
   refine ⟨by omega, ?_, ?_, ?_⟩
