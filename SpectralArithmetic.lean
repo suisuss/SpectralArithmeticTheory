@@ -14,3 +14,5 @@ import SpectralArithmetic.Obstruction.Encoding
 import SpectralArithmetic.Obstruction.Pairing
 import SpectralArithmetic.Obstruction.Oplus
 import SpectralArithmetic.Obstruction.Main
+-- Convergence conjecture (open)
+import SpectralArithmetic.Obstruction.Convergence
