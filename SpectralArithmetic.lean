@@ -7,3 +7,7 @@ import SpectralArithmetic.PeanoTest
 import SpectralArithmetic.ZFTest
 import SpectralArithmetic.Complex
 import SpectralArithmetic.Model
+import SpectralArithmetic.Encoding
+import SpectralArithmetic.Pairing
+import SpectralArithmetic.OplusImpossibility
+import SpectralArithmetic.Obstruction
