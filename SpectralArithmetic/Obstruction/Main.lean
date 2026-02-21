@@ -148,10 +148,7 @@ theorem encoding_obstruction_term
     the extensional path introduces addition (oplus) that the
     intensional path does not contain. This is where, for executable
     encodings, carry propagation enters and forces external state. -/
-theorem compilation_ne_execution
-    (ε : Term → ℕ) (hε : Function.Injective ε) :
-    ε (obsRewrite (.obs t_f₂)) ≠ ε (.obs t_f₂) :=
-  encoding_obstruction_term ε hε
+abbrev compilation_ne_execution := @encoding_obstruction_term
 
 /-- **Corollary (No Fixed Point for Iterated Encoding):**
 
@@ -246,11 +243,7 @@ theorem no_coalgebra_morphism
     Together they constitute the encoding obstruction:
     the gap between intension and extension is real (codes differ)
     but not semantic (denotations agree). -/
-theorem semantic_invariance_general' {State : Type*} [DynSemiring State]
-    (a b : Term) :
-    eval (.obs (.compose a b)) =
-      (eval (obsRewrite (.obs (.compose a b))) : State) :=
-  semantic_invariance_general a b
+abbrev semantic_invariance_general' := @semantic_invariance_general
 
 /-! ## Trajectory Divergence
 
