@@ -19,7 +19,7 @@
   - Complex scalars form ℂ = ℝ[j]/(j²+1)
 -/
 
-import SpectralArithmetic.Complete
+import SpectralArithmetic.Core.Complete
 import Mathlib.Data.Complex.Basic
 
 namespace SpectralMonoid

@@ -9,7 +9,7 @@
   This is the infrastructure for the encoding obstruction theorem.
 -/
 
-import SpectralArithmetic.Semiring
+import SpectralArithmetic.Core.Semiring
 
 namespace SpectralMonoid
 

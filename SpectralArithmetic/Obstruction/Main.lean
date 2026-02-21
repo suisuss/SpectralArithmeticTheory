@@ -20,8 +20,8 @@
      different values (injectivity), breaking the morphism
 -/
 
-import SpectralArithmetic.Encoding
-import SpectralArithmetic.Semiring
+import SpectralArithmetic.Obstruction.Encoding
+import SpectralArithmetic.Core.Semiring
 
 namespace SpectralMonoid
 
