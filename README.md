@@ -101,7 +101,13 @@ SpectralArithmetic/
 ├── Complex.lean         ← G1, j⁴ = f₀, ℂ eigenvalue theorem (axiomatized)
 ├── PeanoTest.lean       ← PA1-PA9 verification, recursion theorem
 ├── ZFTest.lean          ← ZF1-ZF9 verification (sets as predicates)
-└── Model.lean           ← Forward model: AddMonoidAlgebra ℝ ℝ satisfies A1–F3
+├── Model.lean           ← Forward model: AddMonoidAlgebra ℝ ℝ satisfies A1–F3
+└── Obstruction/         ← Encoding obstruction (see suisuss/Obstruction for general version)
+    ├── Encoding.lean    ← Term algebra, obsRewrite, trajectory divergence
+    ├── Main.lean        ← no_coalgebra_morphism, compilation ≠ execution
+    ├── Oplus.lean       ← Bitwise ⊕ impossibility
+    ├── Pairing.lean     ← Pairing unboundedness, carry propagation
+    └── Convergence.lean ← WeakConvergence vs TotalDivergence (open)
 ```
 
 Build: `lake build` (requires Lean 4 v4.28.0 + Mathlib v4.28.0)
@@ -109,6 +115,28 @@ Build: `lake build` (requires Lean 4 v4.28.0 + Mathlib v4.28.0)
 **What the Lean code proves:** If you have a commutative semiring with a derivation satisfying the Leibniz rule and characteristic zero, the eigenvalue theorem holds, the Peano axioms are consequences, and axioms progressively become theorems as algebraic structure enriches.
 
 **What the Lean code does not prove:** The connection to actual eigenfunctions of d/dx, the derivation of e, the Taylor series, the PA/ZF equiconsistency results, or the self-representation/computation material. These remain pen-and-paper arguments in the theory documents.
+
+## The Encoding Obstruction
+
+The framework proves its own limitation: no injective encoding of its terms can faithfully preserve the semantics. This is the **encoding trilemma** — three properties, any two compatible, all three impossible:
+
+1. **Injectivity** — distinct terms get distinct codes
+2. **Homomorphism** — the encoding respects operations
+3. **Non-trivial semantics** — distinct terms can denote the same value
+
+The spectral framework makes this concrete. The eigenvalue theorem says `obs(f_n) = n · f_n` — observation reads off the number. But encoding this process and reproducing it internally produces a different answer than performing the observation directly (`encoding_obstruction_term`). The system can observe its eigenstates but cannot faithfully encode the act of observation.
+
+This obstruction is not specific to the spectral framework. It holds for any system with enough structure to be interesting:
+
+| System | Source of non-trivial semantics | Where the trilemma bites |
+|---|---|---|
+| **This framework** | Leibniz rule rewrites `obs(compose(a,b))` to a structurally different term | `Obstruction/Main.lean` |
+| **Peano arithmetic** | `S(S(0))` and `S(0)+S(0)` are different terms for 2 | [Obstruction repo: Peano.lean](https://github.com/suisuss/Obstruction) |
+| **ZF set theory** | `⋃∅` and `∅` are different terms for the empty set | [Obstruction repo: ZF.lean](https://github.com/suisuss/Obstruction) |
+
+The encoding-specific results live in [`SpectralArithmetic/Obstruction/`](SpectralArithmetic/Obstruction/). The general results — independent of the spectral framework, proved for PA, ZF, and all term algebras with Leibniz observation — are in the standalone [Obstruction](https://github.com/suisuss/Obstruction) repository.
+
+This is the structural barrier to completeness. To escape incompleteness while retaining self-reference, a system would need an encoding that is both injective and homomorphic. The trilemma proves that's impossible. Gödel proved *that* you can't escape. The encoding obstruction characterizes *what you'd need to overcome* — and proves it can't be overcome.
 
 ## Connections to Existing Work
 
@@ -154,5 +182,7 @@ This is a synthesis of ideas from several fields:
 For the core results: **Semiring.lean** (eigenvalue theorem) → **PeanoTest.lean** (PA verification) → **pa-equiconsistency** (why these axioms and not others).
 
 For the full theory: **spectral-arithmetic-complete** gives everything in one document.
+
+For the encoding obstruction: [**Obstruction repo**](https://github.com/suisuss/Obstruction) (the encoding trilemma for PA, ZF, and all term algebras) → [**Obstruction/**](SpectralArithmetic/Obstruction/) (the same obstruction applied to this framework's eigenvalue structure).
 
 For the most original open question: **self-representation** (the syntax-semantics bisimulation conjecture).
