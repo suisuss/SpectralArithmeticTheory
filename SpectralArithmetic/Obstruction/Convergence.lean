@@ -150,20 +150,15 @@ structure EncodingFamily where
   injective : ∀ k, Function.Injective (encode k)
 
 /-- The morphism discrepancy at depth k for an encoding family:
-    the difference between encoding the extensionalized form and
-    encoding the original form, using the depth-k encoding.
+    the absolute difference between encoding the extensionalized form
+    and encoding the original form, using the depth-k encoding.
 
     If this is zero, the encoding commutes at depth k.
     If this converges to zero, the encoding asymptotically commutes. -/
 def discrepancy (εs : EncodingFamily) (a b : Term) (k : ℕ) : ℕ :=
-  -- The code of the extensionalized form at depth k
-  -- vs. the code of the original form at depth k
-  -- We measure the absolute difference.
   let rewritten := iterDeepRewrite k (obsRewrite (.obs (.compose a b)))
   let original := iterDeepRewrite k (.obs (.compose a b))
-  if εs.encode k rewritten ≥ εs.encode k original
-  then εs.encode k rewritten - εs.encode k original
-  else εs.encode k original - εs.encode k rewritten
+  Int.natAbs ((εs.encode k rewritten : Int) - (εs.encode k original : Int))
 
 /-- **PROVED: The discrepancy is always nonzero at depth 0.**
     This is no_coalgebra_morphism restated for encoding families.
@@ -174,17 +169,11 @@ theorem discrepancy_nonzero_at_zero (εs : EncodingFamily) (a b : Term) :
     discrepancy εs a b 0 ≠ 0 := by
   simp only [discrepancy, iterDeepRewrite]
   intro h
-  -- If the discrepancy is 0, the codes are equal
-  split_ifs at h with hge
-  · -- rewritten ≥ original case: difference = 0 means equal
-    have heq : εs.encode 0 (obsRewrite (.obs (.compose a b))) =
-               εs.encode 0 (.obs (.compose a b)) := by omega
-    exact absurd (εs.injective 0 heq) (extensionalize_ne_original_general a b)
-  · -- original > rewritten case: difference = 0 means equal
-    push_neg at hge
-    have heq : εs.encode 0 (.obs (.compose a b)) =
-               εs.encode 0 (obsRewrite (.obs (.compose a b))) := by omega
-    exact absurd (εs.injective 0 heq) (Ne.symm (extensionalize_ne_original_general a b))
+  -- Int.natAbs = 0 implies the integer difference is 0
+  rw [Int.natAbs_eq_zero] at h
+  have heq : εs.encode 0 (obsRewrite (.obs (.compose a b))) =
+             εs.encode 0 (.obs (.compose a b)) := by omega
+  exact absurd (εs.injective 0 heq) (extensionalize_ne_original_general a b)
 
 /-! ## Part 5: The Convergence Conjecture
 
