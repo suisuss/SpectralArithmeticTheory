@@ -104,24 +104,35 @@ def bitAt (n k : ℕ) : Bool := (n / 2 ^ k) % 2 != 0
 def IsBitwise (F : ℕ → ℕ → ℕ) (f : Bool → Bool → Bool) : Prop :=
   ∀ m n k, bitAt (F m n) k = f (bitAt m k) (bitAt n k)
 
-/-- **Bridge Theorem (Bool → ℕ):**
-    If F : ℕ → ℕ → ℕ is bitwise with respect to some f : Bool → Bool → Bool,
-    and f is commutative, cancellative, and has an identity element,
-    then f has characteristic 2 (f(x, x) = e for all x).
+/-- **Bridge Theorem (Bool → ℕ, underlying op):**
+    If f : Bool → Bool → Bool is the per-bit operation underlying
+    a bitwise F : ℕ → ℕ → ℕ, and f is commutative, cancellative,
+    with identity e, then f has characteristic 2.
 
-    Consequence: F cannot satisfy characteristic zero on ℕ, because the
-    underlying Bool operation is forced to have characteristic 2.
-    Therefore no bitwise operation on ℕ satisfies ALL of:
-    commutative, cancellative, identity, characteristic zero. -/
-theorem bitwise_inherits_char_two
-    (F : ℕ → ℕ → ℕ) (f : Bool → Bool → Bool) (e : Bool)
-    (_hbw : IsBitwise F f)
+    This is a direct corollary of bool_comm_cancel_id_implies_char_two —
+    the constraint lives entirely at the Bool level. -/
+theorem bitwise_underlying_char_two
+    (f : Bool → Bool → Bool) (e : Bool)
     (hcomm : ∀ a b, f a b = f b a)
     (hid : ∀ x, f e x = x)
     (hcancel : ∀ a b c, f a b = f a c → b = c) :
     ∀ x, f x x = e :=
-  -- The proof is immediate: the constraint is on f (Bool level),
-  -- independent of F (ℕ level). The IsBitwise hypothesis establishes
-  -- that F's algebraic properties are determined by f's, so the
-  -- char-2 constraint on f propagates to F.
   bool_comm_cancel_id_implies_char_two f e hcomm hid hcancel
+
+/-- **Bridge Theorem (Bool → ℕ, lifted to F):**
+    If F : ℕ → ℕ → ℕ is bitwise w.r.t. f, and f is commutative,
+    cancellative, with identity e, then every bit of F(n, n) equals e.
+
+    This uses IsBitwise: the k-th bit of F(n, n) is f(bit_k(n), bit_k(n)) = e.
+    Therefore F(n, n) has the same bit pattern for all n — it acts like
+    a characteristic-2 operation on ℕ, contradicting characteristic zero. -/
+theorem bitwise_diagonal_char_two
+    (F : ℕ → ℕ → ℕ) (f : Bool → Bool → Bool) (e : Bool)
+    (hbw : IsBitwise F f)
+    (hcomm : ∀ a b, f a b = f b a)
+    (hid : ∀ x, f e x = x)
+    (hcancel : ∀ a b c, f a b = f a c → b = c)
+    (n k : ℕ) :
+    bitAt (F n n) k = e := by
+  rw [hbw]
+  exact bitwise_underlying_char_two f e hcomm hid hcancel (bitAt n k)
