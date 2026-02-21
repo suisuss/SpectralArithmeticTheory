@@ -174,10 +174,19 @@ theorem deep_ne_shallow :
 theorem deep_ne_original :
     deepRewrite (obsRewrite (.obs t_f₂)) ≠ .obs t_f₂ := by decide
 
-/-- **No fixed point:** Three successive forms of the same expression —
-    intensional, one-step extensional, and deeply extensional — are
-    all distinct. Substitution produces an unbounded chain of new forms.
-    Any injective encoding must assign each a different code. -/
+/-- **No fixed point (There is no bottom):**
+    Three successive forms of the same expression — intensional,
+    one-step extensional, and deeply extensional — are all distinct.
+    Substitution produces an unbounded chain of new forms. Any injective
+    encoding must assign each a different code.
+
+    This is the algebraic content of the halting problem for self-executing
+    encodings: "the computation has finished" would require the
+    intension/extension switching to reach a fixed point. This theorem
+    proves no fixed point exists. The switching never stops. There is
+    no bottom — no definitive final normalization. The halting problem
+    is not a separate result to connect; it IS what this theorem means
+    when read temporally. -/
 theorem substitution_chain_distinct :
     .obs t_f₂ ≠ obsRewrite (.obs t_f₂) ∧
     obsRewrite (.obs t_f₂) ≠ deepRewrite (obsRewrite (.obs t_f₂)) ∧

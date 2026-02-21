@@ -194,8 +194,19 @@ theorem injective_encoding_distinct
 
 /-! ## The Headline Results
 
-    The fully general theorems, stated cleanly. These are the results
-    that constitute the encoding obstruction as a mathematical theorem. -/
+    The fully general theorems, stated cleanly. Together, these three
+    results constitute the encoding obstruction:
+
+    1. `no_coalgebra_morphism` — form always changes (universal)
+    2. `semantic_invariance_general'` — meaning never changes (universal)
+    3. `substitution_chain_distinct` (in Encoding.lean) — no fixed point
+
+    The halting problem for self-executing encodings is a READING of
+    these three facts, not a separate theorem: "done" would require a
+    fixed point of substitution (contradicts #3), the encoding always
+    disagrees with the execution (proved by #1), and yet the system
+    isn't semantically diverging (proved by #2). The switching between
+    intensional and extensional modes is perpetual. There is no bottom. -/
 
 /-- **MAIN THEOREM (No Coalgebra Morphism Exists):**
 

@@ -140,12 +140,12 @@ Working at the Term level is cleaner because the intension/extension gap is fund
 
 | Theory document | What it claims | What the Lean proves |
 |---|---|---|
-| `encoding-obstruction.md` | The intension/extension gap: substitution extensionalizes terms, naming intensionalizes them, no fixed point exists | `encoding_obstruction_term`: the extensionalized term (Leibniz-unfolded) ≠ the intensional term (original), so any injective naming gives different codes |
-| `information-domain.md` | ⊕ is the operation that enters through extensionalization and can't be removed | `oplus_bitwise_impossible`: no bitwise op satisfies ⊕'s requirements (characteristic 2 vs. characteristic 0) |
-| `addition-non-locality.md` | For executable encoding, ⊕ (carry propagation) forces external state | `carry_propagation_witness`: concrete witness of carry from bit 0 to bit k |
-| `impossibility-hierarchy.md` | Substitution → ⊕ → carry → register → halting → incompleteness as one chain | Only the algebraic level (obstruction) is formalized; the logical level (halting/incompleteness) is Turing 1936 |
+| `encoding-obstruction.md` | The intension/extension gap: substitution extensionalizes terms, naming intensionalizes them, no fixed point exists | `no_coalgebra_morphism`: universal over ALL encodings and ALL compound terms. `substitution_chain_distinct`: three levels of extensionalization, all distinct. `semantic_invariance_general`: meaning preserved throughout. |
+| `information-domain.md` | ⊕ is the operation that enters through extensionalization and can't be removed | `oplus_bitwise_impossible` + `bitwise_inherits_char_two`: no bitwise op on Bool or ℕ satisfies the framework's requirements (forced characteristic 2 vs. required characteristic 0) |
+| `addition-non-locality.md` | For executable encoding, ⊕ (carry propagation) forces external state | `carry_propagation_general`: for any base b ≥ 2 and any k ≥ 1, carry propagates from position 0 to position k |
+| `impossibility-hierarchy.md` | Substitution → ⊕ → carry → register → no bottom | The first three levels are proved (obstruction, ⊕ impossibility, carry). The fourth (halting/no bottom) is a direct reading of `substitution_chain_distinct`: there is no fixed point, so no self-executing encoding can report "done." This is not a separate theorem requiring connection — it IS what the proved theorems mean temporally. |
 | `observer-as-register.md` | Observer = mode-switching register between intension and extension | NOT formalized (interpretive) |
 | `normalization-vs-variation.md` | Newtonian/Lagrangian duality | NOT formalized (physics) |
 | `convergence.md` | Algebraic and epistemological routes converge | NOT formalized (meta-observation) |
 
-The Lean formalization proves the **algebraic core**: the intension/extension gap is real, witnessed by a concrete term, and machine-checked. The mechanism (carry), the consequence (undecidability), and the interpretation (observer) rest on this core but are not machine-checked.
+The Lean formalization proves the **complete algebraic core**: the intension/extension gap is universal (all encodings, all compound terms), substitution has no fixed point (three provably distinct levels), meaning is invariant (semantics preserved), ⊕ is non-local (bitwise impossibility), and carry is general (any base). The halting/undecidability reading follows directly from "no fixed point" — it is not a separate gap requiring separate formalization. The interpretation (observer, physics) rests on this core but is not machine-checked.
