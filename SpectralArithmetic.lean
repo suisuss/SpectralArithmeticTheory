@@ -17,3 +17,5 @@ import SpectralArithmetic.Obstruction.Oplus
 import SpectralArithmetic.Obstruction.Main
 -- Convergence conjecture (open)
 import SpectralArithmetic.Obstruction.Convergence
+-- Complexity asymmetry (P vs NP structural analogy)
+import SpectralArithmetic.Obstruction.Complexity
