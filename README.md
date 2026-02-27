@@ -41,6 +41,7 @@ The eigenvalue theorem is proved by induction using the Leibniz rule. The infini
 | F1-F3 with abstract set universe Ens (non-trivial axioms) | Verification/ZFTest.lean |
 | ZF1-ZF3, ZF6-ZF8 from abstract Ens; ZF4-ZF5 metatheoretic | Verification/ZFTest.lean |
 | Countermodel: F1 fails for finite Ens (orbit is infinite) | Verification/Countermodels.lean |
+| Countermodel: F2 fails for singleton Ens (separation needs sub-predicates) | Verification/Countermodels.lean |
 | Countermodel: F3 fails for sub-orbit Ens (π maps outside orbit) | Verification/Countermodels.lean |
 | Complex extension: j⁴ = f₀, quarter-turn periodicity | Core/Complex.lean |
 | ℝ eigenvalue theorem (axiomatized, not derived) | Core/Complete.lean |

@@ -2,11 +2,11 @@
   Spectral Arithmetic: Countermodels for F-Axiom Separation
   ==========================================================
 
-  This file proves that the F-axioms (F1, F3) in the abstract `Ens`
+  This file proves that the F-axioms (F1, F2, F3) in the abstract `Ens`
   formulation carry genuine content — they are NOT automatically
   satisfied by every model of DynComplete.
 
-  We construct two countermodels using the forward model
+  We construct three countermodels using the forward model
   (State = AddMonoidAlgebra ℝ ℝ):
 
   **Countermodel A — F1 is non-trivial:**
@@ -14,7 +14,13 @@
   finitely many states), then F1 (the orbit ensemble) cannot exist
   because the orbit is infinite (from iterS_injective + char zero).
 
-  **Countermodel B — F3 is non-trivial:**
+  **Countermodel B — F2 is non-trivial:**
+  If Ens contains only the orbit predicate isNat (a singleton family),
+  then F1 holds but F2 (separation) fails: separating the orbit by
+  (· = f₀) requires {f₀} as an ensemble, but {f₀} ≠ isNat since
+  iterS 1 is also in the orbit and iterS 1 ≠ f₀.
+
+  **Countermodel C — F3 is non-trivial:**
   If Ens is restricted to *sub-orbit* predicates (predicates implying
   isNat), then F1 and F2 hold, but F3 fails: the constant function
   `fun _ => realEigen π` maps every orbit element to realEigen π,
@@ -70,10 +76,41 @@ theorem f1_not_finite :
   ext s
   exact (hspec s).symm
 
-/-! ## Countermodel B: Sub-orbit Ens falsifies F3
+/-! ## Countermodel B: Singleton Ens falsifies F2
+
+If Ens contains only the orbit predicate isNat (up to extensional
+equality), then F1 holds trivially, but F2 (separation) fails:
+separating the orbit by (· = f₀) should give {f₀}, but {f₀} is
+not extensionally equal to isNat since iterS 1 is also in the
+orbit and iterS 1 ≠ f₀ (from InfiniteOrbit). -/
+
+/-- A predicate is "orbit-equivalent" if it agrees with isNat everywhere.
+    This models a singleton Ens = {isNat}. -/
+def OrbitEquiv (P : S → Prop) : Prop :=
+  ∀ s, P s ↔ isNat s
+
+/-- **Countermodel B:** No orbit-equivalent predicate satisfies the
+    separation spec for isNat with φ = (· = f₀).
+
+    This shows F2 is non-trivial: restricting Ens to a singleton
+    (only the orbit predicate) breaks separation. -/
+theorem f2_not_singleton :
+    ¬∃ (B : S → Prop), OrbitEquiv B ∧
+      (∀ s, B s ↔ (isNat (State := S) s ∧ s = f₀)) := by
+  intro ⟨B, horbit, hsep⟩
+  -- iterS 1 is in the orbit
+  have hnat : isNat (iterS (State := S) 1) := ⟨1, rfl⟩
+  -- By orbit-equivalence, B (iterS 1) holds
+  have hB := (horbit (iterS 1)).mpr hnat
+  -- By separation spec, iterS 1 = f₀
+  have heq := ((hsep (iterS 1)).mp hB).2
+  -- But iterS 1 ≠ f₀ (infinite orbit)
+  exact InfiniteOrbit.no_cycle 1 (by omega) heq
+
+/-! ## Countermodel C: Sub-orbit Ens falsifies F3
 
 Define Ens = {P : S → Prop | ∀ s, P s → isNat s} — predicates
-whose support lies within the orbit. F1 holds (the orbit is trivially
+whose support lies within the orbit. F1 holds (the orbit is
 a sub-orbit predicate). F2 (separation) holds (intersection with φ
 preserves sub-orbit membership). F3 fails: there exist functions
 that map orbit elements outside the orbit. -/
@@ -129,7 +166,7 @@ noncomputable def constPi : S → S := fun _ => DynComplete.realEigen (State := 
 /-- π is irrational. -/
 theorem pi_irrational : Irrational Real.pi := irrational_pi
 
-/-- **Countermodel B:** The image of a sub-orbit predicate under constPi
+/-- **Countermodel C:** The image of a sub-orbit predicate under constPi
     is NOT sub-orbit (when the source is nonempty).
 
     Specifically: the image of isNat under constPi contains realEigen π,

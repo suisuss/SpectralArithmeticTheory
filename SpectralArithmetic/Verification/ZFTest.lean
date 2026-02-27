@@ -163,8 +163,8 @@ these axioms carry genuine content:
 
 - F1 is non-trivial: the orbit is infinite, so restricting Ens to
   finite predicates falsifies F1 (see Countermodels.lean).
-- F2 (separation) is non-trivial: restricting Ens to a sub-family
-  not closed under ∧ falsifies F2.
+- F2 (separation) is non-trivial: restricting Ens to a singleton
+  (only isNat) falsifies F2 (see Countermodels.lean).
 - F3 is non-trivial: restricting Ens to sub-orbit predicates
   falsifies F3 when the function maps outside the orbit.
 
