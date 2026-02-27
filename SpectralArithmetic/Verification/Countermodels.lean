@@ -16,9 +16,10 @@
 
   **Countermodel B — F3 is non-trivial:**
   If Ens is restricted to *sub-orbit* predicates (predicates implying
-  isNat), then F1 and F2 hold, but F3 fails: the function
-  `realEigen π ∘ ·` maps orbit elements to non-orbit elements
-  (since realEigen is injective and π ≠ n for any n : ℕ).
+  isNat), then F1 and F2 hold, but F3 fails: the constant function
+  `fun _ => realEigen π` maps every orbit element to realEigen π,
+  which is not in the orbit (since π is irrational and realEigen
+  is injective, so realEigen π ≠ iterS n for any n : ℕ).
 -/
 
 import SpectralArithmetic.Verification.Model
