@@ -426,6 +426,7 @@ The reading order follows the logical chain:
 - [encoding-obstruction.md](encoding-obstruction.md) — The trilemma: eigenvalue arithmetic + self-encoding + coalgebra morphism
 - [information-domain.md](information-domain.md) — Bitwise encoding, tropical algebra, and the refined ⊕ obstruction
 - [addition-non-locality.md](addition-non-locality.md) — Carry propagation forces external state in self-encoding systems
+- [computing-as-external-state.md](computing-as-external-state.md) — The obstruction as metatheorem about Turing/Church: why computation requires external state
 - [self-representation.md](self-representation.md) — Gödel encoding, the self-representation chain, and the discrete-continuous conjecture
 - [confluence.md](confluence.md) — Confluence and termination of the rewriting system
 

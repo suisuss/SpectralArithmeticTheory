@@ -568,6 +568,7 @@ See [information-domain.md](information-domain.md) for the full analysis, includ
 ## Related
 
 - [addition-non-locality.md](addition-non-locality.md) — The foundational layer: carry propagation forces external state in self-encoding systems with addition
+- [computing-as-external-state.md](computing-as-external-state.md) — Why computation is language + external state: the obstruction as metatheorem about Turing/Church
 - [information-domain.md](information-domain.md) — The information-domain analysis: bitwise encoding, tropical algebra, and the refined ⊕ obstruction
 - [self-representation.md](self-representation.md) — The Gödel encoding, self-representation chain, and original discrete-continuous conjecture
 - [confluence.md](confluence.md) — The oriented rewriting system that defines obs_code
