@@ -254,7 +254,5 @@ noncomputable instance modelDynZF : DynZF S where
   sepEns_spec := fun _ _ _ => Iff.rfl
   imageEns := fun F A => fun y => ∃ x, A x ∧ F x = y
   imageEns_spec := fun _ _ _ => Iff.rfl
-  emptyEns := fun _ => False
-  emptyEns_spec := fun _ h => h
 
 end SpectralMonoid.Model

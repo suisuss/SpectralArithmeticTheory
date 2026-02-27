@@ -35,7 +35,7 @@
   | ZF Axiom       | Source                                    |
   |----------------|-------------------------------------------|
   | Extensionality | ens_ext (from DynZF)                      |
-  | Empty Set      | emptyEns (from DynZF)                     |
+  | Empty Set      | sepEns orbitEns False (derived from F2)    |
   | Pairing        | F1 + F2 + F3 (sep orbit, then image)      |
   | Union          | Deferred (requires sets-of-sets)           |
   | Power Set      | Deferred (requires sets-of-sets)           |
@@ -200,9 +200,6 @@ class DynZF (State : Type*) extends DynComplete State where
       image ensemble F[A] exists. -/
   imageEns : (State → State) → Ens → Ens
   imageEns_spec : ∀ F A y, mem y (imageEns F A) ↔ (∃ x, mem x A ∧ F x = y)
-  /-- Empty ensemble: no members -/
-  emptyEns : Ens
-  emptyEns_spec : ∀ s, ¬mem s emptyEns
 
 /-! ## Part 3: Set-Theoretic Definitions
 
@@ -213,6 +210,14 @@ section SetOps
 variable {State : Type*} [DynZF State]
 
 open DynZF
+
+/-- Empty ensemble, derived from F2: separate the orbit by False. -/
+def emptyEns : @DynZF.Ens State _ := sepEns orbitEns (fun _ => False)
+
+/-- The empty ensemble has no members. -/
+theorem emptyEns_spec (s : State) : ¬mem s emptyEns := by
+  intro h
+  exact ((sepEns_spec orbitEns _ s).mp h).2
 
 /-- Subset relation on ensembles -/
 def ensSubset (A B : @DynZF.Ens State _) : Prop :=
@@ -285,7 +290,7 @@ theorem zf1_extensionality (A B : @DynZF.Ens State _)
   ens_ext A B h
 
 /-- **ZF2: Empty Set.** An ensemble with no members exists.
-    Uses: emptyEns (from DynZF). -/
+    Uses: sepEns (F2) on orbitEns with False predicate. -/
 theorem zf2_empty_set :
     ∃ A : @DynZF.Ens State _, ∀ s, ¬mem s A :=
   ⟨emptyEns, emptyEns_spec⟩
