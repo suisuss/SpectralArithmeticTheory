@@ -9,6 +9,7 @@ import SpectralArithmetic.Core.Complex
 import SpectralArithmetic.Verification.PeanoTest
 import SpectralArithmetic.Verification.ZFTest
 import SpectralArithmetic.Verification.Model
+import SpectralArithmetic.Verification.Countermodels
 -- Encoding obstruction
 import SpectralArithmetic.Obstruction.Encoding
 import SpectralArithmetic.Obstruction.Pairing

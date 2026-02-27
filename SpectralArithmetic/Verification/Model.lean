@@ -236,8 +236,30 @@ noncomputable instance modelDynComplete : DynComplete S where
     change modelObs (Finsupp.single α 1 : S) = α • (Finsupp.single α 1 : S)
     rw [modelObs_single, ← mapRange_mul_left_eq_smul, Finsupp.mapRange_single]
 
-/-! ## DynZF Instance (automatic) -/
+/-! ## DynZF Instance (explicit)
 
-noncomputable example : DynZF S := inferInstance
+The forward model uses `Ens = S → Prop` — the full predicate space.
+This is correct: CIC provides the complete predicate space, so
+`Iff.rfl` proofs are valid here. The point of the abstract `Ens`
+is that OTHER models can restrict it (see Countermodels.lean). -/
+
+noncomputable instance modelDynZF : DynZF S where
+  toDynComplete := modelDynComplete
+  Ens := S → Prop
+  mem := fun s A => A s
+  ens_ext := fun _ _ h => funext fun s => propext (h s)
+  orbitEns := isNat
+  orbitEns_spec := fun _ => Iff.rfl
+  sepEns := fun A φ => fun s => A s ∧ φ s
+  sepEns_spec := fun _ _ _ => Iff.rfl
+  imageEns := fun F A => fun y => ∃ x, A x ∧ F x = y
+  imageEns_spec := fun _ _ _ => Iff.rfl
+  Ens₂ := (S → Prop) → Prop
+  mem₂ := fun A P => P A
+  ens_ext₂ := fun _ _ h => funext fun A => propext (h A)
+  powerEns := fun A => fun B => ∀ s, B s → A s
+  powerEns_spec := fun _ _ => Iff.rfl
+  unionEns₂ := fun P => fun s => ∃ A, P A ∧ A s
+  unionEns₂_spec := fun _ _ => Iff.rfl
 
 end SpectralMonoid.Model
