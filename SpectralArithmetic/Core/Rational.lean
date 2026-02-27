@@ -10,7 +10,7 @@
   - obs(f_{1/q}) = qdiv q (f_{1/q})  (eigenvalue 1/q)
 -/
 
-import SpectralArithmetic.IntegralDomain
+import SpectralArithmetic.Core.IntegralDomain
 
 namespace SpectralMonoid
 

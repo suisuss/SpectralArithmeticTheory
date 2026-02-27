@@ -20,7 +20,7 @@
   Together they give: Con(ZF) ↔ Con(A1–F3).
 -/
 
-import SpectralArithmetic.ZFTest
+import SpectralArithmetic.Verification.ZFTest
 import Mathlib.Algebra.MonoidAlgebra.Basic
 import Mathlib.Algebra.MonoidAlgebra.NoZeroDivisors
 

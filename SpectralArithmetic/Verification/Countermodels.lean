@@ -21,7 +21,7 @@
   (since realEigen is injective and π ≠ n for any n : ℕ).
 -/
 
-import SpectralArithmetic.Model
+import SpectralArithmetic.Verification.Model
 import Mathlib.Analysis.Real.Pi.Irrational
 
 namespace SpectralMonoid.Countermodels

@@ -10,7 +10,7 @@
   - Power rule: obs(g^{n+1}) = (n+1) · g^n · obs(g)
 -/
 
-import SpectralArithmetic.Semiring
+import SpectralArithmetic.Core.Semiring
 
 namespace SpectralMonoid
 

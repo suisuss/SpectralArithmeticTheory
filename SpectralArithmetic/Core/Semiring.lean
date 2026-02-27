@@ -7,7 +7,7 @@
   - A8 (infinite orbit) is a THEOREM, not an axiom
 -/
 
-import SpectralArithmetic.Basic
+import SpectralArithmetic.Core.Basic
 
 namespace SpectralMonoid
 

@@ -28,24 +28,24 @@ The eigenvalue theorem is proved by induction using the Leibniz rule. The infini
 
 | Result | File |
 |---|---|
-| Peano axioms P1-P5 from A1-A7 + InfiniteOrbit | Basic.lean |
-| Eigenvalue theorem: obs(fₙ) = n · fₙ | Semiring.lean |
-| A8 (infinite orbit) as theorem from char zero | Semiring.lean |
-| All nine PA axioms (PA1-PA9) | PeanoTest.lean |
-| A7 (cancellation) as theorem from integral domain | IntegralDomain.lean |
-| Power rule: obs(gⁿ⁺¹) = (n+1) · gⁿ · obs(g) | IntegralDomain.lean |
-| Eigenvalue theorem for ℤ (negative eigenvalues) | IntegralDomain.lean |
-| Eigenvalue 1/q for q-th roots | Rational.lean |
-| Torsion-freeness and generalized cancellation | Rational.lean |
-| Boolean algebra on {z, f₀} via compose/oplus/oneg | ZFTest.lean |
-| F1-F3 with abstract set universe Ens (non-trivial axioms) | ZFTest.lean |
-| ZF1-ZF3, ZF6-ZF8 from abstract Ens; ZF4-ZF5 metatheoretic | ZFTest.lean |
-| Countermodel: F1 fails for finite Ens (orbit is infinite) | Countermodels.lean |
-| Countermodel: F3 fails for sub-orbit Ens (π maps outside orbit) | Countermodels.lean |
-| Complex extension: j⁴ = f₀, quarter-turn periodicity | Complex.lean |
-| ℝ eigenvalue theorem (axiomatized, not derived) | Complete.lean |
-| ℂ eigenvalue theorem (axiomatized, not derived) | Complex.lean |
-| Forward model: AddMonoidAlgebra ℝ ℝ satisfies all 20 axioms (A1–F3) | Model.lean |
+| Peano axioms P1-P5 from A1-A7 + InfiniteOrbit | Core/Basic.lean |
+| Eigenvalue theorem: obs(fₙ) = n · fₙ | Core/Semiring.lean |
+| A8 (infinite orbit) as theorem from char zero | Core/Semiring.lean |
+| All nine PA axioms (PA1-PA9) | Verification/PeanoTest.lean |
+| A7 (cancellation) as theorem from integral domain | Core/IntegralDomain.lean |
+| Power rule: obs(gⁿ⁺¹) = (n+1) · gⁿ · obs(g) | Core/IntegralDomain.lean |
+| Eigenvalue theorem for ℤ (negative eigenvalues) | Core/IntegralDomain.lean |
+| Eigenvalue 1/q for q-th roots | Core/Rational.lean |
+| Torsion-freeness and generalized cancellation | Core/Rational.lean |
+| Boolean algebra on {z, f₀} via compose/oplus/oneg | Verification/ZFTest.lean |
+| F1-F3 with abstract set universe Ens (non-trivial axioms) | Verification/ZFTest.lean |
+| ZF1-ZF3, ZF6-ZF8 from abstract Ens; ZF4-ZF5 metatheoretic | Verification/ZFTest.lean |
+| Countermodel: F1 fails for finite Ens (orbit is infinite) | Verification/Countermodels.lean |
+| Countermodel: F3 fails for sub-orbit Ens (π maps outside orbit) | Verification/Countermodels.lean |
+| Complex extension: j⁴ = f₀, quarter-turn periodicity | Core/Complex.lean |
+| ℝ eigenvalue theorem (axiomatized, not derived) | Core/Complete.lean |
+| ℂ eigenvalue theorem (axiomatized, not derived) | Core/Complex.lean |
+| Forward model: AddMonoidAlgebra ℝ ℝ satisfies all 20 axioms (A1–F3) | Verification/Model.lean |
 
 ### Pen-and-paper (theory documents, not formalized)
 
@@ -95,16 +95,24 @@ Total: 21 axioms, 4 primitives. The number tower ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂
 
 ```
 SpectralArithmetic/
-├── Basic.lean           ← A1-A7, Peano axioms P1-P5, iterS arithmetic
-├── Semiring.lean        ← B1-B5, eigenvalue theorem, A8 as theorem
-├── IntegralDomain.lean  ← C1-C3, A7 as theorem, power rule, ℤ eigenvalues
-├── Rational.lean        ← D1-D2, eigenvalue 1/q, torsion-freeness
-├── Complete.lean        ← E1 (axiomatized), ℝ eigenvalue theorem (axiomatized)
-├── Complex.lean         ← G1, j⁴ = f₀, ℂ eigenvalue theorem (axiomatized)
-├── PeanoTest.lean       ← PA1-PA9 verification, recursion theorem
-├── ZFTest.lean          ← ZF axioms from abstract set universe Ens (F1-F3 non-trivial)
-├── Model.lean           ← Forward model: AddMonoidAlgebra ℝ ℝ satisfies A1–F3
-└── Countermodels.lean   ← F1/F3 separation: countermodels proving non-triviality
+├── Core/
+│   ├── Basic.lean           ← A1-A7, Peano axioms P1-P5, iterS arithmetic
+│   ├── Semiring.lean        ← B1-B5, eigenvalue theorem, A8 as theorem
+│   ├── IntegralDomain.lean  ← C1-C3, A7 as theorem, power rule, ℤ eigenvalues
+│   ├── Rational.lean        ← D1-D2, eigenvalue 1/q, torsion-freeness
+│   ├── Complete.lean        ← E1 (axiomatized), ℝ eigenvalue theorem (axiomatized)
+│   └── Complex.lean         ← G1, j⁴ = f₀, ℂ eigenvalue theorem (axiomatized)
+├── Verification/
+│   ├── PeanoTest.lean       ← PA1-PA9 verification, recursion theorem
+│   ├── ZFTest.lean          ← ZF axioms from abstract set universe Ens (F1-F3 non-trivial)
+│   ├── Model.lean           ← Forward model: AddMonoidAlgebra ℝ ℝ satisfies A1-F3
+│   └── Countermodels.lean   ← F1/F3 separation: countermodels proving non-triviality
+└── Obstruction/             ← Encoding obstruction (see suisuss/Obstruction for general version)
+    ├── Encoding.lean        ← Term algebra, obsRewrite, trajectory divergence
+    ├── Main.lean            ← no_coalgebra_morphism, compilation ≠ execution
+    ├── Oplus.lean           ← Bitwise ⊕ impossibility
+    ├── Pairing.lean         ← Pairing unboundedness, carry propagation
+    └── Convergence.lean     ← WeakConvergence vs TotalDivergence (open)
 ```
 
 Build: `lake build` (requires Lean 4 v4.28.0 + Mathlib v4.28.0)
@@ -112,6 +120,28 @@ Build: `lake build` (requires Lean 4 v4.28.0 + Mathlib v4.28.0)
 **What the Lean code proves:** If you have a commutative semiring with a derivation satisfying the Leibniz rule and characteristic zero, the eigenvalue theorem holds, the Peano axioms are consequences, and axioms progressively become theorems as algebraic structure enriches.
 
 **What the Lean code does not prove:** The connection to actual eigenfunctions of d/dx, the derivation of e, the Taylor series, the PA/ZF equiconsistency results, or the self-representation/computation material. These remain pen-and-paper arguments in the theory documents.
+
+## The Encoding Obstruction
+
+The framework proves its own limitation: no injective encoding of its terms can faithfully preserve the semantics. This is the **encoding trilemma** — three properties, any two compatible, all three impossible:
+
+1. **Injectivity** — distinct terms get distinct codes
+2. **Homomorphism** — the encoding respects operations
+3. **Non-trivial semantics** — distinct terms can denote the same value
+
+The spectral framework makes this concrete. The eigenvalue theorem says `obs(f_n) = n · f_n` — observation reads off the number. But encoding this process and reproducing it internally produces a different answer than performing the observation directly (`encoding_obstruction_term`). The system can observe its eigenstates but cannot faithfully encode the act of observation.
+
+This obstruction is not specific to the spectral framework. It holds for any system with enough structure to be interesting:
+
+| System | Source of non-trivial semantics | Where the trilemma bites |
+|---|---|---|
+| **This framework** | Leibniz rule rewrites `obs(compose(a,b))` to a structurally different term | `Obstruction/Main.lean` |
+| **Peano arithmetic** | `S(S(0))` and `S(0)+S(0)` are different terms for 2 | [Obstruction repo: Peano.lean](https://github.com/suisuss/Obstruction) |
+| **ZF set theory** | `⋃∅` and `∅` are different terms for the empty set | [Obstruction repo: ZF.lean](https://github.com/suisuss/Obstruction) |
+
+The encoding-specific results live in [`SpectralArithmetic/Obstruction/`](SpectralArithmetic/Obstruction/). The general results — independent of the spectral framework, proved for PA, ZF, and all term algebras with Leibniz observation — are in the standalone [Obstruction](https://github.com/suisuss/Obstruction) repository.
+
+This is the structural barrier to completeness. To escape incompleteness while retaining self-reference, a system would need an encoding that is both injective and homomorphic. The trilemma proves that's impossible. Gödel proved *that* you can't escape. The encoding obstruction characterizes *what you'd need to overcome* — and proves it can't be overcome.
 
 ## Connections to Existing Work
 
@@ -154,8 +184,10 @@ This is a synthesis of ideas from several fields:
 
 ## Reading Order
 
-For the core results: **Semiring.lean** (eigenvalue theorem) → **PeanoTest.lean** (PA verification) → **pa-equiconsistency** (why these axioms and not others).
+For the core results: **Core/Semiring.lean** (eigenvalue theorem) → **Verification/PeanoTest.lean** (PA verification) → **pa-equiconsistency** (why these axioms and not others).
 
 For the full theory: **spectral-arithmetic-complete** gives everything in one document.
+
+For the encoding obstruction: [**Obstruction repo**](https://github.com/suisuss/Obstruction) (the encoding trilemma for PA, ZF, and all term algebras) → [**Obstruction/**](SpectralArithmetic/Obstruction/) (the same obstruction applied to this framework's eigenvalue structure).
 
 For the most original open question: **self-representation** (the syntax-semantics bisimulation conjecture).

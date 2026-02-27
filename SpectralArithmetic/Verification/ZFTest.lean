@@ -45,7 +45,7 @@
   | Foundation     | Type stratification (metatheory)          |
 -/
 
-import SpectralArithmetic.Complete
+import SpectralArithmetic.Core.Complete
 
 namespace SpectralMonoid
 
