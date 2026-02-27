@@ -37,8 +37,8 @@
   | Extensionality | ens_ext (from DynZF)                      |
   | Empty Set      | sepEns orbitEns False (derived from F2)    |
   | Pairing        | F1 + F2 + F3 (sep orbit, then image)      |
-  | Union          | Deferred (requires sets-of-sets)           |
-  | Power Set      | Deferred (requires sets-of-sets)           |
+  | Union          | unionEns₂ (from DynZF, F5)                |
+  | Power Set      | powerEns (from DynZF, F4)                 |
   | Infinity       | orbitEns + A1-B5 (eigenvalue thm)         |
   | Separation     | sepEns (from DynZF)                       |
   | Replacement    | imageEns (from DynZF)                     |
@@ -179,7 +179,9 @@ the full predicate space. -/
 
     F1: The orbit ensemble exists (Infinity).
     F2: Separation — sub-ensembles exist.
-    F3: Replacement — image ensembles exist. -/
+    F3: Replacement — image ensembles exist.
+    F4: Power ensemble — the family of sub-ensembles exists (Power Set).
+    F5: Family union — the union of a family of ensembles exists (Union). -/
 class DynZF (State : Type*) extends DynComplete State where
   /-- The abstract set universe -/
   Ens : Type*
@@ -200,6 +202,20 @@ class DynZF (State : Type*) extends DynComplete State where
       image ensemble F[A] exists. -/
   imageEns : (State → State) → Ens → Ens
   imageEns_spec : ∀ F A y, mem y (imageEns F A) ↔ (∃ x, mem x A ∧ F x = y)
+  /-- Level-2 ensemble type: sets of ensembles (sets of sets) -/
+  Ens₂ : Type*
+  /-- Level-2 membership: A ∈₂ P means ensemble A is in the family P -/
+  mem₂ : Ens → Ens₂ → Prop
+  /-- Level-2 extensionality -/
+  ens_ext₂ : ∀ P Q : Ens₂, (∀ A, mem₂ A P ↔ mem₂ A Q) → P = Q
+  /-- F4: Power ensemble — for any ensemble A, the family of all
+      sub-ensembles of A exists. (ZF5: Power Set) -/
+  powerEns : Ens → Ens₂
+  powerEns_spec : ∀ A B, mem₂ B (powerEns A) ↔ (∀ s, mem s B → mem s A)
+  /-- F5: Family union — for any family of ensembles, their union
+      exists as a single ensemble. (ZF4: Union) -/
+  unionEns₂ : Ens₂ → Ens
+  unionEns₂_spec : ∀ P s, mem s (unionEns₂ P) ↔ (∃ A, mem₂ A P ∧ mem s A)
 
 /-! ## Part 3: Set-Theoretic Definitions
 
@@ -400,21 +416,32 @@ holds by type-theoretic construction, not by axiom. -/
 Independent — same status as in ZF. Neither provable nor refutable
 from the algebraic axioms. Lean's `Classical.choice` provides it. -/
 
-/-! #### ZF4 and ZF5: Deferred
+/-! #### ZF5: Power Set (from F4) -/
 
-Union and Power Set at the Ens level require sets-of-ensembles
-(a family Ens → Prop or a second-level type). These are deferred
-to Phase 2. The metatheoretic versions using State → Prop still
-hold (see Part 4b below). -/
+/-- **ZF5: Power Set.** For any ensemble A, the family of all
+    sub-ensembles of A exists as a Level-2 ensemble.
+    Uses: powerEns (from DynZF, F4). -/
+theorem zf5_powerset (A : @DynZF.Ens State _) :
+    ∃ P : @DynZF.Ens₂ State _, ∀ B, mem₂ B P ↔ ensSubset B A :=
+  ⟨powerEns A, fun B => powerEns_spec A B⟩
+
+/-! #### ZF4: Union (from F5) -/
+
+/-- **ZF4: Union.** For any family of ensembles P, the union
+    exists as a single ensemble.
+    Uses: unionEns₂ (from DynZF, F5). -/
+theorem zf4_union (P : @DynZF.Ens₂ State _) :
+    ∃ A : @DynZF.Ens State _, ∀ s, mem s A ↔ (∃ B, mem₂ B P ∧ mem s B) :=
+  ⟨unionEns₂ P, fun s => unionEns₂_spec P s⟩
 
 end FromDynZF
 
 /-! ### 4b: Metatheoretic results (using State → Prop directly)
 
 These hold for ANY type State, using Lean's predicate space.
-They don't use Ens and are kept for completeness. ZF4 and ZF5
-live here since they require sets-of-sets which Ens doesn't
-yet support. -/
+They don't use Ens and are kept for reference. ZF4 and ZF5
+now have Ens-level proofs above (from F4, F5), but the
+metatheoretic versions remain as a comparison point. -/
 
 section Metatheoretic
 
@@ -509,6 +536,28 @@ theorem imageEns_empty (F : State → State) :
     exact absurd hx (emptyEns_spec x)
   · intro h
     exact absurd h (emptyEns_spec s)
+
+/-- The empty ensemble is in every power ensemble -/
+theorem emptyEns_mem_powerEns (A : @DynZF.Ens State _) :
+    mem₂ emptyEns (powerEns A) :=
+  (powerEns_spec A emptyEns).mpr (fun s h => absurd h (emptyEns_spec s))
+
+/-- Every ensemble is in its own power ensemble -/
+theorem self_mem_powerEns (A : @DynZF.Ens State _) :
+    mem₂ A (powerEns A) :=
+  (powerEns_spec A A).mpr (fun _ h => h)
+
+/-- Union of a power ensemble recovers the original -/
+theorem unionEns₂_powerEns (A : @DynZF.Ens State _) :
+    ∀ s, mem s (unionEns₂ (powerEns A)) ↔ mem s A := by
+  intro s
+  constructor
+  · intro h
+    obtain ⟨B, hB, hs⟩ := (unionEns₂_spec (powerEns A) s).mp h
+    exact (powerEns_spec A B).mp hB s hs
+  · intro h
+    apply (unionEns₂_spec (powerEns A) s).mpr
+    exact ⟨A, self_mem_powerEns A, h⟩
 
 end DerivedEns
 
