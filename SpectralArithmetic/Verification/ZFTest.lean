@@ -354,30 +354,24 @@ theorem zf3_pairing (a b : State) :
   let twoEns := sepEns orbitEns (fun s => s = (f₀ : State) ∨ s = (f₁ : State))
   -- Take the image under F
   let pairE := imageEns F twoEns
+  have hF_f₀ : F (f₀ : State) = a := by
+    change (if (f₀ : State) = f₀ then a else b) = a
+    rw [if_pos rfl]
+  have hF_f₁ : F (f₁ : State) = b := by
+    change (if (f₁ : State) = f₀ then a else b) = b
+    rw [if_neg (Ne.symm f₀_ne_f₁)]
   exact ⟨pairE, fun x => by
     constructor
     · intro hx
       rw [show pairE = imageEns F twoEns from rfl] at hx
       obtain ⟨w, hw, rfl⟩ := (imageEns_spec F twoEns x).mp hx
       obtain ⟨_, hw'⟩ := (sepEns_spec orbitEns _ w).mp hw
-      have hF_f₀ : F (f₀ : State) = a := by
-        change (if (f₀ : State) = f₀ then a else b) = a
-        rw [if_pos rfl]
-      have hF_f₁ : F (f₁ : State) = b := by
-        change (if (f₁ : State) = f₀ then a else b) = b
-        rw [if_neg (Ne.symm f₀_ne_f₁)]
       cases hw' with
       | inl h => left; subst h; exact hF_f₀
       | inr h => right; subst h; exact hF_f₁
     · intro hx
       rw [show pairE = imageEns F twoEns from rfl]
       apply (imageEns_spec F twoEns x).mpr
-      have hF_f₀ : F (f₀ : State) = a := by
-        change (if (f₀ : State) = f₀ then a else b) = a
-        rw [if_pos rfl]
-      have hF_f₁ : F (f₁ : State) = b := by
-        change (if (f₁ : State) = f₀ then a else b) = b
-        rw [if_neg (Ne.symm f₀_ne_f₁)]
       cases hx with
       | inl h =>
         exact ⟨f₀, (sepEns_spec orbitEns _ f₀).mpr
