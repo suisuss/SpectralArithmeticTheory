@@ -21,3 +21,5 @@ import SpectralArithmetic.Obstruction.Convergence
 import SpectralArithmetic.Obstruction.Complexity
 -- SAT encoding as term structure
 import SpectralArithmetic.Obstruction.SAT
+-- deepRewrite cost bounds
+import SpectralArithmetic.Obstruction.CostBounds
