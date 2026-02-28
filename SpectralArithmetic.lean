@@ -19,3 +19,5 @@ import SpectralArithmetic.Obstruction.Main
 import SpectralArithmetic.Obstruction.Convergence
 -- Complexity asymmetry (P vs NP structural analogy)
 import SpectralArithmetic.Obstruction.Complexity
+-- SAT encoding as term structure
+import SpectralArithmetic.Obstruction.SAT
