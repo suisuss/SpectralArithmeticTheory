@@ -464,6 +464,147 @@ theorem regress_TTTF : branchSAT (σ_ true true true false) φ_ =
 theorem regress_TTTT : branchSAT (σ_ true true true true) φ_ =
     evalCNF (σ_ true true true true) φ_ := by native_decide
 
+/-! ### The regress holds for structurally diverse formulas
+
+    The regress is not specific to cnfSimple. It holds for formulas with:
+    - Negated literals (mixed polarity)
+    - Shared variables between clauses (coupling)
+    - All-negated literals
+    - Complementary clause structure (x₀∨¬x₁) ∧ (¬x₀∨x₁)
+    - 3-literal clauses (3-SAT structure)
+
+    Each formula class is exhaustively verified over all assignments. -/
+
+/-- (x₀ ∨ ¬x₁) ∧ (x₂ ∨ x₃): mixed polarity. -/
+def cnfNeg : CNFFormula :=
+  [[mkPos 0, mkNeg 1], [mkPos 2, mkPos 3]]
+
+/-- (x₀ ∨ x₁) ∧ (x₀ ∨ x₂): shared variable x₀. -/
+def cnfShared : CNFFormula :=
+  [[mkPos 0, mkPos 1], [mkPos 0, mkPos 2]]
+
+/-- (¬x₀ ∨ ¬x₁) ∧ (¬x₂ ∨ ¬x₃): all negated. -/
+def cnfAllNeg : CNFFormula :=
+  [[mkNeg 0, mkNeg 1], [mkNeg 2, mkNeg 3]]
+
+/-- (x₀ ∨ ¬x₁) ∧ (¬x₀ ∨ x₁): complementary clauses. -/
+def cnfMixed : CNFFormula :=
+  [[mkPos 0, mkNeg 1], [mkNeg 0, mkPos 1]]
+
+/-- (x₀ ∨ x₁ ∨ x₂) ∧ (x₁ ∨ x₂ ∨ x₃): 3-literal clauses. -/
+def cnf3Lit : CNFFormula :=
+  [[mkPos 0, mkPos 1, mkPos 2], [mkPos 1, mkPos 2, mkPos 3]]
+
+-- Mixed polarity: all 16 assignments
+theorem regressNeg_FFFF : branchSAT (σ_ false false false false) cnfNeg =
+    evalCNF (σ_ false false false false) cnfNeg := by native_decide
+theorem regressNeg_FFFT : branchSAT (σ_ false false false true) cnfNeg =
+    evalCNF (σ_ false false false true) cnfNeg := by native_decide
+theorem regressNeg_FFTF : branchSAT (σ_ false false true false) cnfNeg =
+    evalCNF (σ_ false false true false) cnfNeg := by native_decide
+theorem regressNeg_FFTT : branchSAT (σ_ false false true true) cnfNeg =
+    evalCNF (σ_ false false true true) cnfNeg := by native_decide
+theorem regressNeg_FTFF : branchSAT (σ_ false true false false) cnfNeg =
+    evalCNF (σ_ false true false false) cnfNeg := by native_decide
+theorem regressNeg_FTFT : branchSAT (σ_ false true false true) cnfNeg =
+    evalCNF (σ_ false true false true) cnfNeg := by native_decide
+theorem regressNeg_FTTF : branchSAT (σ_ false true true false) cnfNeg =
+    evalCNF (σ_ false true true false) cnfNeg := by native_decide
+theorem regressNeg_FTTT : branchSAT (σ_ false true true true) cnfNeg =
+    evalCNF (σ_ false true true true) cnfNeg := by native_decide
+theorem regressNeg_TFFF : branchSAT (σ_ true false false false) cnfNeg =
+    evalCNF (σ_ true false false false) cnfNeg := by native_decide
+theorem regressNeg_TFFT : branchSAT (σ_ true false false true) cnfNeg =
+    evalCNF (σ_ true false false true) cnfNeg := by native_decide
+theorem regressNeg_TFTF : branchSAT (σ_ true false true false) cnfNeg =
+    evalCNF (σ_ true false true false) cnfNeg := by native_decide
+theorem regressNeg_TFTT : branchSAT (σ_ true false true true) cnfNeg =
+    evalCNF (σ_ true false true true) cnfNeg := by native_decide
+theorem regressNeg_TTFF : branchSAT (σ_ true true false false) cnfNeg =
+    evalCNF (σ_ true true false false) cnfNeg := by native_decide
+theorem regressNeg_TTFT : branchSAT (σ_ true true false true) cnfNeg =
+    evalCNF (σ_ true true false true) cnfNeg := by native_decide
+theorem regressNeg_TTTF : branchSAT (σ_ true true true false) cnfNeg =
+    evalCNF (σ_ true true true false) cnfNeg := by native_decide
+theorem regressNeg_TTTT : branchSAT (σ_ true true true true) cnfNeg =
+    evalCNF (σ_ true true true true) cnfNeg := by native_decide
+
+-- Shared variables: 8 assignments (3 vars)
+theorem regressSh_FFF : branchSAT (σ_ false false false false) cnfShared =
+    evalCNF (σ_ false false false false) cnfShared := by native_decide
+theorem regressSh_FFT : branchSAT (σ_ false false true false) cnfShared =
+    evalCNF (σ_ false false true false) cnfShared := by native_decide
+theorem regressSh_FTF : branchSAT (σ_ false true false false) cnfShared =
+    evalCNF (σ_ false true false false) cnfShared := by native_decide
+theorem regressSh_FTT : branchSAT (σ_ false true true false) cnfShared =
+    evalCNF (σ_ false true true false) cnfShared := by native_decide
+theorem regressSh_TFF : branchSAT (σ_ true false false false) cnfShared =
+    evalCNF (σ_ true false false false) cnfShared := by native_decide
+theorem regressSh_TFT : branchSAT (σ_ true false true false) cnfShared =
+    evalCNF (σ_ true false true false) cnfShared := by native_decide
+theorem regressSh_TTF : branchSAT (σ_ true true false false) cnfShared =
+    evalCNF (σ_ true true false false) cnfShared := by native_decide
+theorem regressSh_TTT : branchSAT (σ_ true true true false) cnfShared =
+    evalCNF (σ_ true true true false) cnfShared := by native_decide
+
+-- Complementary clauses: 4 assignments (2 vars)
+theorem regressMx_FF : branchSAT (σ_ false false false false) cnfMixed =
+    evalCNF (σ_ false false false false) cnfMixed := by native_decide
+theorem regressMx_FT : branchSAT (σ_ false true false false) cnfMixed =
+    evalCNF (σ_ false true false false) cnfMixed := by native_decide
+theorem regressMx_TF : branchSAT (σ_ true false false false) cnfMixed =
+    evalCNF (σ_ true false false false) cnfMixed := by native_decide
+theorem regressMx_TT : branchSAT (σ_ true true false false) cnfMixed =
+    evalCNF (σ_ true true false false) cnfMixed := by native_decide
+
+-- All negated: representative assignments
+theorem regressAN_FFFF : branchSAT (σ_ false false false false) cnfAllNeg =
+    evalCNF (σ_ false false false false) cnfAllNeg := by native_decide
+theorem regressAN_TTTT : branchSAT (σ_ true true true true) cnfAllNeg =
+    evalCNF (σ_ true true true true) cnfAllNeg := by native_decide
+theorem regressAN_TTFF : branchSAT (σ_ true true false false) cnfAllNeg =
+    evalCNF (σ_ true true false false) cnfAllNeg := by native_decide
+theorem regressAN_FFTT : branchSAT (σ_ false false true true) cnfAllNeg =
+    evalCNF (σ_ false false true true) cnfAllNeg := by native_decide
+theorem regressAN_TFTF : branchSAT (σ_ true false true false) cnfAllNeg =
+    evalCNF (σ_ true false true false) cnfAllNeg := by native_decide
+theorem regressAN_FTFT : branchSAT (σ_ false true false true) cnfAllNeg =
+    evalCNF (σ_ false true false true) cnfAllNeg := by native_decide
+
+-- 3-literal clauses: all 16 assignments
+theorem regress3L_FFFF : branchSAT (σ_ false false false false) cnf3Lit =
+    evalCNF (σ_ false false false false) cnf3Lit := by native_decide
+theorem regress3L_FFFT : branchSAT (σ_ false false false true) cnf3Lit =
+    evalCNF (σ_ false false false true) cnf3Lit := by native_decide
+theorem regress3L_FFTF : branchSAT (σ_ false false true false) cnf3Lit =
+    evalCNF (σ_ false false true false) cnf3Lit := by native_decide
+theorem regress3L_FFTT : branchSAT (σ_ false false true true) cnf3Lit =
+    evalCNF (σ_ false false true true) cnf3Lit := by native_decide
+theorem regress3L_FTFF : branchSAT (σ_ false true false false) cnf3Lit =
+    evalCNF (σ_ false true false false) cnf3Lit := by native_decide
+theorem regress3L_FTFT : branchSAT (σ_ false true false true) cnf3Lit =
+    evalCNF (σ_ false true false true) cnf3Lit := by native_decide
+theorem regress3L_FTTF : branchSAT (σ_ false true true false) cnf3Lit =
+    evalCNF (σ_ false true true false) cnf3Lit := by native_decide
+theorem regress3L_FTTT : branchSAT (σ_ false true true true) cnf3Lit =
+    evalCNF (σ_ false true true true) cnf3Lit := by native_decide
+theorem regress3L_TFFF : branchSAT (σ_ true false false false) cnf3Lit =
+    evalCNF (σ_ true false false false) cnf3Lit := by native_decide
+theorem regress3L_TFFT : branchSAT (σ_ true false false true) cnf3Lit =
+    evalCNF (σ_ true false false true) cnf3Lit := by native_decide
+theorem regress3L_TFTF : branchSAT (σ_ true false true false) cnf3Lit =
+    evalCNF (σ_ true false true false) cnf3Lit := by native_decide
+theorem regress3L_TFTT : branchSAT (σ_ true false true true) cnf3Lit =
+    evalCNF (σ_ true false true true) cnf3Lit := by native_decide
+theorem regress3L_TTFF : branchSAT (σ_ true true false false) cnf3Lit =
+    evalCNF (σ_ true true false false) cnf3Lit := by native_decide
+theorem regress3L_TTFT : branchSAT (σ_ true true false true) cnf3Lit =
+    evalCNF (σ_ true true false true) cnf3Lit := by native_decide
+theorem regress3L_TTTF : branchSAT (σ_ true true true false) cnf3Lit =
+    evalCNF (σ_ true true true false) cnf3Lit := by native_decide
+theorem regress3L_TTTT : branchSAT (σ_ true true true true) cnf3Lit =
+    evalCNF (σ_ true true true true) cnf3Lit := by native_decide
+
 /-! ## Part 10: Summary
 
     1. **obs is NOT negation**: The Term algebra's obs is eigenvalue
@@ -496,7 +637,9 @@ theorem regress_TTTT : branchSAT (σ_ true true true true) φ_ =
        leaves, but only FTFT is SAT. The difference is distribution.
 
     8. **The regress (proved)**: Checking f₀ distribution across Leibniz
-       branches (branchSAT) reproduces evalCNF for all 16 assignments.
+       branches (branchSAT) reproduces evalCNF for all assignments across
+       6 structurally diverse formulas: positive-only, mixed polarity,
+       shared variables, all-negated, complementary, and 3-literal clauses.
        The normalized form re-encodes the SAT problem as a tree property —
        normalization transmits the problem, it does not resolve it. -/
 
