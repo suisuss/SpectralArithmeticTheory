@@ -147,7 +147,89 @@ The framework maps P vs NP onto the depth-width tradeoff:
 
 ---
 
+## Part 5: Certificate Derived from Encoding Analysis
+
+### The reframing
+
+The standard framing treats the certificate as an external object -- a satisfying assignment given to us by an oracle or a lucky guess. But in the eigenvalue framework, the encoding IS the object of study. The term tree is fully visible before any obs fires. The question becomes: **can structural analysis of the encoding itself derive sufficient information for optimal obs placement?**
+
+This shifts the framework from "certificate as input" to "certificate as output of analysis."
+
+### The three-phase process
+
+**Phase 1: Analyze.** Pattern-match on the Term tree. This is purely syntactic -- no obs needed, no Leibniz expansion, no normalization. The analysis extracts:
+
+- Compose nesting depth and shape (how deep, left-nested vs right-nested vs balanced)
+- Leaf distribution (where f_0, f_1, z appear in the tree)
+- Shared sub-term identification (which sub-terms appear in multiple branches)
+- Dependency structure (which compose groups share sub-terms with which other groups)
+
+This is polynomial -- it's tree traversal with bookkeeping. The analysis produces a structural description of the encoding without evaluating it.
+
+**Phase 2: Group.** Based on the structural analysis, partition the term into sub-terms that can be obs'd with minimal cross-group dependency:
+
+- Independent sub-terms (no shared sub-terms) can be grouped separately
+- Shared sub-terms create dependencies between groups -- place group boundaries to minimize cross-boundary sharing
+- Each group is a compose sub-chain of bounded width
+
+The grouping determines WHERE intermediate obs nodes will be placed. Good grouping = few cross-group dependencies = each group normalizes independently. Bad grouping = many cross-group dependencies = sequential cascading across groups.
+
+**Phase 3: Decode/Unwrap.** Apply obs at group boundaries (the JIT placement), then normalize group by group:
+
+- For each group: apply deepRewrite to resolve the obs(compose) sites within the group
+- Propagate results across group boundaries: the eigenvalue output of one group feeds into adjacent groups
+- Iterate until all groups are fully normalized
+
+The certificate is not an input to this process -- it is the OUTPUT. The structural analysis determines the obs placement, the obs placement determines the normalization order, and the normalization produces the eigenvalues that would traditionally be called "the certificate."
+
+### What SAT solvers actually do
+
+This three-phase process maps directly onto modern SAT solver techniques:
+
+| Framework phase | SAT solver analogue | Operation |
+|-----------------|---------------------|-----------|
+| Analyze: identify forced leaves | Unit propagation | Find clauses with single unassigned literal -- its value is forced |
+| Analyze: identify shared sub-terms | Variable activity scoring (VSIDS) | Track which variables appear in many clauses -- high-activity variables create the most cross-group dependencies |
+| Group: partition by dependency | Clause learning / conflict analysis | Discover which variable groups are tightly coupled and which are independent |
+| Decode/Unwrap: obs at boundaries | Decision + BCP | Pick a variable (place obs), propagate forced consequences (normalize the group) |
+| Propagate across groups | Implication graph | Eigenvalue from one group constrains adjacent groups |
+| Iterate | DPLL/CDCL loop | Repeat until all groups resolved or contradiction found |
+
+The CDCL algorithm IS the JIT obs placement strategy:
+- It analyzes the encoding (formula) to identify structural features
+- It groups variables by conflict-driven clause learning
+- It places obs (makes decisions) based on the analysis
+- It propagates (normalizes) and backtracks (undoes obs placement) when the placement creates contradictions
+
+### Why this matters for P vs NP
+
+The question is no longer "does a polynomial-time algorithm exist?" (an existential claim about all possible algorithms). It becomes: **does the structural analysis phase (polynomial-time tree traversal) extract enough information to determine an obs placement that achieves polynomial total normalization work?**
+
+For 2-SAT: **yes.** The implication graph (a polynomial-time structural analysis) determines all forced obs placements. The grouping has no irreducible dependencies -- every shared variable creates a binary implication that resolves in one direction. The JIT strategy finds a certificate (or proves unsatisfiability) in polynomial time.
+
+For 3-SAT: the structural analysis identifies dependencies, but some variables have no forced value -- their obs placement requires a CHOICE. Each choice creates a branching point. If the choice is wrong (leads to contradiction), backtracking undoes the obs and tries the other branch. The number of backtracks determines the total cost.
+
+The P vs NP question in this framing: **for 3-SAT, does every structural analysis strategy require exponentially many backtracks (re-placements of obs) in the worst case?**
+
+### What the framework adds beyond standard complexity theory
+
+Standard complexity theory asks: does a polynomial-time algorithm exist? This is a black-box question about the space of all algorithms.
+
+The framework asks: does polynomial-time structural analysis of the encoding yield sufficient obs placement information? This is a white-box question about the relationship between syntactic structure and normalization cost.
+
+The advantage: the framework constrains WHAT the analysis can extract (structural features of the Term tree) and HOW the analysis helps (obs placement determines normalization regime). This gives a concrete handle for lower bounds: show that no polynomial-time tree traversal can determine an obs placement that avoids exponential total work.
+
+The Leibniz uniqueness result (Part 1 of leibniz-uniqueness.md) already constrains the obs placement: each obs(compose) must expand to the full Leibniz product (both branches). The analysis can determine which branches WILL collapse (because a leaf is z), but only by tracing the dependency chain from leaves to the obs site. For deeply nested dependencies (3-SAT's constraint graph), this tracing may itself require exponential exploration.
+
+---
+
 ## Related
+
+- [leibniz-uniqueness.md](leibniz-uniqueness.md) -- Leibniz rule is forced, certificates as pruning
+- [encoding-complexity.md](encoding-complexity.md) -- P vs NP as encoding execution problem
+- [normalization-depth.md](normalization-depth.md) -- Normalization depth: constant vs linear regimes
+- [convergence-and-complexity.md](convergence-and-complexity.md) -- Convergence rate as complexity measure
+- [barrier-analysis.md](barrier-analysis.md) -- Barrier analysis for the encoding obstruction
 
 - [leibniz-uniqueness.md](leibniz-uniqueness.md) -- Leibniz rule is forced, certificates as pruning
 - [encoding-complexity.md](encoding-complexity.md) -- P vs NP as encoding execution problem
