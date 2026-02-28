@@ -29,3 +29,5 @@ import SpectralArithmetic.Obstruction.VarSharing
 import SpectralArithmetic.Obstruction.JIT
 -- Coupled case analysis and constraint graphs
 import SpectralArithmetic.Obstruction.CoupledAnalysis
+-- NAND encoding via circuit terms (proper CNF = AND-of-ORs)
+import SpectralArithmetic.Obstruction.NANDEncoding
