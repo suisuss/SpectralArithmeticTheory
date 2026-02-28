@@ -258,11 +258,19 @@ This shifts the complexity question from "how many iterations?" to "how expensiv
 2. **Variable sharing** means the Leibniz branching produces exponentially many sub-terms
 3. **Carry non-locality** means combining branch results has irreducible per-addition cost
 
-### The missing step
+### The missing step -- now partially filled (2026-02-28 update)
 
-The gap remains: proving that the exponential per-pass work for the `nestedObsCompose` family transfers to NP-complete problem encodings. The `nestedObsCompose` family is a specific algebraic construction — SAT formulas have different structure (flat clause lists with variable sharing, not binary-tree nesting). Whether SAT-encoding terms have the same exponential per-pass cost is the open question.
+The gap between nestedObsCompose and SAT encodings has been partially bridged by four new Lean files:
 
-Additionally, the per-pass cost analysis examines ONE SPECIFIC rewriting strategy (`deepRewrite`). A polynomial-time algorithm for SAT would correspond to a DIFFERENT strategy for manipulating the encoding — one that avoids the exponential term-size blowup. The encoding obstruction shows such a strategy cannot be a coalgebra morphism (it must distort observation dynamics), but does not prove no efficient strategy exists.
+**SAT.lean** formalizes SAT formula encoding as Terms. Literals map to f_0/z, clauses are right-nested compose chains, formulas wrap clause compositions in obs. Key result: obs(compose-chain of k atoms) has normalization depth k-1, proved for k=2..5.
+
+**CostBounds.lean** tracks obs(compose) site evolution across deepRewrite passes. Key finding: compose chains maintain exactly 1 site per pass for k-1 passes (site persistence), while nestedObsCompose sites explode then collapse (3 -> 8 -> 0).
+
+**Complexity.lean (Part 8)** introduces the f0Chain family (right-nested compose chains of f_0 atoms) and proves linear normalization depth (k-1 for k atoms). This contrasts with nestedObsCompose's constant depth (2). The structural explanation: obs placement determines cost -- obs at every level enables parallel resolution, obs only at top forces sequential unwinding.
+
+**VarSharing.lean** establishes that under any fixed assignment, independent and sharing formulas produce identical normalization costs. Variable sharing only manifests across the assignment space -- a meta-level property about how search interacts with the constraint graph.
+
+The remaining gap: proving that the compose-chain lower bound applies to ALL normalization strategies, not just deepRewrite. The Leibniz rule is algebraically forced (no alternative rewrite exists), but the sequential dependency across passes has not been proved unavoidable for arbitrary strategies. See [leibniz-uniqueness.md](leibniz-uniqueness.md) for the detailed analysis.
 
 ---
 
@@ -396,6 +404,7 @@ The framework identifies encoding execution as the right lens for understanding 
 
 - [encoding-complexity.md](encoding-complexity.md) -- P vs NP as encoding execution problem
 - [convergence-and-complexity.md](convergence-and-complexity.md) -- Convergence rate as complexity measure
+- [leibniz-uniqueness.md](leibniz-uniqueness.md) -- Leibniz rule is forced, certificates as pruning, lower bound structure
 - [../encoding-obstruction.md](../encoding-obstruction.md) -- The core trilemma
 - [../confluence.md](../confluence.md) -- Termination and confluence of R1-R12
 - [../impossibility-hierarchy.md](../impossibility-hierarchy.md) -- Four levels: substitution -> carry -> halting -> undecidability

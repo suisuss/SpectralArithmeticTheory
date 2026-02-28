@@ -238,17 +238,30 @@ The framework's value, independent of whether P != NP is proved through it, is t
 
 ## Part 8: Research Directions
 
-### Immediate: formalize the extensionalization chain for SAT
+### Completed: formalize the extensionalization chain for SAT (2026-02-28)
 
-Define, within the eigenvalue framework, what it means to "solve SAT" as a sequence of extensionalization steps. Map the eigenstates to formula components, define the encoding, and characterize the obs applications required. This would make the compounding hypothesis precise and testable.
+SAT encoding is now formalized in Lean (SAT.lean). Literals map to f_0/z under an assignment, clauses are right-nested compose chains, formulas wrap clause compositions in obs. The encoding is purely structural -- Term shape mirrors SAT structure but eval does not correspond to Boolean satisfaction.
 
-### Medium-term: prove chain length lower bounds
+Key proved results:
+- obs(compose-chain of k atoms) has normalization depth k-1 (concrete for k=2..6)
+- Site persistence: compose chains maintain exactly 1 obs(compose) site per pass
+- The 2-SAT vs 3-SAT structural distinction: 2-literal clauses normalize in 1 pass, 3-literal clauses require 2 passes
 
-For the formalized SAT extensionalization chain, prove lower bounds on the chain length. Start with specific restricted cases (2-SAT, 3-SAT on structured instances, k-SAT for varying k). Determine whether the chain length grows polynomially (as in 2-SAT, which is in P) or super-polynomially (as expected for 3-SAT). The transition between k=2 and k=3 would be the critical test case.
+### Completed: per-pass cost bounds (2026-02-28)
 
-### Long-term: connect chain length to complexity classes
+CostBounds.lean establishes exact size formulas for Leibniz expansion of obs(compose) with obs-free children, and tracks site evolution across passes. The two normalization regimes are proved: nestedObsCompose (constant depth, obs at every level) vs compose chains (linear depth, obs only at top).
 
-If chain length lower bounds can be established, connect them to standard complexity measures (time, circuit depth, space). Show that a super-polynomial extensionalization chain implies a super-polynomial time lower bound. This is the bridge from the algebraic framework to the complexity-theoretic conclusion.
+### Completed: obs placement determines cost (2026-02-28)
+
+Complexity.lean Part 8 proves that obs placement -- not nesting depth -- determines normalization regime. This maps to: certificates "place obs at every level" enabling parallel resolution, while search has obs only at the boundary forcing sequential unwinding.
+
+### In progress: Leibniz uniqueness and lower bounds
+
+The Leibniz rule is algebraically forced by DynSemiring axioms. The next step is formalizing that obsRewrite is the unique minimal correct expansion, which would establish that the branching factor per pass is unavoidable. See [leibniz-uniqueness.md](leibniz-uniqueness.md).
+
+### Medium-term: connect normalization cost to complexity classes
+
+With the SAT encoding formalized, the remaining gap is: proving that deepRewrite's cost lower bound applies to ALL normalization strategies, not just deepRewrite. This is the "search term lower bound" problem.
 
 ### Parallel: resolve the convergence conjecture
 
@@ -258,6 +271,10 @@ Independent of the SAT-specific direction, resolve whether the encoding distorti
 
 ## Related
 
+- [leibniz-uniqueness.md](leibniz-uniqueness.md) -- Leibniz rule is forced, certificates as pruning, lower bound structure
+- [normalization-depth.md](normalization-depth.md) -- Normalization depth, fixed points, and halting
+- [convergence-and-complexity.md](convergence-and-complexity.md) -- Convergence rate as complexity measure
+- [barrier-analysis.md](barrier-analysis.md) -- Barrier analysis for the encoding obstruction
 - [../encoding-obstruction.md](../encoding-obstruction.md) -- The core trilemma: eigenvalue arithmetic + self-encoding + coalgebra morphism
 - [../addition-non-locality.md](../addition-non-locality.md) -- Carry propagation as the mechanism forcing external state
 - [../computing-as-external-state.md](../computing-as-external-state.md) -- Computation = language + external state (derived, not stipulated)

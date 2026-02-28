@@ -443,6 +443,7 @@ The barriers do not capture proof techniques that exploit the identity of Boolea
 - [encoding-complexity.md](encoding-complexity.md) -- P vs NP as encoding execution problem
 - [convergence-and-complexity.md](convergence-and-complexity.md) -- Convergence rate as complexity measure
 - [normalization-depth.md](normalization-depth.md) -- Normalization depth, fixed points, and halting
+- [leibniz-uniqueness.md](leibniz-uniqueness.md) -- Leibniz rule is forced, certificates as pruning, lower bound structure
 - [../encoding-obstruction.md](../encoding-obstruction.md) -- The core trilemma
 - [../addition-non-locality.md](../addition-non-locality.md) -- Carry propagation forces external state
 - [../impossibility-hierarchy.md](../impossibility-hierarchy.md) -- Four levels of impossibility

@@ -476,9 +476,28 @@ The gap between this structural account and a proof is the gap between understan
 
 ---
 
+---
+
+## Part 9: Update -- Lean Formalization Results (2026-02-28)
+
+The new Lean formalization (SAT.lean, CostBounds.lean, Complexity.lean Part 8, VarSharing.lean) refines the convergence-complexity connection:
+
+1. **Convergence depth is now quantified for specific term families.** Compose chains of k obs-free atoms require exactly k-1 passes (proved for k=2..6). This is linear, not exponential, but it's linear in clause width -- and clause width is the parameter that separates 2-SAT (P) from 3-SAT (NP-complete).
+
+2. **The convergence rate depends on obs placement.** Obs at every level (nestedObsCompose) gives constant convergence rate (2 passes). Obs only at the boundary (compose chains) gives linear convergence rate (k-1 passes). This is the structural analogue of "certificates enable fast convergence."
+
+3. **Variable sharing doesn't affect single-assignment convergence.** Under a fixed assignment, all formulas with the same shape converge at the same rate regardless of variable sharing. The sharing effect is across the assignment space, not within a single normalization trajectory.
+
+4. **The Leibniz rule is algebraically forced.** There is no alternative rewrite that avoids the branching. The convergence rate's lower bound comes from the algebraic structure, not from a particular algorithm choice. See [leibniz-uniqueness.md](leibniz-uniqueness.md).
+
+---
+
 ## Related
 
 - [encoding-complexity.md](encoding-complexity.md) -- P vs NP as encoding execution problem
+- [leibniz-uniqueness.md](leibniz-uniqueness.md) -- Leibniz rule is forced, certificates as pruning, lower bound structure
+- [normalization-depth.md](normalization-depth.md) -- Normalization depth, fixed points, and halting
+- [barrier-analysis.md](barrier-analysis.md) -- Barrier analysis for the encoding obstruction
 - [../encoding-obstruction.md](../encoding-obstruction.md) -- The core trilemma
 - [../convergence-conjecture.md](../convergence-conjecture.md) -- The convergence conjecture (original statement)
 - [../addition-non-locality.md](../addition-non-locality.md) -- Carry propagation as the mechanism
