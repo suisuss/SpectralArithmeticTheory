@@ -29,6 +29,7 @@ class DynSemiring (State : Type*) extends SpectralMonoid State where
   compose_distrib : ∀ a b c, compose a (oplus b c) = oplus (compose a b) (compose a c)
   obs_f₀ : obs f₀ = z
   leibniz : ∀ a b, obs (compose a b) = oplus (compose (obs a) b) (compose a (obs b))
+  obs_oplus : ∀ a b, obs (oplus a b) = oplus (obs a) (obs b)
   char_zero : ∀ n : ℕ, n ≥ 1 → nfoldSum oplus z n f₀ ≠ z
 
 namespace DynSemiring

@@ -260,24 +260,26 @@ theorem cnf_structural_separation :
 #eval normDepthBounded 15 (cnfToTerm (fun _ => true) cnf3SAT)
 #eval normDepthBounded 15 (cnfToTerm (fun _ => false) cnf3SAT)
 
-/-! ## Part 7: The obs(oplus) Frontier
+/-! ## Part 7: The Sum Rule Closes the Gap
 
-    The Leibniz expansion rule handles obs(compose(a,b)) →
-    oplus(compose(obs(a),b), compose(a,obs(b))). But the CNF encoding
-    produces obs(oplus(...)) sub-terms (from the OR gates), and there
-    is no rewrite rule for obs(oplus). These terms get stuck.
+    With the sum rule (obs distributes over oplus), both obs(compose)
+    and obs(oplus) are now rewrite sites. The Leibniz product rule
+    handles obs(compose(a,b)) and the sum rule handles obs(oplus(a,b)).
 
-    This reflects a genuine algebraic gap:
-    - obs(compose) has the Leibniz/product rule
-    - obs(oplus) would need a sum rule: obs(a+b) = obs(a) + obs(b)?
-    - Whether obs distributes over addition is a separate axiom
+    This means CNF-encoded terms now normalize more deeply:
+    - obs(compose(clause₁, clause₂)) fires the Leibniz rule
+    - The resulting obs(oplus(...)) from OR gates fires the sum rule
+    - obs pushes all the way down to the leaves (f₀ and z)
+    - obs(f₀) → z, obs(z) → z: both leaves normalize to z
 
-    The encoding still works for distinguishability because the structural
-    difference (f₀ vs z leaves) is present BEFORE normalization. -/
+    The full normalization reveals a key structural insight: under the
+    sum rule, ALL obs-wrapped CNF terms normalize to z-containing
+    forms. The distinguishability between sat and unsat assignments
+    is in the PRE-obs term structure, not the post-normalization form. -/
 
-/-- obs(oplus) is not a Leibniz rewrite site — it stays as-is. -/
-theorem obs_oplus_not_rewrite_site :
-    isObsNormal (.obs (.oplus .f₀ .z)) = true := by decide
+/-- obs(oplus) IS a rewrite site — the sum rule fires. -/
+theorem obs_oplus_is_rewrite_site :
+    isObsNormal (.obs (.oplus .f₀ .z)) = false := by decide
 
 /-- obs(compose) IS a rewrite site — Leibniz fires. -/
 theorem obs_compose_is_rewrite_site :
@@ -300,10 +302,10 @@ theorem obs_compose_is_rewrite_site :
        This is a decidable structural property of the pre-normalization
        term (proved by cnf_structural_separation).
 
-    5. **The obs(oplus) gap**: Normalization via deepRewrite handles
-       obs(compose) (Leibniz rule) but not obs(oplus). This limits
-       how far normalization can reduce CNF-encoded terms but does
-       not prevent sat/unsat distinguishability.
+    5. **Sum rule closes the gap**: With obs_oplus (linearity), both
+       obs(compose) and obs(oplus) are rewrite sites. CNF-encoded terms
+       now normalize more deeply — obs pushes through the OR-tree to
+       the leaves.
 
     6. **The real question**: Given that sat/unsat terms are structurally
        different, the P vs NP question becomes: can the structural

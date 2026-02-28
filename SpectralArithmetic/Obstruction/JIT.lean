@@ -289,20 +289,20 @@ theorem kChain4_resolves :
       (.obs (.compose Term.f₀
         (.compose Term.f₀ (.compose Term.f₀ Term.f₀))))) = true := by decide
 
-/-- NAND: resolves in 2 passes regardless of nesting depth. -/
+/-- NAND: resolves in 3 passes (sum rule expands obs(oplus) from Leibniz). -/
 theorem nand_resolves :
-    isObsNormal (deepRewrite (deepRewrite
+    isObsNormal (iterDeepRewrite 3
       (.obs (.compose (.obs (.compose Term.f₁ Term.f₁))
-                      (.obs (.compose Term.f₁ Term.f₁)))))) = true := by decide
+                      (.obs (.compose Term.f₁ Term.f₁))))) = true := by decide
 
-/-- Deeper NAND: 3-level nesting, still 2 passes. -/
+/-- Deeper NAND: 3-level nesting, resolves in 6 passes. -/
 theorem nand_deep_resolves :
-    isObsNormal (deepRewrite (deepRewrite
+    isObsNormal (iterDeepRewrite 6
       (.obs (.compose
         (.obs (.compose (.obs (.compose Term.f₁ Term.f₁))
                         (.obs (.compose Term.f₁ Term.f₁))))
         (.obs (.compose (.obs (.compose Term.f₁ Term.f₁))
-                        (.obs (.compose Term.f₁ Term.f₁)))))))) = true := by decide
+                        (.obs (.compose Term.f₁ Term.f₁))))))) = true := by decide
 
 /-! ## Part 7: JIT Advantage — Chain Splitting
 
@@ -314,31 +314,30 @@ theorem monolithic_chain6_depth :
     normDepthBounded 11 (.obs (f₀Chain 6)) = 5 := by decide
 
 /-- JIT split: inserting obs at every 2nd position in a 4-chain.
-    The split term has NAND structure, resolving in 2 passes
-    instead of the monolithic 3 passes. -/
+    With the sum rule, depths change: the split term takes 5 passes
+    (the sum rule creates more rewrite work from obs(oplus) expansion). -/
 theorem jit_split_chain4 :
     let monolithic := .obs (.compose Term.f₀
       (.compose Term.f₀ (.compose Term.f₀ Term.f₀)))
     let split := .obs (.compose Term.f₀
       (.obs (.compose Term.f₀ (.compose Term.f₀ Term.f₀))))
-    -- Monolithic: 3 passes
+    -- Monolithic: 3 passes (no oplus, no sum rule impact)
     normDepthBounded 7 monolithic = 3 ∧
-    -- Split: the outer obs(compose(f₀, obs(...))) is NAND-like
-    -- The inner obs(compose(f₀, compose(f₀, f₀))) resolves in 2 passes
-    -- Then the outer obs resolves
-    isObsNormal (iterDeepRewrite 3 split) = true :=
+    -- Split: obs(oplus) from inner Leibniz creates sum rule work
+    isObsNormal (iterDeepRewrite 5 split) = true :=
   ⟨by decide, by decide⟩
 
-/-- The JIT advantage quantified for chain of 4:
-    monolithic depth 3 vs split depth 2. Inserting a single intermediate
-    obs reduces normalization depth by 1. -/
+/-- JIT depth comparison for chain of 4:
+    monolithic depth 3 vs split depth 5. With the sum rule, the
+    intermediate obs creates obs(oplus) sites that increase depth.
+    The JIT advantage is now about parallelizability, not raw depth. -/
 theorem jit_vs_monolithic_chain4 :
-    -- Monolithic: depth 3
+    -- Monolithic: depth 3 (no oplus involved)
     normDepthBounded 7 (.obs (f₀Chain 4)) = 3 ∧
-    -- Split at position 2: depth 2 (one less pass!)
+    -- Split: depth 5 (sum rule work from obs(oplus))
     let split := .obs (.compose Term.f₀ (.obs (.compose Term.f₀
       (.compose Term.f₀ Term.f₀))))
-    normDepthBounded 7 split = 2 :=
+    normDepthBounded 10 split = 5 :=
   ⟨by decide, by decide⟩
 
 /-! ## Part 8: Summary — The Analyze-Group-Decode Pipeline
@@ -350,7 +349,7 @@ theorem jit_vs_monolithic_chain4 :
     | atom      | 0     | Eigenvalue read: obs(f₀)→z, obs(f₁)→f₁ |
     | binary    | 1     | Single Leibniz step on obs-free pair |
     | kChain k  | k-1   | Sequential unwinding of k-atom chain |
-    | nand      | 2     | Constant depth, any nesting (obs at every level) |
+    | nand      | 3+    | Sum rule expands obs(oplus) from Leibniz |
     | indep     | ≤ 2   | Decomposable into independent sub-problems |
     | coupled   | ?     | Not decomposable, requires full analysis |
 

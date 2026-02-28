@@ -109,19 +109,20 @@ theorem coupling_invariance_size_d2_pass1 :
 theorem coupling_invariance_size_d2_pass2 :
     termSize (iterDeepRewrite 2 coupledD2) = termSize (iterDeepRewrite 2 indepD2) := by decide
 
-/-- The concrete depth values: coupled and indep are both 2 at d1. -/
+/-- The concrete depth values: coupled and indep are both 4 at d1.
+    (With the sum rule, depths increase but coupling invariance holds.) -/
 theorem coupling_depth_d1_value :
-    normDepthBounded 15 coupledD1 = 2 ∧ normDepthBounded 15 indepD1 = 2 :=
+    normDepthBounded 15 coupledD1 = 4 ∧ normDepthBounded 15 indepD1 = 4 :=
   ⟨by decide, by decide⟩
 
-/-- The concrete depth values: coupled and indep are both 3 at d2. -/
+/-- The concrete depth values: coupled and indep are both 5 at d2. -/
 theorem coupling_depth_d2_value :
-    normDepthBounded 15 coupledD2 = 3 ∧ normDepthBounded 15 indepD2 = 3 :=
+    normDepthBounded 15 coupledD2 = 5 ∧ normDepthBounded 15 indepD2 = 5 :=
   ⟨by decide, by decide⟩
 
-/-- The concrete depth values: coupled and indep are both 4 at d3. -/
+/-- The concrete depth values: coupled and indep are both 6 at d3. -/
 theorem coupling_depth_d3_value :
-    normDepthBounded 15 coupledD3 = 4 ∧ normDepthBounded 15 indepD3 = 4 :=
+    normDepthBounded 15 coupledD3 = 6 ∧ normDepthBounded 15 indepD3 = 6 :=
   ⟨by decide, by decide⟩
 
 /-! ## Part 2: Constraint Graph Analysis

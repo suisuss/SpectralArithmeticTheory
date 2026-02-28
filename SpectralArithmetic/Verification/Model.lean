@@ -127,6 +127,7 @@ noncomputable instance modelDynSemiring : DynSemiring S where
     change modelObs (1 : S) = 0
     rw [AddMonoidAlgebra.one_def, modelObs_single, zero_mul, Finsupp.single_zero]
   leibniz := leibniz_proof
+  obs_oplus := modelObs_add
   char_zero := by
     intro n hn
     change nfoldSum (· + ·) 0 n (1 : S) ≠ 0

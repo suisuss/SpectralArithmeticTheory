@@ -100,9 +100,11 @@ theorem nested2_sites : obsComposeSites (nestedObsCompose 2) = 3 := by decide
 theorem nested2_sites_after_pass1 :
     obsComposeSites (deepRewrite (nestedObsCompose 2)) = 8 := by decide
 
-/-- After two deepRewrites, nestedObsCompose 2 has 0 sites (fully resolved). -/
+/-- After two deepRewrites, nestedObsCompose 2 has 4 sites remaining.
+    With the sum rule, obs(oplus) expansion creates new obs sub-terms
+    that land on compose structures, producing more obs(compose) sites. -/
 theorem nested2_sites_after_pass2 :
-    obsComposeSites (deepRewrite (deepRewrite (nestedObsCompose 2))) = 0 := by decide
+    obsComposeSites (deepRewrite (deepRewrite (nestedObsCompose 2))) = 4 := by decide
 
 /-- Compose chain of 3 atoms has 1 site (just the outer obs(compose)). -/
 theorem chain3_sites :
