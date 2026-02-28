@@ -23,3 +23,5 @@ import SpectralArithmetic.Obstruction.Complexity
 import SpectralArithmetic.Obstruction.SAT
 -- deepRewrite cost bounds
 import SpectralArithmetic.Obstruction.CostBounds
+-- Variable sharing and normalization cost
+import SpectralArithmetic.Obstruction.VarSharing
