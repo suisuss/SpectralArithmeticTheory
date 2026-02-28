@@ -262,6 +262,7 @@ The Leibniz uniqueness result (Part 1 of leibniz-uniqueness.md) already constrai
 | `CostBounds.lean` | obsComposeSites, site persistence, exact size formulas, site evolution data | Complete |
 | `VarSharing.lean` | sharesVariable, isIndependent, concrete sharing examples, assignment-space analysis | Complete |
 | `JIT.lean` | BaseCase groupings, classify, extractChainAtoms, insertObs, decompose, jitNormalize, JIT advantage theorem | Complete |
+| `CoupledAnalysis.lean` | Coupling invariance proofs, constraint graphs, formula-level coupling subdivision, assignment space analysis | Complete |
 
 ### The argument chain so far
 
@@ -271,11 +272,18 @@ The Leibniz uniqueness result (Part 1 of leibniz-uniqueness.md) already constrai
 4. JIT obs placement reduces depth: inserting intermediate obs in a k-chain reduces depth from k-1 to approximately ceil(k/2) (proved for k=4: depth 3 → 2)
 5. The certificate is the information that enables optimal obs placement
 6. Structural analysis of the encoding (classify) can determine base case groupings in polynomial time
-7. The coupled case (shared sub-terms, no known decomposition) is where NP-hardness lives
+7. **The coupled case is a phantom category at the term level** (proved: identical normalization depth and term size for coupled vs independent terms at every nesting depth)
+8. **Coupling matters at the formula level**: it determines the size of the assignment space (distinct terms across variable assignments), not the per-term normalization cost
+9. **Formula-level subdivision**: independent (factorable), sparse/tree-like (2-SAT), bounded degree (FPT), dense (3-SAT hard)
 
 ### What's next
 
-The coupled base case is the frontier. Every other base case has a known, proved depth bound. The coupled case — obs(compose(C_1, C_2)) where C_1 and C_2 share sub-terms — is the one that resists decomposition. Characterizing its depth bound (or proving it has no polynomial bound) is the path to the complexity separation.
+The hardness is not in per-term normalization (always polynomial in compose chain depth). It's in **assignment space exploration**: for dense formulas, must exponentially many assignments be tested? The framework models this as: the certificate identifies which of 2^n possible terms has the right eigenvalue pattern. The question is whether constraint graph analysis can narrow the search polynomially.
+
+Three paths:
+1. **Approximation**: heuristic assignment space navigation (what SAT solvers do)
+2. **Fundamental theorem**: show constraint graph structure determines search cost (tree-structured → polynomial)
+3. **Impossibility**: show dense constraint graphs force exponential assignment exploration
 
 ---
 

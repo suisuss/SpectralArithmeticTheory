@@ -45,7 +45,7 @@ inductive BaseCase where
   | kChain   : Nat → BaseCase  -- obs(k obs-free atoms in compose chain): depth k-1
   | nand     : BaseCase        -- obs(compose(obs(_), obs(_))): depth 2
   | indep    : BaseCase        -- obs(compose(C₁,C₂)) no shared sub-terms
-  | coupled  : BaseCase        -- obs(compose(C₁,C₂)) shared sub-terms
+  | coupled  : BaseCase        -- obs(compose(C₁,C₂)) shared sub-terms (phantom: see CoupledAnalysis.lean)
   | oplusObs : BaseCase        -- obs(oplus(_,_)): already partially expanded
   | nested   : BaseCase        -- obs(obs(_)): nested obs
   | nonObs   : BaseCase        -- not obs-rooted: no normalization needed
@@ -60,7 +60,7 @@ def BaseCase.depth : BaseCase → Nat
   | .kChain k   => k - 1
   | .nand       => 2
   | .indep      => 2
-  | .coupled    => 0  -- sentinel: requires full normDepthBounded
+  | .coupled    => 0  -- phantom: same as indep per-term (see CoupledAnalysis.lean)
   | .oplusObs   => 1
   | .nested     => 1
   | .nonObs     => 0

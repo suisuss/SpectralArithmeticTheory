@@ -27,3 +27,5 @@ import SpectralArithmetic.Obstruction.CostBounds
 import SpectralArithmetic.Obstruction.VarSharing
 -- JIT obs placement pipeline
 import SpectralArithmetic.Obstruction.JIT
+-- Coupled case analysis and constraint graphs
+import SpectralArithmetic.Obstruction.CoupledAnalysis
