@@ -25,3 +25,5 @@ import SpectralArithmetic.Obstruction.SAT
 import SpectralArithmetic.Obstruction.CostBounds
 -- Variable sharing and normalization cost
 import SpectralArithmetic.Obstruction.VarSharing
+-- JIT obs placement pipeline
+import SpectralArithmetic.Obstruction.JIT
