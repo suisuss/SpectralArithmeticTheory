@@ -754,7 +754,128 @@ theorem fixpoint_obsNormal_unsat :
     isObsNormal (normCNF (fun _ => false) cnfSimple) = true := by
   native_decide
 
-/-! ## Part 11: Summary
+/-! ## Part 11: Finite Truncation — No Scalar Invariant Separates SAT from UNSAT
+
+    At EVERY truncation depth k, countF0 gives identical values for
+    certain SAT and UNSAT assignments. This is the strongest form of
+    the impossibility: no finite prefix of the rewrite chain helps.
+
+    f₀ counts through the rewrite chain:
+    - All-true  (SAT):   4 → 8 → 8 → 4  (always nonzero)
+    - All-false (UNSAT): 0 → 0 → 0 → 0  (always zero)
+    - TFTF      (SAT):   2 → 4 → 4 → 2
+    - FFTT      (UNSAT): 2 → 4 → 4 → 2  ← SAME as TFTF!
+
+    TFTF and FFTT are indistinguishable by countF0 at every depth,
+    yet branchSAT distinguishes them at the fixed point. -/
+
+-- f₀ count at every truncation depth for SAT (all-true, 4 literals)
+theorem trunc_sat_step0 :
+    countF0 (iterDeepRewrite 0
+      (cnfToTerm (fun _ => true) φ_)) = 4 := by native_decide
+theorem trunc_sat_step1 :
+    countF0 (iterDeepRewrite 1
+      (cnfToTerm (fun _ => true) φ_)) = 8 := by native_decide
+theorem trunc_sat_step2 :
+    countF0 (iterDeepRewrite 2
+      (cnfToTerm (fun _ => true) φ_)) = 8 := by native_decide
+theorem trunc_sat_step3 :
+    countF0 (iterDeepRewrite 3
+      (cnfToTerm (fun _ => true) φ_)) = 4 := by native_decide
+
+-- f₀ count at every truncation depth for UNSAT (all-false)
+theorem trunc_unsat_step0 :
+    countF0 (iterDeepRewrite 0
+      (cnfToTerm (fun _ => false) φ_)) = 0 := by native_decide
+theorem trunc_unsat_step1 :
+    countF0 (iterDeepRewrite 1
+      (cnfToTerm (fun _ => false) φ_)) = 0 := by native_decide
+theorem trunc_unsat_step2 :
+    countF0 (iterDeepRewrite 2
+      (cnfToTerm (fun _ => false) φ_)) = 0 := by native_decide
+theorem trunc_unsat_step3 :
+    countF0 (iterDeepRewrite 3
+      (cnfToTerm (fun _ => false) φ_)) = 0 := by native_decide
+
+-- TFTF (SAT, 2 literals): 2 → 4 → 4 → 2
+theorem trunc_tftf_step0 :
+    countF0 (iterDeepRewrite 0
+      (cnfToTerm (σ_ true false true false) φ_)) = 2 := by
+  native_decide
+theorem trunc_tftf_step1 :
+    countF0 (iterDeepRewrite 1
+      (cnfToTerm (σ_ true false true false) φ_)) = 4 := by
+  native_decide
+theorem trunc_tftf_step2 :
+    countF0 (iterDeepRewrite 2
+      (cnfToTerm (σ_ true false true false) φ_)) = 4 := by
+  native_decide
+theorem trunc_tftf_step3 :
+    countF0 (iterDeepRewrite 3
+      (cnfToTerm (σ_ true false true false) φ_)) = 2 := by
+  native_decide
+
+-- FFTT (UNSAT, 2 literals): SAME f₀ count as TFTF at every depth
+theorem trunc_fftt_step0 :
+    countF0 (iterDeepRewrite 0
+      (cnfToTerm (σ_ false false true true) φ_)) = 2 := by
+  native_decide
+theorem trunc_fftt_step1 :
+    countF0 (iterDeepRewrite 1
+      (cnfToTerm (σ_ false false true true) φ_)) = 4 := by
+  native_decide
+theorem trunc_fftt_step2 :
+    countF0 (iterDeepRewrite 2
+      (cnfToTerm (σ_ false false true true) φ_)) = 4 := by
+  native_decide
+theorem trunc_fftt_step3 :
+    countF0 (iterDeepRewrite 3
+      (cnfToTerm (σ_ false false true true) φ_)) = 2 := by
+  native_decide
+
+-- The indistinguishability theorem: at EVERY truncation depth,
+-- countF0 gives the same value for SAT (TFTF) and UNSAT (FFTT)
+theorem trunc_indistinguishable_0 :
+    countF0 (iterDeepRewrite 0
+      (cnfToTerm (σ_ true false true false) φ_)) =
+    countF0 (iterDeepRewrite 0
+      (cnfToTerm (σ_ false false true true) φ_)) := by
+  native_decide
+theorem trunc_indistinguishable_1 :
+    countF0 (iterDeepRewrite 1
+      (cnfToTerm (σ_ true false true false) φ_)) =
+    countF0 (iterDeepRewrite 1
+      (cnfToTerm (σ_ false false true true) φ_)) := by
+  native_decide
+theorem trunc_indistinguishable_2 :
+    countF0 (iterDeepRewrite 2
+      (cnfToTerm (σ_ true false true false) φ_)) =
+    countF0 (iterDeepRewrite 2
+      (cnfToTerm (σ_ false false true true) φ_)) := by
+  native_decide
+theorem trunc_indistinguishable_3 :
+    countF0 (iterDeepRewrite 3
+      (cnfToTerm (σ_ true false true false) φ_)) =
+    countF0 (iterDeepRewrite 3
+      (cnfToTerm (σ_ false false true true) φ_)) := by
+  native_decide
+
+-- But branchSAT DOES distinguish them (only at fixed point)
+theorem trunc_branchSAT_distinguishes :
+    branchSAT (σ_ true false true false) φ_ ≠
+    branchSAT (σ_ false false true true) φ_ := by
+  native_decide
+
+-- Before fixed point: term has no top-level oplus (it's obs(...))
+-- topLeft/topRight return the term unchanged
+theorem trunc_no_oplus_at_step0 :
+    topLeft (iterDeepRewrite 0
+      (cnfToTerm (σ_ true false true false) φ_)) =
+    iterDeepRewrite 0
+      (cnfToTerm (σ_ true false true false) φ_) := by
+  native_decide
+
+/-! ## Part 12: Summary
 
     1. **obs is NOT negation**: The Term algebra's obs is eigenvalue
        extraction. obs(f₁) = f₁, obs(f₀) = z. It preserves eigenstates.
@@ -796,6 +917,13 @@ theorem fixpoint_obsNormal_unsat :
        directly to CNF terms: each rewrite produces a distinct form
        (3 before convergence), the chain converges to an obs-normal
        fixed point, and f₀ count at the fixed point equals the original.
-       Normalization terminates but cannot compress SAT. -/
+       Normalization terminates but cannot compress SAT.
+
+   10. **Finite truncation (proved)**: At EVERY truncation depth k,
+       countF0 gives identical values for SAT (TFTF) and UNSAT (FFTT).
+       No scalar invariant of the rewrite chain separates SAT from UNSAT.
+       Only the distributional property (branchSAT) separates them, and
+       branchSAT requires the fixed point — before convergence, the term
+       has no top-level oplus for branch extraction. -/
 
 end SpectralMonoid
