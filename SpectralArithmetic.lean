@@ -38,3 +38,5 @@ import SpectralArithmetic.Lambda.Embedding
 import SpectralArithmetic.Lambda.Expr
 -- Untyped S-expression rewriting (stripped ADT)
 import SpectralArithmetic.Lambda.UntypedExpr
+-- BCKW combinatory logic (second Turing-complete basis)
+import SpectralArithmetic.Lambda.BCKW
