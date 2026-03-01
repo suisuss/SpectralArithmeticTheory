@@ -31,3 +31,6 @@ import SpectralArithmetic.Obstruction.JIT
 import SpectralArithmetic.Obstruction.CoupledAnalysis
 -- NAND encoding via circuit terms (proper CNF = AND-of-ORs)
 import SpectralArithmetic.Obstruction.NANDEncoding
+-- Lambda calculus embedding (SK combinators → DynSemiring)
+import SpectralArithmetic.Lambda.Combinator
+import SpectralArithmetic.Lambda.Embedding
