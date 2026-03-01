@@ -34,3 +34,7 @@ import SpectralArithmetic.Obstruction.NANDEncoding
 -- Lambda calculus embedding (SK combinators → DynSemiring)
 import SpectralArithmetic.Lambda.Combinator
 import SpectralArithmetic.Lambda.Embedding
+-- Boolean expression ADT with eager/lazy evaluation strategies
+import SpectralArithmetic.Lambda.Expr
+-- Untyped S-expression rewriting (stripped ADT)
+import SpectralArithmetic.Lambda.UntypedExpr
