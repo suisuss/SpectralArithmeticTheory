@@ -265,10 +265,18 @@ The critical variables are:
 
 The DynSemiring's total indistinguishability is the genuinely remarkable result. It arises from the combination of commutativity AND opaque leaf transformation (obs converts f₀ → z, f₁ → f₁), not from either property alone.
 
-## Open Questions
+## Conclusion
 
-1. **Is commutativity + opaque leaf transformation sufficient?** The polynomial result shows commutativity alone is insufficient. Would a commutative algebra with opaque leaf transformation (but different from Leibniz) also show total indistinguishability?
+This investigation is concluded. The DynSemiring's total indistinguishability is a framework-specific artifact, not a universal property of SAT or a path to P vs NP.
 
-2. **Can the DynSemiring indistinguishability be broken by a non-scalar measure?** Tree-structural comparisons (not just node counts) might separate — the diffusion analysis showed that terms are structurally different despite identical counts, with first difference at depth 10.
+**What was established:**
+- The DynSemiring obs normalization cannot separate SAT from UNSAT under any scalar measure. This is a genuine and precisely characterized property of the algebra.
+- The indistinguishability does NOT generalize across computational frameworks. Every other framework tested — SK, BCKW, typed ADT, untyped ADT, polynomial arithmetization — can separate with an appropriate measure.
+- Each successive hypothesis for the root cause (semantics-blindness, structural proliferation, commutativity) was refuted by the next ablation.
+- The phenomenon narrows to the specific combination of commutativity + opaque leaf transformation (Leibniz/obs) in the DynSemiring — a description of one algebra's limitations, not a barrier theorem.
 
-3. **What about the polynomial's structural uniformity?** The polynomial result shows a weaker form of indistinguishability: structural measures (size, countMul, countAdd, countLit) ARE totally uniform. Only value-dependent measures separate. Is this structural uniformity a consequence of commutativity? Does DynSemiring extend this structural uniformity to value-dependent measures via opaque leaf transformation?
+**Why this cannot yield a P vs NP result:**
+A complexity barrier requires showing that *no efficient procedure* can solve SAT. This investigation showed that *one specific algebraic decomposition* cannot. The space of possible models of computation and logical languages is too large to ablate through, and there is no unified metatheory that connects the DynSemiring's failure to computational complexity in general. The indistinguishability keeps retreating to more framework-specific explanations rather than converging on a universal obstruction.
+
+**What would be needed instead:**
+A direct approach within a single, well-chosen model of computation (circuit complexity, proof complexity, algebraic geometry, etc.) — committing to one framework and pushing deep, rather than surveying across many.
