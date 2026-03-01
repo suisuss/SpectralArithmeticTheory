@@ -17,3 +17,17 @@ import SpectralArithmetic.Obstruction.Oplus
 import SpectralArithmetic.Obstruction.Main
 -- Convergence conjecture (open)
 import SpectralArithmetic.Obstruction.Convergence
+-- Complexity asymmetry (P vs NP structural analogy)
+import SpectralArithmetic.Obstruction.Complexity
+-- SAT encoding as term structure
+import SpectralArithmetic.Obstruction.SAT
+-- deepRewrite cost bounds
+import SpectralArithmetic.Obstruction.CostBounds
+-- Variable sharing and normalization cost
+import SpectralArithmetic.Obstruction.VarSharing
+-- JIT obs placement pipeline
+import SpectralArithmetic.Obstruction.JIT
+-- Coupled case analysis and constraint graphs
+import SpectralArithmetic.Obstruction.CoupledAnalysis
+-- NAND encoding via circuit terms (proper CNF = AND-of-ORs)
+import SpectralArithmetic.Obstruction.NANDEncoding

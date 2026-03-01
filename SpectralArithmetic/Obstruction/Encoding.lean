@@ -75,6 +75,7 @@ def eval {State : Type*} [DynSemiring State] : Term → State
 def obsRewrite : Term → Term
   | .obs (.compose a b) =>
       .oplus (.compose (.obs a) b) (.compose a (.obs b))
+  | .obs (.oplus a b) => .oplus (.obs a) (.obs b)
   | .obs .f₁ => .f₁
   | .obs .f₀ => .z
   | .obs .z  => .z
@@ -105,8 +106,10 @@ theorem obsRewrite_eval {State : Type*} [DynSemiring State] (t : Term) :
   | .obs .z =>
     simp only [obsRewrite, eval]
     exact (DynSemiring.obs_z).symm
+  | .obs (.oplus a b) =>
+    simp only [obsRewrite, eval]
+    rw [← DynSemiring.obs_oplus]
   | .obs (.obs _) => rfl
-  | .obs (.oplus _ _) => rfl
   | .f₀ => rfl
   | .f₁ => rfl
   | .z => rfl
