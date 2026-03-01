@@ -1,10 +1,10 @@
-# Information Diffusion Under Normalization
+# Information Redistribution Under Normalization
 
 ## The Finding
 
-When SAT formulas are encoded as combinator terms and normalized, assignment-specific information undergoes a diffusion process: it spreads from concentrated positions (specific leaves) into the global tree structure, becoming invisible to any local or aggregate measurement.
+When SAT formulas are encoded as combinator terms and normalized, assignment-specific information is redistributed from aggregate properties (leaf counts, branch counts) into deep tree structure (arrangement of nodes at depth 10+). Every scalar measure of the normalized term either is identical across all assignments or depends only on the number of true literals — never on which variables are true, and never on satisfiability.
 
-This diffusion is not specific to the DynSemiring's obs normalization. It also occurs under native SK combinatory reduction — a completely independent computational mechanism. The phenomenon appears to be a property of SAT itself, not of the normalization system.
+This redistribution is not specific to the DynSemiring's obs normalization. It also occurs under native SK combinatory reduction — a completely independent computational mechanism. The phenomenon appears to be a property of SAT itself, not of the normalization system.
 
 ## The Data
 
@@ -94,18 +94,21 @@ Depths 0-5: perfect uniformity. Depths 6+: small differences emerge but oscillat
 
 ## Interpretation
 
-### Not heat diffusion — standing wave interference
+### Not diffusion — combinatorial invariance from tree duplication
 
-The initial hypothesis was that obs normalization acts like heat diffusion: localized information spreads uniformly and stays uniform. The oscillation at depths 6+ contradicts this. Heat diffusion is monotonic — once uniform, it stays uniform.
+The initial framing ("information diffusion") suggested a physical analogy: localized information spreads uniformly, like heat. The oscillation at depths 6+ rules this out. Heat diffusion is monotonic — once uniform, it stays uniform. The f_0 counts become uniform at depth 5, then non-uniform again at depth 6. That's not diffusion.
 
-The better analogy is standing wave interference. The Leibniz rule `obs(compose(a,b)) = oplus(compose(obs(a),b), compose(a,obs(b)))` creates superpositions (oplus terms). With shared variables, the superpositions from different clause contributions interfere. At certain depths (3, 5), the interference is perfectly destructive — all assignment-specific signals cancel exactly. At other depths (6-9), the cancellation is imperfect, but the residual signal is small and oscillatory.
+What's actually happening is more specific. The Leibniz rule `obs(compose(a,b)) = oplus(compose(obs(a),b), compose(a,obs(b)))` duplicates tree structure: it takes one compose node and produces two copies (one where the left child is observed, one where the right child is observed), joined by oplus. Iterated application creates a specific pattern of tree duplication.
 
-This would explain:
-- Why depths 3 and 5 show perfect uniformity (destructive interference nodes)
-- Why depths 6+ show small, oscillating differences (near-but-not-exact cancellation)
-- Why SAT/UNSAT collisions persist at all depths (the residual signal carries true-count information but not positional information)
+For this formula with shared variables, the duplication pattern at depth 5 happens to produce a tree where f_0 leaves are distributed so that the total count is the same regardless of which assignment was used. This is a **combinatorial identity arising from the formula's clause-variable structure**, not a physical process. The nested AND/OR/NOT structure, when unfolded by Leibniz into a tree of oplus-joined compose branches, creates enough symmetry that swapping K and SK at variable positions rearranges the f_0 leaves without changing the count.
 
-### Information is diffused, not destroyed
+At depth 6, the next round of Leibniz unfolding breaks this particular symmetry — the tree grows asymmetrically and the combinatorial identity no longer holds exactly. The small residual differences (range ~7 out of ~100) suggest the symmetry is approximately but not exactly preserved at higher depths.
+
+The key point: oplus is addition in a semiring. There are no negative terms. countF0 of oplus(A, B) is countF0(A) + countF0(B). There is no cancellation mechanism — nothing subtracts. The uniformity at depth 5 is not two signals cancelling; it's the Leibniz tree duplication distributing f_0 leaves in a pattern where the total is structurally forced to be the same for all assignments.
+
+Why does the formula's structure force this? The shared variables create a coupling: changing x_0 affects both clause 1 (where it appears positive) and clause 2 (where it appears negated). In the combinator term, this means the same K-vs-SK choice propagates into multiple sub-trees. The Leibniz rule then duplicates across these coupled sub-trees, and the coupling ensures that a K in one position (contributing f_0) is offset by the structural consequences of that same choice in the coupled position. The exact mechanism deserves further analysis, but the data is clear: the duplication + coupling produces count invariance.
+
+### Information is redistributed, not destroyed
 
 The terms at depth 5 are structurally different despite having identical counts. The assignment information is present but has been pushed from aggregate properties (countable) to positional properties (tree-shape-dependent). Specifically:
 
@@ -144,17 +147,17 @@ The oscillation at depth 6+ is the main complication for the "push all bubbles o
 
 3. For native SK reduction, the K-count also never separates SAT from UNSAT at any fuel level.
 
-The depth limitation means the diffusion is NOT permanent at a given observation level. Instead, the correct picture may be:
+The depth limitation means the count invariance is NOT a permanent feature of the rewrite chain. It holds at specific depths (3, 5) where the Leibniz tree duplication produces a symmetric f_0 distribution, and fails at other depths (6+) where the symmetry breaks.
 
-**The normalization process creates and resolves interference patterns at different scales.** At some depths, the interference is perfectly destructive (uniform f_0). At other depths, some signal leaks through. But the leaked signal is about the NUMBER of true literals, not about WHICH variables are true — so it still cannot distinguish SAT from UNSAT assignments with the same true count.
+However, what DOES persist at every depth is the weaker property: **no scalar count separates SAT from UNSAT.** At depth 6+, f_0 values differ across assignments, but the variation tracks the number of true literals, not which variables are true. Since SAT and UNSAT assignments can share the same true count, the counts still collide. The combinatorial identity (exact f_0 uniformity) breaks, but the indistinguishability (SAT/UNSAT confusion) survives.
 
-This is consistent with the depth-10 first-difference finding: the positional information (which variables are true) is always deep in the tree. The oscillation is about aggregate information (how many are true) temporarily becoming visible. The SAT-relevant information (which combination satisfies all clauses) remains inaccessible at every depth.
+The depth-10 first-difference finding is consistent with this: the positional information (which variables are true) lives deep in the tree at every depth tested. Even when aggregate information (how many are true) becomes partially visible at depth 6+, the positional information that determines satisfiability remains buried.
 
 ## Open Questions
 
-### Does the interference pattern have a structure?
+### Why do specific depths produce exact uniformity?
 
-The depths at which perfect uniformity occurs (3, 5) — is there a pattern? Are these related to the formula's clause/variable counts? Testing other formulas could reveal whether the uniform depths are predictable.
+The depths at which perfect f_0 uniformity occurs (3, 5) — is there a pattern? Are these related to the formula's clause count, variable count, or nesting depth? Testing other formulas could reveal whether the uniform depths are predictable or coincidental.
 
 ### Does the SK indistinguishability hold for all intermediate fuel levels?
 
@@ -183,4 +186,4 @@ The data points to a clean decomposition of SAT information:
 
 3. **Relational information** (which combinations of literals satisfy all clauses simultaneously): this is satisfiability itself. It is never extractable from any aggregate or local measurement of the normalized term. Only a traversal that reaches the positional differences and evaluates their joint effect can determine it.
 
-This decomposition — aggregate (easy but useless) vs positional (hard to reach) vs relational (requires combining positional data) — may be the structural core of why SAT is hard. The normalization process, regardless of mechanism, respects this decomposition: it can shuffle aggregate information freely but cannot promote positional information to aggregate form.
+This decomposition — aggregate (easy but useless) vs positional (hard to reach) vs relational (requires combining positional data) — may be the structural core of why SAT is hard. The normalization process, regardless of mechanism, respects this hierarchy: it can rearrange aggregate information freely but cannot promote positional information to aggregate form. The data shows this for two independent normalization mechanisms (obs/Leibniz and native SK reduction) on the same formula.
