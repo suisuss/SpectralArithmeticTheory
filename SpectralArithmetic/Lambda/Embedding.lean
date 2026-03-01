@@ -145,6 +145,12 @@ def countK : CombTerm → Nat
   | .S => 0
   | .app m n => countK m + countK n
 
+/-- The number of S's in a combinator term. -/
+def countS : CombTerm → Nat
+  | .S => 1
+  | .K => 0
+  | .app m n => countS m + countS n
+
 /-- f₀ count in the embedded term = K count in the combinator term. -/
 theorem embed_countF0_eq_countK (t : CombTerm) :
     countF0 (embed t) = countK t := by
@@ -760,7 +766,96 @@ theorem sk_converged_countK :
     (SK uses K-discard and S-distribute), or sub-Turing limitation
     (SK reduction is Turing-complete). -/
 
-/-! ## Part 11: Summary
+/-! ## Part 11: SK countS — Separation Breaks Indistinguishability
+
+  The SK indistinguishability result (Part 10) used countK as the
+  scalar measure. But TRUE = K has countK = 1 and FALSE = SK also
+  has countK = 1. The measure cannot distinguish the final values.
+
+  countS is different: TRUE = K has countS = 0, FALSE = SK has
+  countS = 1. This asymmetry means countS CAN potentially
+  separate SAT from UNSAT.
+
+  Data (countS after SK reduction at each fuel level):
+  ```
+  Fuel  000(U) 001(U) 010(S) 011(U) 100(U) 101(S) 110(U) 111(U)
+  0     11     9      9      7      9      7      7      5
+  1     11     9      8      6      8      6      7      5
+  3     10     8      7      5      7      5      6      4
+  5     6      5      5      3      6      4      5      3
+  7     1      1      3      2      1      2      1      2
+  10    1      1      2      1      1      0      1      1
+  30    1      1      0      1      1      0      1      1
+  ```
+
+  Fuel 0-5: SAT/UNSAT collisions persist (001(U)=010(S) at fuel 0).
+  Fuel 7: 010(S)=3, no UNSAT=3. But 101(S)=2 = 011(U)=2. Mixed.
+  Fuel 10: SAT={010:2, 101:0}. UNSAT all =1. NO collision. SEPARATES.
+  Fuel 30: SAT={0,0}, UNSAT={1,...,1}. SEPARATES (converged).
+
+  This means the SK indistinguishability under countK was an
+  artifact of choosing a measure where TRUE and FALSE are
+  accidentally indistinguishable (both countK = 1), not a deep
+  property of SK reduction.
+
+  The DynSemiring result is stronger: countF₀ (= countK via
+  embedding) AND countF₁ (corresponding to countS) both show
+  indistinguishability. f₁ = 62 - 12*truecount at depth 5,
+  which collides: 010(S, 1 true) = 001(U, 1 true) = 50.
+  Every DynSemiring measure depends only on truecount.
+-/
+
+/-- countS after SK reduction at given fuel. -/
+def skS (fuel : Nat) (b0 b1 b2 : Bool) : Nat :=
+  countS (CombTerm.reduce fuel (cnf3shared b0 b1 b2))
+
+/-- TRUE = K has 0 S combinators. -/
+theorem countS_true : countS cTrue = 0 := by rfl
+/-- FALSE = SK has 1 S combinator. -/
+theorem countS_false : countS cFalse = 1 := by rfl
+
+-- Fuel 0: collision (same as countK)
+theorem sk_countS_f0_collision :
+    skS 0 false false true = skS 0 false true false :=
+  by native_decide
+
+-- Fuel 5: collision persists
+theorem sk_countS_f5_001 : skS 5 false false true = 5 := by native_decide
+theorem sk_countS_f5_010 : skS 5 false true false = 5 := by native_decide
+theorem sk_countS_f5_collision :
+    skS 5 false false true = skS 5 false true false :=
+  by native_decide
+
+-- Fuel 10: SEPARATION
+theorem sk_countS_f10_010 : skS 10 false true false = 2 := by native_decide
+theorem sk_countS_f10_101 : skS 10 true false true = 0 := by native_decide
+
+/-- At fuel 10, all UNSAT assignments have countS = 1. -/
+theorem sk_countS_f10_unsat_uniform :
+    skS 10 false false false = 1 ∧
+    skS 10 false false true = 1 ∧
+    skS 10 false true true = 1 ∧
+    skS 10 true false false = 1 ∧
+    skS 10 true true false = 1 ∧
+    skS 10 true true true = 1 :=
+  ⟨by native_decide, by native_decide, by native_decide,
+   by native_decide, by native_decide, by native_decide⟩
+
+/-- countS SEPARATES at fuel 10: SAT values {2, 0} are disjoint
+    from UNSAT values {1, 1, 1, 1, 1, 1}. -/
+theorem sk_countS_f10_separates :
+    skS 10 false true false ≠ 1 ∧ skS 10 true false true ≠ 1 :=
+  ⟨by native_decide, by native_decide⟩
+
+-- Convergence: SAT → K (0 S), UNSAT → SK (1 S)
+theorem sk_countS_f30_sat : skS 30 false true false = 0 ∧ skS 30 true false true = 0 :=
+  ⟨by native_decide, by native_decide⟩
+
+theorem sk_countS_f30_unsat :
+    skS 30 false false false = 1 ∧ skS 30 true true true = 1 :=
+  ⟨by native_decide, by native_decide⟩
+
+/-! ## Part 12: Summary
 
     1. **The embedding is structural**: K → f₀, S → f₁, app → compose.
        It is injective and preserves term structure.
@@ -799,10 +894,22 @@ theorem sk_converged_countK :
        pattern was specific to the 2-clause case. The indistinguishability
        persists but the mechanism is more complex.
 
-    9. **Framework independence**: Native SK reduction (Turing-complete,
-       asymmetric, non-commutative) also cannot separate SAT from UNSAT
-       via countK at any fuel level. The indistinguishability survives
-       the change from obs/Leibniz to beta-reduction — two completely
-       independent normalization mechanisms produce the same phenomenon. -/
+    9. **SK countK indistinguishability**: Native SK reduction cannot
+       separate SAT from UNSAT via countK at any fuel level 0-30.
+       This is because TRUE = K and FALSE = SK both have countK = 1.
+
+    10. **SK countS BREAKS indistinguishability**: countS (number of S
+        combinators) DOES separate SAT from UNSAT at fuel 10+. TRUE = K
+        has countS = 0, FALSE = SK has countS = 1. At fuel 10, SAT
+        assignments have countS ∈ {0, 2}, UNSAT all have countS = 1.
+        The SK countK result was measure-specific, not framework-deep.
+
+    11. **DynSemiring indistinguishability is uniquely strong**: In the
+        DynSemiring, ALL measures (f₀, f₁, z, oplus, compose, size)
+        depend only on true-count at depth 5. Both countF₀ (= countK)
+        AND countF₁ (corresponding to countS) show collisions. No
+        scalar measure separates. This total indistinguishability may
+        be a consequence of compose's commutativity erasing directional
+        information that non-commutative frameworks preserve. -/
 
 end Combinator
