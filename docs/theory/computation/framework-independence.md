@@ -123,6 +123,55 @@ Interesting detail: eager separation is **transient** — it holds at fuels 3-4 
 
 **Conclusion**: Removing types did NOT restore indistinguishability. The separation comes from the rewrite rules themselves, not from the type system.
 
+### 5. Polynomial arithmetization
+
+**Type**: Commutative algebra, semantics-blind, sub-Turing.
+
+**Encoding**: Standard arithmetization of boolean formulas into integer arithmetic:
+- x = 0 or 1 (boolean variable)
+- NOT x = 1 - x
+- AND a b = a * b
+- OR a b = a + b - a * b
+
+**Reduction**: Eager innermost-first expansion via:
+1. Constant folding: `lit a ⊕ lit b → lit (a ⊕ b)`
+2. Identity/zero rules: `0*a→0, 1*a→a, 0+a→a, a-0→a`
+3. Distribution: `a*(b+c) → a*b + a*c` (structural proliferation, duplicates subterm `a`)
+
+**Measurements**: Two categories:
+- Structural: size (total nodes), countMul, countAdd, countLit
+- Value-dependent: count1 (number of `lit 1` leaves), count0
+
+**Result**: SPLIT — structural measures uniform, value measures separate.
+
+Structural measures are TOTALLY UNIFORM across all 8 assignments at every fuel level:
+```
+Fuel  size (all 8)  countMul (all 8)
+0     35            5
+5     25            4
+10    15            2
+```
+
+The tree shape is identical regardless of which booleans are substituted — only leaf values (lit 0 vs lit 1) differ. This is trivially true: substituting 0 vs 1 at leaves doesn't change the tree structure.
+
+Value-dependent measures (count1) are NOT uniform and SEPARATE at fuel 7:
+```
+Fuel  000(U) 001(U) 010(S) 011(U) 100(U) 101(S) 110(U) 111(U)
+0     6      10     10     14     10     14     14     18
+5     6      8      9      11     7      11     9      13
+7     5      7      8      10     5      8      7      10
+10    4      6      5      7      4      7      4      7
+15    1      1      2      1      1      2      1      1
+50    0      0      1      0      0      1      0      0
+```
+
+At fuel 7: SAT = {010:8, 101:8}. No UNSAT assignment has count1 = 8. **Separates.**
+At convergence (fuel 50): SAT → lit 1 (count1 = 1), UNSAT → lit 0 (count1 = 0). **Separates trivially.**
+
+**Critical implication**: Polynomial arithmetic is **commutative** (a*b = b*a, a+b = b+a), yet count1 separates SAT from UNSAT. This **refutes** the hypothesis that commutativity alone causes total indistinguishability.
+
+The polynomial result differs from DynSemiring in a crucial way: distribution duplicates subterms but leaf values propagate **transparently** — a `lit 1` stays `lit 1` regardless of what it's multiplied by. In the DynSemiring, the Leibniz rule creates new structure that **entangles** values with tree shape via the obs/oplus mechanism.
+
 ## The Measure Distinction (Revised)
 
 The initial hypothesis — that indistinguishability correlates with "semantics-blind rules" — was too broad. The BCKW and SK countS results show that **even semantics-blind frameworks can separate** when the right measure is chosen.
@@ -138,6 +187,8 @@ The revised picture:
 | BCKW | countK | 1 | 2 | Yes, fuel 7 |
 | Typed Expr ADT | countT | 1 | 0 | Yes, fuel 2/3 |
 | Untyped S-expr | countTag0 | 1 | 0 | Yes, fuel 3 |
+| Poly arith | size/countMul/etc | same | same | NO (structural) |
+| Poly arith | count1 | 1 | 0 | Yes, fuel 7 |
 
 A pattern emerges: **separation requires a measure where TRUE and FALSE have different values at convergence.** When the measure assigns the same value to TRUE and FALSE (SK countK, DynSemiring countF₀), separation is impossible even in principle. When they differ (SK countS, BCKW countK, all ADT measures), separation is achievable.
 
@@ -156,13 +207,18 @@ Every measure either is uniform or depends only on the number of true literals. 
 
 This is NOT because the rules are semantics-blind — SK rules are also semantics-blind and countS separates. The likely cause is **commutativity**: compose(a, b) = compose(b, a) in the DynSemiring. This symmetry erases directional information. In SK, application is non-commutative: `app K (app S K)` ≠ `app (app S K) K`. In the DynSemiring embedding, both map to the same compose term. The commutativity collapses distinctions that non-commutative frameworks preserve.
 
-## Revised Hypothesis
+## Revised Hypothesis (v2)
 
-Total indistinguishability under ALL scalar measures is a property of **commutative** algebraic frameworks, not of semantics-blind reduction in general.
+The commutativity hypothesis (v1) — that commutativity alone causes total indistinguishability — is **refuted** by the polynomial arithmetization result. Polynomial arithmetic is commutative, yet count1 separates.
 
-In non-commutative frameworks (SK, BCKW), there always exists some measure that separates — you just need to choose one where TRUE and FALSE have different values. The indistinguishability under a specific measure (e.g., SK countK) is an accident of the measure, not a property of the framework.
+The DynSemiring's total indistinguishability likely arises from the specific interaction of three properties:
+1. **Commutativity**: compose(a,b) = compose(b,a), erasing directional information
+2. **Leibniz normalization**: obs creates new structure via oplus, entangling values with tree shape
+3. **Generator eigenvalues**: obs(f₀) = z (annihilation), obs(f₁) = f₁ (eigenstate) — both generators map to "self-like" outputs under obs
 
-In the DynSemiring, commutativity ensures that ALL measures depend only on symmetric properties of the input (like truecount). No measure can access the asymmetric information (which variables are true) that determines satisfiability.
+In polynomial expansion, distribution also creates structure (duplicates subterms), but leaf values propagate transparently. A `lit 1` stays `lit 1` through any algebraic manipulation. In the DynSemiring, `f₀` under obs becomes `z` — the value is *transformed*, not just propagated. This transformation, combined with commutativity, may be what forces all measures into symmetric functions of the input.
+
+The key distinction may be: **does normalization transform leaf values or preserve them?** Polynomial expansion preserves leaf values (transparent propagation). DynSemiring obs transforms them (opaque transformation). When leaf values are preserved, value-counting measures can track them through reduction and separate. When leaf values are transformed, the information about which variables were true gets redistributed into structural patterns that commutative counting cannot access.
 
 ## The Design Problem for Further Tests
 
@@ -189,27 +245,30 @@ Each of these is genuinely different from tree-based term rewriting. The encodin
 
 ## Summary
 
-| Framework | Commutative? | Measure | TRUE≡FALSE? | Separates? |
-|-----------|-------------|---------|-------------|------------|
-| DynSemiring | Yes | countF₀ | Yes (92=92) | NO |
-| DynSemiring | Yes | countF₁ | Yes (by truecount) | NO |
-| DynSemiring | Yes | ALL measures | Yes | NO |
-| SK | No | countK | Yes (1=1) | NO |
-| SK | No | countS | No (0≠1) | Yes, fuel 10 |
-| BCKW | No | countK | No (1≠2) | Yes, fuel 7 |
-| Typed Expr ADT | N/A | countT | No (1≠0) | Yes, fuel 2/3 |
-| Untyped S-expr | N/A | countTag0 | No (1≠0) | Yes, fuel 3 |
+| Framework | Commutative? | Leaf transform? | Measure | TRUE≡FALSE? | Separates? |
+|-----------|-------------|----------------|---------|-------------|------------|
+| DynSemiring | Yes | Yes (obs) | countF₀ | Yes (92=92) | NO |
+| DynSemiring | Yes | Yes (obs) | countF₁ | Yes (by truecount) | NO |
+| DynSemiring | Yes | Yes (obs) | ALL measures | Yes | NO |
+| SK | No | No | countK | Yes (1=1) | NO |
+| SK | No | No | countS | No (0≠1) | Yes, fuel 10 |
+| BCKW | No | No | countK | No (1≠2) | Yes, fuel 7 |
+| Poly arith | Yes | No | size/countMul | Yes (uniform) | NO (structural) |
+| Poly arith | Yes | No | count1 | No (1≠0) | Yes, fuel 7 |
+| Typed Expr ADT | N/A | N/A (semantic) | countT | No (1≠0) | Yes, fuel 2/3 |
+| Untyped S-expr | N/A | N/A (semantic) | countTag0 | No (1≠0) | Yes, fuel 3 |
 
-The critical variable is not "semantics in rules" but rather:
+The critical variables are:
 1. **Does the measure distinguish TRUE from FALSE?** If not, separation is impossible by construction.
-2. **Is the framework commutative?** If yes, ALL measures may fail (DynSemiring). If no, there exists a separating measure.
+2. **Does normalization transform leaf values?** If yes (DynSemiring obs), value-tracking measures fail. If no (polynomial, SK), value-tracking measures can separate.
+3. **Is the framework commutative?** Commutativity is necessary but NOT sufficient for total indistinguishability. Polynomial arithmetic is commutative but count1 separates.
 
-The DynSemiring's total indistinguishability is the genuinely remarkable result. It may be a consequence of commutativity forcing all scalar measures into symmetric functions of the input.
+The DynSemiring's total indistinguishability is the genuinely remarkable result. It arises from the combination of commutativity AND opaque leaf transformation (obs converts f₀ → z, f₁ → f₁), not from either property alone.
 
 ## Open Questions
 
-1. **Is commutativity sufficient for total indistinguishability?** Test another commutative algebra with a different normalization mechanism.
+1. **Is commutativity + opaque leaf transformation sufficient?** The polynomial result shows commutativity alone is insufficient. Would a commutative algebra with opaque leaf transformation (but different from Leibniz) also show total indistinguishability?
 
-2. **Polynomial arithmetization**: Encode SAT as multilinear polynomial, partially expand. The algebra of polynomial expansion is commutative. If it also shows total indistinguishability, that confirms the commutativity hypothesis.
+2. **Can the DynSemiring indistinguishability be broken by a non-scalar measure?** Tree-structural comparisons (not just node counts) might separate — the diffusion analysis showed that terms are structurally different despite identical counts, with first difference at depth 10.
 
-3. **Can the DynSemiring indistinguishability be broken by a non-scalar measure?** Tree-structural comparisons (not just node counts) might separate — the diffusion analysis showed that terms are structurally different despite identical counts, with first difference at depth 10.
+3. **What about the polynomial's structural uniformity?** The polynomial result shows a weaker form of indistinguishability: structural measures (size, countMul, countAdd, countLit) ARE totally uniform. Only value-dependent measures separate. Is this structural uniformity a consequence of commutativity? Does DynSemiring extend this structural uniformity to value-dependent measures via opaque leaf transformation?

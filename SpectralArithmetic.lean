@@ -40,3 +40,5 @@ import SpectralArithmetic.Lambda.Expr
 import SpectralArithmetic.Lambda.UntypedExpr
 -- BCKW combinatory logic (second Turing-complete basis)
 import SpectralArithmetic.Lambda.BCKW
+-- Polynomial arithmetization (commutative algebra test)
+import SpectralArithmetic.Lambda.Poly
