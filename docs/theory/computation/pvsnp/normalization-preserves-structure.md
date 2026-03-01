@@ -1,6 +1,14 @@
-# Normalization Preserves Structure: A Metatheory of the Natural Proof Barrier
+# Normalization Preserves Structure: The Encoding Obstruction Applied to SAT
 
-## The Finding
+## Overview
+
+The encoding obstruction (proved in Encoding.lean) establishes abstractly that no injective encoding commutes with extensionalization — substitution always changes form while preserving meaning. The impossibility hierarchy (impossibility-hierarchy.md) traces this through four levels: substitution has no fixed point, Leibniz introduces addition, addition requires carry propagation, and carry requires external state whose normalization is undecidable.
+
+This document shows that these abstract results have a **concrete instantiation in SAT**: when CNF formulas are encoded as DynSemiring terms and normalized, the combinatorial content of the satisfiability problem passes through the entire normalization chain intact. The encoding obstruction doesn't just prevent encoding from commuting with observation — it prevents normalization from compressing SAT.
+
+The connection is proved in NANDEncoding.lean (113 theorems, zero sorry).
+
+## The Concrete Finding
 
 CNF-encoded terms, when fully normalized via the Leibniz product rule and the obs(oplus) sum rule, produce terms whose leaf structure **faithfully mirrors the original satisfiability problem**. Normalization does not compress, simplify, or resolve the combinatorial structure — it preserves it.
 
@@ -37,106 +45,134 @@ TTTT        YES     4    4    Maximum f_0, all clauses satisfied
 
 4. **Checking this tree property IS the original SAT problem.** The normalization has not simplified anything — it has produced a structural representation that requires the same combinatorial check.
 
-## The JIT Regress
+## From Abstract Obstruction to Concrete SAT
 
-The JIT pipeline (JIT.lean) classifies terms into base cases and decides normalization strategy. But the discovery above reveals a regress:
+The impossibility hierarchy has four levels. Each maps precisely onto the SAT normalization findings:
 
-**Level 0 — The SAT problem.** Given formula phi, find an assignment sigma such that all clauses are satisfied.
+### Level 1 (Philosophical → Structural): Substitution has no fixed point
 
-**Level 1 — The Term encoding.** Map each assignment to a Term via CTerm/De Morgan translation. Per-term normalization is polynomial (depth 2-4 for our test cases). But there are 2^n possible terms. Which one to normalize?
+**Abstract result:** `substitution_chain_distinct` — three levels of extensionalization produce three provably distinct terms. The intension/extension gap is irreducible.
 
-**Level 2 — The JIT.** Analyze formula structure (constraint graph, coupling type) to guide assignment selection. But this analysis is itself a computation on the formula. The JIT must decide which assignments are "worth" normalizing.
+**SAT instantiation:** `cnf_chain_distinct_sat`, `cnf_chain_distinct_unsat` — CNF terms produce 3 distinct forms before convergence (step 0 ≠ step 1 ≠ step 2 ≠ step 3). The Leibniz rule unfolds `obs(compose(clause₁, clause₂))` into an oplus-rooted tree, the sum rule pushes obs into the OR subtrees, and each step produces a structurally distinct term.
 
-**Level 3 — The meta-JIT.** To optimize the JIT's analysis, you'd need an analysis of the analysis. And to optimize that...
+**The connection:** The abstract no-fixed-point theorem applies directly to SAT-encoded terms because they have the form `obs(compose(a, b))` — exactly the compound observation terms that `substitution_chain_distinct` covers. The theorem `cnfToTerm_is_rewrite_site` proves this is general: ANY 2+ clause CNF formula produces a Leibniz rewrite site.
 
-Each level of the regress is an instance of the intension/extension gap from Encoding.lean:
+### Level 2 (Information-theoretic → f_0 preservation): Leibniz introduces addition
 
-- The **intensional** form is the strategy (opaque, named, treated as a unit)
-- The **extensional** form is the strategy's output (unfolded, all parts visible)
-- Extensionalizing the strategy produces a new form that itself needs a strategy
+**Abstract result:** The Leibniz rule `obs(a·b) = obs(a)·b + a·obs(b)` introduces ⊕ into every compound observation. The `oplus_bitwise_impossible` theorem shows this ⊕ cannot be made local.
 
-The `substitution_chain_distinct` theorem proves this gap has no fixed point: extensionalization always produces a structurally distinct term. Applied reflexively, the framework's own machinery for analyzing terms cannot reach a point where further analysis is unnecessary.
+**SAT instantiation:** `f0_inflates_at_step1` — the Leibniz rule doubles the f_0 count at step 1 (from 4 to 8 for all-true). Both branches of the oplus carry copies of the original f_0 leaves. The sum rule then pushes obs deeper, and `obs(f_0) → z` destroys some copies. At convergence: `f0_at_fixpoint_sat` — the count returns to the original.
 
-## The Fixed Point Impossibility
+**The connection:** The Leibniz rule's introduction of ⊕ is what creates the tree duplication. The f_0 count oscillation (4 → 8 → 8 → 4) is the addition playing out concretely: ⊕ adds branches (inflation), obs resolves them (deflation), but the net information content is preserved. The ⊕ doesn't compress — it redistributes.
 
-### What is proved (in Lean, zero sorry)
+### Level 3 (Computational → the regress): Non-local carry = non-local SAT check
 
-1. **No syntactic fixed point for extensionalization** (`substitution_chain_distinct`): For any compound observation term, the intensional form, one-step extensional form, and deeply extensional form are all structurally distinct. The chain never converges.
+**Abstract result:** `carry_propagation_general` — addition on positional encodings requires carry propagation (output at position k depends on all inputs at positions 0..k-1). The register (external state for carry) is inescapable.
 
-2. **No injective encoding commutes with extensionalization** (`encoding_obstruction_general`): For any injective encoding epsilon and any compound observation term, epsilon(obsRewrite(t)) != epsilon(t). The code of the rewritten form always differs from the code of the original.
+**SAT instantiation:** `branchSAT = evalCNF` for all 16 assignments across 6 formulas. Checking whether both Leibniz branches contain f_0 IS the original clause-by-clause SAT check. The tree structure forces a non-local check: you can't determine satisfiability from any single subtree; you must check ALL clause subtrees.
 
-3. **Normalization preserves combinatorial structure** (the table above, proved in NANDEncoding.lean): The f_0/z leaf distribution in normalized CNF terms mirrors exactly which literals are satisfied under the given assignment. The normalized form is an isomorphic representation of the satisfiability question, not a reduction of it.
+**The connection:** The non-locality of carry propagation manifests as the non-locality of the SAT check. Just as addition's output at position k depends on all lower positions, satisfiability depends on ALL clauses being satisfied. A local check (like `containsF0` — is there ANY f_0 anywhere?) fails: `containsF0_same_for_sat_and_unsat` proves it gives the same answer for SAT and UNSAT assignments. The clause-distribution check is inherently non-local, mirroring carry propagation's inherent non-locality.
 
-4. **Per-term normalization cost is coupling-invariant** (CoupledAnalysis.lean): Structural sub-term sharing between clauses does not affect the cost of normalizing any individual term. The exponential lives in the number of terms (assignment space), not in the cost of processing each one.
+### Level 4 (Logical → the JIT regress): No bottom
 
-5. **The assignment space is the hard part** (CoupledAnalysis.lean): Independent formulas produce 2^n distinct terms from 2^n assignments. Shared variables collapse the space (sharing halves it), but dense coupling (3-SAT structure) preserves exponential space.
+**Abstract result:** The halting problem for self-executing encodings — "done" would require a fixed point of substitution, but `substitution_chain_distinct` proves no fixed point exists.
 
-### What this means
+**SAT instantiation:** The JIT regress. Any strategy for deciding which assignments to normalize faces the same combinatorial structure as the SAT problem itself:
 
-Within the DynSemiring framework, the following impossibility holds:
+- **Level 0:** Find a satisfying assignment (the SAT problem)
+- **Level 1:** Choose which term to normalize (same search space)
+- **Level 2:** Analyze the formula to guide the choice (computation on the formula)
+- **Level 3:** Optimize the analysis (computation on the computation)
+- **Level k:** Optimize level k-1 (computation on level k-1)
 
-> **No finite sequence of extensionalizations (obsRewrite applications) can determine satisfiability of a CNF-encoded term without examining the leaf structure, which encodes the assignment.**
+Each level is an intension/extension switch: the strategy (intensional) is unfolded into its execution (extensional), producing a new object that needs its own strategy. The `substitution_chain_distinct` theorem proves this chain never stabilizes.
 
-The normalization machinery (Leibniz product rule + sum rule) pushes obs through the term tree to the leaves, where obs(f_0) -> z and obs(z) -> z. The result is a tree of compose and oplus nodes over {f_0, z} leaves. But the pattern of f_0 vs z IS the assignment, re-encoded. Reading satisfiability from this pattern requires checking the distribution across clause subtrees — the original problem.
+**The connection:** The JIT regress IS the halting problem for SAT optimization. "The optimizer has finished optimizing" would require the analysis to reach a fixed point. But the analysis IS a computation on the same formula structure, and the encoding obstruction proves no fixed point exists for computations on self-encoding structures. The regress is not a contingent failure of our particular JIT — it's a structural consequence of the algebra.
 
-The framework cannot "see past" the encoding. It can only unfold structure (extensionalize) or re-name structure (intensionalize). Neither operation compresses the combinatorial content. The information-theoretic content of "which assignment satisfies the formula" passes through normalization intact.
+## The Compilation Cost Interpretation
 
-### What this does NOT mean
+The four-level mapping reveals that the JIT regress is fundamentally a **compilation cost that buys nothing**:
 
-This is not a proof that P != NP. The impossibility is specific to the DynSemiring framework's extensionalization machinery:
+| Compilation step | Cost | Benefit for SAT |
+|---|---|---|
+| Encode formula as Term (`cnfToTerm`) | Polynomial | None — encoding preserves structure |
+| Normalize term (Leibniz + sum rule) | Polynomial per step, 3 steps to convergence | None — `fixpoint_preserves_f0`, f_0 count unchanged |
+| Read SAT from normalized form (`branchSAT`) | Polynomial | None — `branchSAT = evalCNF`, same check |
+| Optimize the reading (JIT analysis) | Polynomial per level | None — regress, each level faces same search |
 
-- A polynomial-time SAT algorithm (if one exists) would not need to work within this framework
-- The impossibility shows that Leibniz extensionalization + sum rule linearity cannot compress SAT, not that no algebraic technique can
-- This is analogous to a **barrier result** (like relativization or natural proofs): it shows that a specific proof/computation technique is insufficient, not that the problem is unsolvable
+Normal compilation amortizes: pay cost once, execute cheaply many times. Here, each compilation step is legitimate polynomial work that produces a structurally distinct, semantically equivalent form — but the SAT information passes through every compilation step intact. The fixed point (`fixpoint_obsNormal_sat`) exists and is reached in finite steps, but reading the fixed point (`branchSAT`) is the original problem.
 
-The correct interpretation is:
+This is why the framework makes P vs NP **algebraically visible**: the gap between compilation cost (polynomial, real work, structurally transformative) and compilation benefit (zero for SAT, information preserved) is provable from the DynSemiring axioms.
 
-> **The DynSemiring framework faithfully represents the P vs NP gap without resolving it.** The gap between polynomial per-term normalization and exponential assignment space search is a structural feature of the algebra, visible in the encoding, preserved through normalization, and immune to the framework's own optimization machinery (the JIT regress).
+## The No-Compression Theorem
 
-## Connection to the Halting Problem
+Combining the four levels, we get the central result:
 
-The `substitution_chain_distinct` theorem has a temporal reading: if you interpret extensionalization as "one step of execution" and intensionalization as "compilation into a new form," then the chain of distinct forms is an infinite computation that never reaches a halting state. The no-fixed-point result IS the halting problem for self-executing encodings.
+> **Within the DynSemiring framework, normalization cannot compress SAT.** The encoding obstruction (form always changes) guarantees that each normalization step produces new structure. The f_0 preservation (content always preserved) guarantees that the SAT information survives every transformation. The convergence (fixed point exists) guarantees that normalization terminates. The regress (branchSAT = evalCNF) guarantees that the fixed point encodes the same combinatorial check.
 
-The JIT regress is the same phenomenon applied to optimization: any strategy for choosing which computation to perform is itself a computation, which could itself be optimized, ad infinitum. The system cannot lift itself out of the regress because the regress is structural (proved by the encoding obstruction), not contingent.
+This is not a proof that P ≠ NP — a polynomial-time SAT algorithm need not work within the DynSemiring framework. But it is a proof that the framework's own machinery (the Leibniz rule, the sum rule, the obs operator) cannot resolve SAT, and this incapacity is a structural consequence of the encoding obstruction, not a contingent limitation.
 
-## A Metatheory of the Natural Proof Barrier
+## Connection to the Natural Proof Barrier
 
-The Razborov-Rudich natural proofs barrier (1997) shows that any proof technique for circuit lower bounds that is *constructive* (produces a distinguishing property) and *large* (satisfied by a random function with noticeable probability) cannot prove P != NP, assuming one-way functions exist. The barrier explains why many proof attempts fail: they use properties that are too "natural" — too symmetric, too uniform — to separate P from NP.
+The Razborov-Rudich natural proofs barrier (1997) shows that constructive, large proof techniques cannot prove P ≠ NP (assuming one-way functions exist). The DynSemiring framework provides an independent, algebraic perspective on why this barrier exists:
 
-The DynSemiring framework provides an independent, algebraic perspective on why this barrier exists:
+1. **The representation tradeoff.** No encoding of Boolean formulas as DynSemiring terms can simultaneously be compact (polynomial-size), decidable (a finite predicate separates SAT from UNSAT), and stable (preserved under normalization). `containsF0` illustrates: it is compact and stable but not a separator. `branchSAT` is a separator but is exactly `evalCNF` — no simpler.
 
-1. **The representation tradeoff.** No encoding of Boolean formulas as DynSemiring terms can simultaneously be:
-   - **Compact** (polynomial-size representation)
-   - **Decidable** (a finite predicate separates SAT from UNSAT)
-   - **Stable** (preserved under extensionalization/normalization)
+2. **The extensionalization invariant.** Any "natural" property P of terms that satisfies P(t) = P(obsRewrite(t)) must ignore the obs structure entirely. But the obs structure IS where SAT information lives (the f_0/z distribution under obs-pushed-to-leaves). Natural properties cannot access SAT information.
 
-   Normalization preserves structure (our table above). Any decidable property of the normalized form either (a) encodes the full assignment distribution (not compact to check) or (b) ignores clause structure (not a SAT separator). The `containsF0` predicate illustrates (b): it returns true for both SAT and some UNSAT assignments because it ignores distribution.
+3. **The JIT regress as barrier mechanism.** A natural proof needs a polynomial-time computable separator. The regress shows that any such separator within the framework faces the same exponential search. The analysis of the analysis reproduces the original problem.
 
-2. **The extensionalization invariant.** The `substitution_chain_distinct` theorem shows that extensionalization always produces a structurally distinct term. Applied to proof strategies: any "natural" property P of terms satisfies P(t) = P(obsRewrite(t)) only if P ignores the obs structure entirely. But the obs structure IS where SAT information lives. So natural properties (those invariant under the algebra's own operations) cannot access the SAT information.
+The framework does not prove the natural proofs barrier (that requires cryptographic assumptions). It provides a concrete algebraic setting where the barrier phenomenon is visible and provable from algebraic axioms alone.
 
-3. **The JIT regress as barrier mechanism.** A natural proof would need to identify a polynomial-time computable property that separates SAT from UNSAT. The JIT regress shows that within the framework, any such property faces the same exponential search it was meant to avoid. The analysis of the analysis reproduces the original problem — this is the barrier, made algebraic.
+## Proved Results (Lean, zero sorry)
 
-The framework does not prove the natural proofs barrier (that requires cryptographic assumptions). Instead, it provides a concrete algebraic setting where the barrier phenomenon is visible and provable without cryptographic assumptions: the DynSemiring's own normalization machinery cannot compress SAT, and this is provable from the algebraic axioms alone.
+### From Encoding.lean (abstract obstruction)
 
-## What the Framework Contributes
+| Theorem | Statement |
+|---|---|
+| `substitution_chain_distinct` | Three levels of extensionalization produce three distinct terms |
+| `encoding_obstruction_general` | No injective encoding commutes with obsRewrite, for ALL a, b |
+| `semantic_invariance_general` | eval is preserved across the gap, for ALL a, b |
+| `extensionalize_more_than_doubles` | Each extensionalization more than doubles term size |
 
-Rather than resolving P vs NP, the framework makes the gap **algebraically visible**:
+### From NANDEncoding.lean (SAT instantiation)
 
-1. **The gap is localized.** It lives in the assignment space (which term to normalize), not in per-term normalization cost (polynomial for any fixed assignment).
+| Theorem | Statement |
+|---|---|
+| `cnfToTerm_is_rewrite_site` | Any 2+ clause CNF term is a Leibniz rewrite site (general) |
+| `cnf_chain_distinct_sat/unsat` | 3 distinct forms before convergence |
+| `cnf_converges_sat/unsat/TFTF` | Chain reaches fixed point at step 3 |
+| `f0_at_fixpoint_sat/unsat/TFTF` | f_0 count at fixed point = original count |
+| `f0_inflates_at_step1` | Leibniz doubles f_0 (tree duplication) |
+| `f0_zero_throughout_unsat` | UNSAT: f_0 = 0 at every step |
+| `fixpoint_preserves_f0` | Fixed point preserves f_0 across 4 assignments |
+| `fixpoint_obsNormal_sat/unsat` | Fixed point is obs-normal |
+| `containsF0_same_for_sat_and_unsat` | Coarse predicate fails as separator |
+| `regress_*` (16 per formula, 6 formulas) | branchSAT = evalCNF exhaustively |
 
-2. **The gap is preserved under normalization.** The sum rule and product rule faithfully transmit the combinatorial structure from input to output. No information is lost or compressed.
+### From CoupledAnalysis.lean (assignment space)
 
-3. **The gap generates a regress.** Any meta-level analysis of the gap faces the same gap, because the framework's own machinery (obs, compose, oplus) is what creates the gap.
-
-4. **The gap has a precise algebraic characterization.** It is the distance between the intensional description of a satisfying assignment (a point in 2^n space) and the extensional verification of that assignment (polynomial-time normalization). Finding the point is hard; checking it is easy. The framework represents both sides and proves they don't collapse.
+| Theorem | Statement |
+|---|---|
+| Coupling invariance | Per-term normalization cost is the same regardless of variable sharing |
+| Assignment space analysis | Independent formulas: 2^n distinct terms; shared variables collapse space |
 
 ## Files
 
 | File | Role |
-|------|------|
+|---|---|
 | `Obstruction/Encoding.lean` | Encoding obstruction, no fixed point theorem |
-| `Obstruction/NANDEncoding.lean` | CTerm, De Morgan, CNF encoding, structural distinguishability |
+| `Obstruction/NANDEncoding.lean` | CTerm, CNF encoding, f_0 distribution, regress, no-compression |
 | `Obstruction/CoupledAnalysis.lean` | Coupling invariance, assignment space analysis |
 | `Obstruction/Complexity.lean` | Normalization depth, verification/construction asymmetry |
 | `Obstruction/JIT.lean` | JIT pipeline, base case classification |
 | `Core/Semiring.lean` | DynSemiring axioms including obs_oplus sum rule |
+
+## Related Documents
+
+| Document | Relationship |
+|---|---|
+| [encoding-obstruction.md](../obstruction/encoding-obstruction.md) | The abstract trilemma — this doc shows its SAT instantiation |
+| [impossibility-hierarchy.md](../impossibility-hierarchy.md) | The four-level hierarchy — this doc maps each level to SAT |
+| [addition-non-locality.md](../obstruction/addition-non-locality.md) | Carry propagation — mirrors non-locality of clause-distribution check |
+| [convergence-conjecture.md](../convergence-conjecture.md) | Convergence question — answered concretely: converges at step 3, content preserved |
