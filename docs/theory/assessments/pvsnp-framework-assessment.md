@@ -14,10 +14,9 @@ The DynSemiring framework proves, in Lean with zero sorry, that its own normaliz
 
 5. **The self-encoding cycle has no fixed point** (`substitution_chain_distinct`): the encode-normalize-re-encode loop never stabilizes. Each iteration produces a structurally distinct term with preserved semantics.
 
-6. **The indistinguishability is encoding-independent** (67 theorems across `Combinator.lean` and `Embedding.lean`): a completely independent encoding of SAT — Church AND/OR over SK combinatory logic, embedded via K -> f_0, S -> f_1, application -> compose — exhibits the same obstruction. Across all 16 assignments to `(x0 v x1) ^ (x2 v x3)`:
-   - f_0 count after normalization = 30 - (number of true literals), fully determined by the assignment
-   - FFTT (UNSAT, f_0 = 27) is indistinguishable from TFFT (SAT, f_0 = 27) by countF0
-   - The anti-correlation with CTerm encoding (CTerm: more true = more f_0; combinators: more true = fewer f_0) shows the obstruction is structural, not an artifact of encoding direction
+6. **The indistinguishability is encoding-independent** (89 theorems across `Combinator.lean` and `Embedding.lean`): a completely independent encoding of SAT — Church AND/OR over SK combinatory logic, embedded via K -> f_0, S -> f_1, application -> compose — exhibits the same obstruction. For the 2-clause formula `(x0 v x1) ^ (x2 v x3)`, f_0 = 30 - true_count and FFTT(UNSAT) = TFFT(SAT) = 27.
+
+7. **The obstruction intensifies with formula complexity** (`cnf3shared_total_indistinguishability`): for the 3-clause formula with shared variables `(x0 v x1) ^ (!x0 v x2) ^ (!x1 v !x2)`, ALL 8 assignments give f_0 = 92 at depth 5. countF0 provides zero bits of information — not even the number of true literals is recoverable. This is total indistinguishability, strictly stronger than the 2-clause result. The simple f_0 = C - true_count pattern was specific to the 2-clause case; with variable sharing, the obstruction eliminates all signal.
 
 ## What Is Not Proved
 
@@ -190,6 +189,8 @@ The framework's genuine contribution is making the P vs NP gap **algebraically v
 
 5. **The argument chain**: The framework provides a concrete, proved instance of the three-link chain (no fixed point → finite truncation preservation → complexity lower bound) that would prove P != NP if established for a Turing-complete system. Link 1 already holds for lambda calculus. The framework's finite truncation proof is a template for link 2.
 
-6. **Encoding independence**: The indistinguishability obstruction survives a complete change of encoding — from CTerm/NAND (Boolean circuit) to Church/SK (combinatory logic). Two entirely different representations of SAT, with opposite f_0 polarity, hit the same structural wall. This rules out the objection that the obstruction is an artifact of the CTerm encoding choice.
+6. **Encoding independence**: The indistinguishability obstruction survives a complete change of encoding — from CTerm/NAND (Boolean circuit) to Church/SK (combinatory logic). Two entirely different representations of SAT, with opposite f_0 polarity, hit the same structural wall.
+
+7. **Scaling**: The obstruction intensifies with formula complexity. The 2-clause formula allows f_0 to track the number of true literals (partial information). The 3-clause formula with shared variables produces total uniformity — all assignments give identical f_0. Variable sharing, which is what makes SAT computationally hard, also makes formulas more opaque to obs normalization.
 
 These don't resolve P vs NP, but they provide the clearest algebraic picture of the gap that we're aware of. The framework sees the gap, proves it's structural within the algebra, and shows why the algebra's own tools can't cross it. The meta-level argument shows the same structural gap exists in any system with intension/extension structure — including lambda calculus. The open question is whether the quantitative step (finite truncation preservation) can be transferred from the algebraic setting to a Turing-complete one.
