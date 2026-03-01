@@ -507,7 +507,149 @@ theorem cnfComb_indistinguishable :
     because K (true) has obs(K) = z (annihilation), while the
     CTerm encoding maps true to f₀ directly. -/
 
-/-! ## Part 9: Summary
+/-! ## Part 9: Scaling — 3-Clause Shared Variable Formula
+
+    The 2-clause formula (x₀ ∨ x₁) ∧ (x₂ ∨ x₃) has disjoint variables
+    per clause, which makes SAT trivial (each clause is independent).
+    Real SAT hardness comes from variable sharing across clauses.
+
+    We test: (x₀ ∨ x₁) ∧ (¬x₀ ∨ x₂) ∧ (¬x₁ ∨ ¬x₂)
+    This has 3 clauses, 3 variables, and variables shared with negation.
+    Only 2 of 8 assignments are SAT: 010 and 101. -/
+
+/-- Church NOT: NOT p = p FALSE TRUE. -/
+def cNot (p : CombTerm) : CombTerm := .app (.app p cFalse) cTrue
+
+/-- 3-clause formula with shared variables and negation:
+    (x₀ ∨ x₁) ∧ (¬x₀ ∨ x₂) ∧ (¬x₁ ∨ ¬x₂) -/
+def cnf3shared (b0 b1 b2 : Bool) : CombTerm :=
+  cAnd (cAnd (cOr (mkBool b0) (mkBool b1))
+             (cOr (cNot (mkBool b0)) (mkBool b2)))
+       (cOr (cNot (mkBool b1)) (cNot (mkBool b2)))
+
+/-! ### Church NOT correctness -/
+
+theorem cNot_T : reduce 10 (cNot cTrue) = cFalse := by native_decide
+theorem cNot_F : reduce 10 (cNot cFalse) = cTrue := by native_decide
+
+/-! ### 3-clause formula correctness -/
+
+theorem cnf3shared_sat_010 :
+    reduce 30 (cnf3shared false true false) = cTrue := by native_decide
+theorem cnf3shared_sat_101 :
+    reduce 30 (cnf3shared true false true) = cTrue := by native_decide
+theorem cnf3shared_unsat_000 :
+    reduce 30 (cnf3shared false false false) = cFalse := by native_decide
+theorem cnf3shared_unsat_111 :
+    reduce 30 (cnf3shared true true true) = cFalse := by native_decide
+theorem cnf3shared_unsat_001 :
+    reduce 30 (cnf3shared false false true) = cFalse := by native_decide
+theorem cnf3shared_unsat_011 :
+    reduce 30 (cnf3shared false true true) = cFalse := by native_decide
+theorem cnf3shared_unsat_100 :
+    reduce 30 (cnf3shared true false false) = cFalse := by native_decide
+theorem cnf3shared_unsat_110 :
+    reduce 30 (cnf3shared true true false) = cFalse := by native_decide
+
+/-! ### f₀ count: all 8 assignments start with f₀ = 17 -/
+
+theorem cnf3shared_uniform_f0_before :
+    countF0 (embed (cnf3shared false false false)) = 17 ∧
+    countF0 (embed (cnf3shared true true true)) = 17 ∧
+    countF0 (embed (cnf3shared false true false)) = 17 ∧
+    countF0 (embed (cnf3shared true false true)) = 17 := by
+  constructor <;> (try constructor) <;> (try constructor) <;> native_decide
+
+/-! ### f₀ after normalization: TOTAL UNIFORMITY
+
+    The key finding for the scaled formula: at depth 5,
+    ALL 8 assignments give f₀ = 92. Not just "same up to
+    true count" — literally identical across ALL assignments.
+
+    This is STRONGER than the 2-clause result (where f₀ varied
+    by true count). With shared variables, the formula structure
+    creates enough cross-clause coupling that obs normalization
+    produces completely uniform f₀ counts.
+
+    | Assignment | SAT? | #true | f₀ (depth 5) |
+    |------------|------|-------|---------------|
+    | 000        | NO   | 0     | 92            |
+    | 001        | NO   | 1     | 92            |
+    | 010        | SAT  | 1     | 92            |
+    | 011        | NO   | 2     | 92            |
+    | 100        | NO   | 1     | 92            |
+    | 101        | SAT  | 2     | 92            |
+    | 110        | NO   | 2     | 92            |
+    | 111        | NO   | 3     | 92            |
+
+    countF0 provides ZERO information about satisfiability.
+    Not even the number of true literals is recoverable. -/
+
+private abbrev cF0_3 := countF0 ∘ iterDeepRewrite 5 ∘ Term.obs ∘ embed
+
+theorem cnf3shared_f0_000 : cF0_3 (cnf3shared false false false) = 92
+    := by native_decide
+theorem cnf3shared_f0_001 : cF0_3 (cnf3shared false false true) = 92
+    := by native_decide
+theorem cnf3shared_f0_010 : cF0_3 (cnf3shared false true false) = 92
+    := by native_decide
+theorem cnf3shared_f0_011 : cF0_3 (cnf3shared false true true) = 92
+    := by native_decide
+theorem cnf3shared_f0_100 : cF0_3 (cnf3shared true false false) = 92
+    := by native_decide
+theorem cnf3shared_f0_101 : cF0_3 (cnf3shared true false true) = 92
+    := by native_decide
+theorem cnf3shared_f0_110 : cF0_3 (cnf3shared true true false) = 92
+    := by native_decide
+theorem cnf3shared_f0_111 : cF0_3 (cnf3shared true true true) = 92
+    := by native_decide
+
+/-! ### Total indistinguishability
+
+    Every SAT assignment has the same f₀ as every UNSAT assignment.
+    This is the strongest possible form of indistinguishability:
+    countF0 provides literally zero bits of information. -/
+
+theorem cnf3shared_total_indistinguishability :
+    cF0_3 (cnf3shared false true false) =   -- SAT
+    cF0_3 (cnf3shared false false false) ∧   -- UNSAT
+    cF0_3 (cnf3shared true false true) =     -- SAT
+    cF0_3 (cnf3shared true true true) := by  -- UNSAT
+  constructor <;> native_decide
+
+/-! ### 3-clause disjoint formula for comparison
+
+    (x₀ ∨ x₁) ∧ (x₂ ∨ x₃) ∧ (x₄ ∨ x₅)
+    With disjoint variables, the simple C - true_count pattern
+    BREAKS: f₀ depends on WHICH variables are true, not just how many.
+
+    TFTFTF (3 true, SAT) → f₀ = 54
+    FTFTFT (3 true, SAT) → f₀ = 55
+
+    But indistinguishability still holds:
+    TTTTTT (6 true, SAT) → f₀ = 53
+    FFTTTT (4 true, UNSAT) → f₀ = 53
+    FFFFTT (2 true, UNSAT) → f₀ = 53 -/
+
+def cnf3disj (b0 b1 b2 b3 b4 b5 : Bool) : CombTerm :=
+  cAnd (cAnd (cOr (mkBool b0) (mkBool b1)) (cOr (mkBool b2) (mkBool b3)))
+       (cOr (mkBool b4) (mkBool b5))
+
+private abbrev cF0_disj := countF0 ∘ iterDeepRewrite 5 ∘ Term.obs ∘ embed
+
+theorem cnf3disj_pattern_breaks :
+    cF0_disj (cnf3disj true false true false true false) = 54 ∧
+    cF0_disj (cnf3disj false true false true false true) = 55 := by
+  constructor <;> native_decide
+
+theorem cnf3disj_indistinguishable :
+    cF0_disj (cnf3disj true true true true true true) =     -- SAT, f₀=53
+    cF0_disj (cnf3disj false false true true true true) ∧   -- UNSAT, f₀=53
+    cF0_disj (cnf3disj true true true true true true) =     -- SAT
+    cF0_disj (cnf3disj false false false false true true) := by -- UNSAT
+  constructor <;> native_decide
+
+/-! ## Part 10: Summary
 
     1. **The embedding is structural**: K → f₀, S → f₁, app → compose.
        It is injective and preserves term structure.
@@ -529,12 +671,21 @@ theorem cnfComb_indistinguishable :
        compose(f₁, f₀). Under obs, TRUE annihilates (derivative of
        constant = 0) and FALSE preserves structure.
 
-    6. **SAT via combinators**: Church-encoded CNF formulas correctly
-       compute satisfiability (reduce to K for SAT, SK for UNSAT).
-       After obs normalization, f₀ count = 30 - (number of true literals).
-       countF0 STILL cannot separate SAT from UNSAT — the same
-       indistinguishability holds in the combinator encoding as in
-       the CTerm encoding. The obstruction survives the change of
-       encoding. -/
+    6. **SAT via combinators (2-clause)**: Church-encoded CNF formulas
+       correctly compute satisfiability. For (x₀∨x₁)∧(x₂∨x₃),
+       f₀ = 30 - true_count. countF0 cannot separate SAT from UNSAT.
+
+    7. **Scaling (3-clause, shared variables)**: For the formula
+       (x₀∨x₁)∧(¬x₀∨x₂)∧(¬x₁∨¬x₂), the indistinguishability is
+       TOTAL: all 8 assignments give f₀ = 92 at depth 5. countF0
+       provides zero bits of information — not even the number of
+       true literals is recoverable. This is the strongest possible
+       form of the obstruction.
+
+    8. **The C - true_count pattern breaks at scale**: For the 3-clause
+       disjoint formula, TFTFTF and FTFTFT both have 3 true literals
+       but give different f₀ values (54 vs 55). The simple linear
+       pattern was specific to the 2-clause case. The indistinguishability
+       persists but the mechanism is more complex. -/
 
 end Combinator
