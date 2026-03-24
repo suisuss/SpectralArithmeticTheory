@@ -14,6 +14,10 @@ The DynSemiring framework proves, in Lean with zero sorry, that its own normaliz
 
 5. **The self-encoding cycle has no fixed point** (`substitution_chain_distinct`): the encode-normalize-re-encode loop never stabilizes. Each iteration produces a structurally distinct term with preserved semantics.
 
+6. **The indistinguishability is encoding-independent** (89 theorems across `Combinator.lean` and `Embedding.lean`): a completely independent encoding of SAT — Church AND/OR over SK combinatory logic, embedded via K -> f_0, S -> f_1, application -> compose — exhibits the same obstruction. For the 2-clause formula `(x0 v x1) ^ (x2 v x3)`, f_0 = 30 - true_count and FFTT(UNSAT) = TFFT(SAT) = 27.
+
+7. **The obstruction intensifies with formula complexity** (`cnf3shared_total_indistinguishability`): for the 3-clause formula with shared variables `(x0 v x1) ^ (!x0 v x2) ^ (!x1 v !x2)`, ALL 8 assignments give f_0 = 92 at depth 5. countF0 provides zero bits of information — not even the number of true literals is recoverable. This is total indistinguishability, strictly stronger than the 2-clause result. The simple f_0 = C - true_count pattern was specific to the 2-clause case; with variable sharing, the obstruction eliminates all signal.
+
 ## What Is Not Proved
 
 **P != NP is not proved.** The impossibility is framework-internal: the DynSemiring's normalization machinery (Leibniz + sum rule + obs at leaves) cannot compress SAT. A polynomial-time SAT algorithm, if one exists, need not work via DynSemiring normalization.
@@ -167,7 +171,7 @@ The key technical challenge: defining the right information measure for lambda t
 ### Honest assessment of each path
 
 - **Path 1** is likely blocked: the framework isn't Turing-complete, and making it so would break the termination that enables our proofs.
-- **Path 2** is promising: the obstruction feels axiomatic, and the key results (Leibniz is forced, carry is non-local, no fixed point) do follow from minimal assumptions. But "feels axiomatic" is not a proof.
+- **Path 2** is promising: the obstruction feels axiomatic, and the key results (Leibniz is forced, carry is non-local, no fixed point) do follow from minimal assumptions. The encoding-independence result (CTerm/NAND and Church/SK hit the same wall) is evidence that the obstruction is algebraic, not encoding-specific. But "feels axiomatic" is not a proof.
 - **Path 3** is the hardest: it's essentially asking to prove P != NP by a new method, with the framework providing only motivation.
 - **Path 4** is the most concrete: we have a specific proof strategy (transfer the argument chain) and a specific technical challenge (define the information measure). The no-fixed-point link is already proved. The finite truncation link is where the framework's contribution is most relevant — we have a working proof for a sub-Turing system, and the question is whether it lifts.
 
@@ -184,5 +188,9 @@ The framework's genuine contribution is making the P vs NP gap **algebraically v
 4. **The regress**: Any meta-analysis within the framework reproduces the same gap. This is proved for 6 formula classes and connects directly to the impossibility hierarchy's "no bottom" result.
 
 5. **The argument chain**: The framework provides a concrete, proved instance of the three-link chain (no fixed point → finite truncation preservation → complexity lower bound) that would prove P != NP if established for a Turing-complete system. Link 1 already holds for lambda calculus. The framework's finite truncation proof is a template for link 2.
+
+6. **Encoding independence**: The indistinguishability obstruction survives a complete change of encoding — from CTerm/NAND (Boolean circuit) to Church/SK (combinatory logic). Two entirely different representations of SAT, with opposite f_0 polarity, hit the same structural wall.
+
+7. **Scaling**: The obstruction intensifies with formula complexity. The 2-clause formula allows f_0 to track the number of true literals (partial information). The 3-clause formula with shared variables produces total uniformity — all assignments give identical f_0. Variable sharing, which is what makes SAT computationally hard, also makes formulas more opaque to obs normalization.
 
 These don't resolve P vs NP, but they provide the clearest algebraic picture of the gap that we're aware of. The framework sees the gap, proves it's structural within the algebra, and shows why the algebra's own tools can't cross it. The meta-level argument shows the same structural gap exists in any system with intension/extension structure — including lambda calculus. The open question is whether the quantitative step (finite truncation preservation) can be transferred from the algebraic setting to a Turing-complete one.

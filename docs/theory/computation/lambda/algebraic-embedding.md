@@ -6,6 +6,8 @@ The DynSemiring framework proves that its normalization cannot compress SAT (113
 
 The central finding: the DynSemiring's `obs` operator IS a differential operator, the Leibniz rule IS the product rule for differentiation, and the rewrite chain IS a Taylor expansion. These are not analogies — they are the same mathematical structure viewed from different angles.
 
+**Status:** The embedding is formalized in Lean 4 via SK combinatory logic (96 theorems across 2 files, zero sorry). The formalization revealed that (1) f_0 count is NOT preserved by normalization for compound combinator terms, (2) the SAT indistinguishability obstruction is encoding-independent, and (3) the obstruction INTENSIFIES with formula complexity — a 3-clause formula with shared variables shows total uniformity (all assignments give identical f_0).
+
 ## The Differential Lambda Calculus Connection
 
 ### Background: Ehrhard-Regnier (2003)
@@ -151,13 +153,27 @@ This creates TWO copies: one where `a` is observed, one where `b` is observed. T
 
 Then the sum rule pushes obs deeper, and `obs(f_0) = z` annihilates some copies. At the fixed point, the count returns to the original (8 back to 4). This is the resolution of contraction: the duplicated resources are processed and the redundant copies are eliminated.
 
-### The "net zero" observation
+### The "net zero" hypothesis — REVISED
 
-The f_0 oscillation pattern (4 -> 8 -> 8 -> 4) reveals something: contraction temporarily inflates resources, but observation resolves them back. The net effect on f_0 count is zero. Duplication creates copies; obs-at-leaves destroys the unproductive ones; the productive count is preserved.
+The f_0 oscillation pattern for CNF-encoded SAT terms (4 -> 8 -> 8 -> 4) suggested that contraction temporarily inflates resources but observation resolves them back, with net effect zero. The formalization of the SK embedding reveals this is **not general**.
 
-This is proved concretely for the DynSemiring. The question is whether it's general: does contraction + differential resolution always net to zero for SAT information?
+f_0 count under obs normalization of embedded combinator terms (proved in Embedding.lean):
 
-If yes — if contraction cannot compress SAT information faster than it creates redundancy — then the finite truncation theorem holds for full lambda calculus. And that implies P != NP.
+| Term  | f_0 before | f_0 after obs+normalize | Change |
+|-------|-----------|------------------------|--------|
+| KK    | 2         | 2                      | =      |
+| SK    | 1         | 1                      | =      |
+| KS    | 1         | 1                      | =      |
+| SS    | 0         | 0                      | =      |
+| I=SKK | 2         | 3                      | +1     |
+| K(KK) | 3         | 5                      | +2     |
+| S(KK) | 2         | 4                      | +2     |
+
+**Pattern:** Two-node terms (simple applications) preserve f_0 count. Compound terms (depth >= 2) show f_0 GROWTH — Leibniz tree duplication dominates over obs annihilation when the term structure is nested.
+
+This is a critical correction: the "net zero" property holds for CNF-encoded SAT terms (which have a specific balanced structure) but NOT for arbitrary combinator terms. The SAT encoding's structure — balanced clause trees with uniform depth — is what makes f_0 preservation work. General computation does not share this balance.
+
+The implication for the P vs NP argument: the finite truncation result (no scalar separates SAT from UNSAT at any depth) relies on the CNF encoding's balanced structure, not on a general property of differentiation + contraction. Whether this balanced structure is NECESSARY for the result, or whether a more refined measure could work for general terms, is open.
 
 ### Why contraction might not help
 
@@ -173,67 +189,270 @@ In the DynSemiring, contraction (oplus) is a symmetric, commutative operation. I
 
 The DynSemiring's obs operator treats both branches of oplus symmetrically (sum rule: `obs(a + b) = obs(a) + obs(b)`). A SAT solver's branching is asymmetric: if the left branch fails, try the right. This asymmetry is where computational power might live, and it's not captured by the sum rule's linearity.
 
-## The Concrete Embedding
+## The Formalized Embedding (Lean 4, zero sorry)
 
-### How it would work
+### SK Combinatory Logic
 
-1. A CNF formula `(x_0 OR x_1) AND (x_2 OR x_3)` becomes a lambda term:
-   `lambda sigma. and (or (sigma 0) (sigma 1)) (or (sigma 2) (sigma 3))`
+We use SK combinatory logic rather than raw lambda calculus because:
+- It is variable-free and first-order (no binding, no substitution, no alpha-equivalence)
+- It is Turing-complete (equivalent to untyped lambda calculus)
+- Its term structure is parallel to the DynSemiring `Term` type
 
-2. An assignment becomes an argument:
-   `lambda n. [true, false, true, false][n]`
+The embedding (`Embedding.lean`):
 
-3. Application `(formula)(assignment)` maps to `compose(formula', assignment')` in the DynSemiring
+```
+embed : CombTerm -> Term
+  K   |-> f_0    (identity element, annihilated by obs)
+  S   |-> f_1    (generator, eigenstate of obs)
+  app |-> compose
+```
 
-4. Beta-reduction maps to the Leibniz rule: reduces the application by differentially decomposing it
+### Why K -> f_0 and S -> f_1
 
-5. The Taylor expansion at depth k maps to `iterDeepRewrite k`
+The mapping is not arbitrary:
+- K discards its second argument: `K x y -> x`. obs annihilates f_0: `obs(f_0) = z`. Both are **weakening** — removing a resource.
+- S duplicates and distributes: `S x y z -> xz(yz)`. obs(f_1) = f_1 is an eigenstate — it persists through observation. S is the **contraction** combinator, and contraction is a fixed point of differentiation.
 
-6. f_0 count at depth k = number of productive linear interactions at that depth
+### The differential correspondence (proved)
 
-7. The finite truncation theorem: no polynomial-depth Taylor coefficient separates SAT from UNSAT
+```
+embed_obs_leibniz:
+  obsRewrite(obs(embed(app m n))) =
+  oplus(compose(obs(embed m), embed n), compose(embed m, obs(embed n)))
+```
 
-### What would need to be proved
+This IS the product rule `D(M N) = D(M) N + M D(N)` from differential lambda calculus, stated for embedded combinator terms. Proved by `rfl` — it follows directly from the definitions.
 
-1. **Faithful embedding**: the map from lambda terms to DynSemiring terms preserves beta-reduction (maps beta steps to Leibniz/sum rule steps). This requires showing that variable substitution decomposes into differential operations.
+```
+embed_K_obs: obsRewrite(obs(embed K)) = z     -- D(constant) = 0
+embed_S_obs: obsRewrite(obs(embed S)) = f_1   -- D(eigenstate) = eigenstate
+```
 
-2. **f_0 correspondence**: the f_0 count in the embedded term equals the number of productive linear uses in the lambda term. This requires defining "productive linear use" precisely in the differential lambda calculus.
+### The commutativity gap (proved)
 
-3. **Preservation transfer**: the f_0 preservation proof (proved concretely for DynSemiring terms) holds for the embedded lambda terms. This requires showing that the embedding doesn't distort the information measure.
+The Term algebra is **free** — compose is NOT commutative at the syntactic level:
 
-4. **Contraction analysis**: the key step — prove that contraction (resource duplication) in the embedded lambda terms nets to zero for f_0 count, just as it does in the DynSemiring (the 4 -> 8 -> 8 -> 4 pattern). This is the technical core.
+```
+embed_KS_ne_SK: embed(app K S) != embed(app S K)   -- as Terms
+embed_KS_eq_SK_semantic: eval(embed(app K S)) = eval(embed(app S K))  -- in any model
+```
+
+This means the embedding does NOT preserve operational semantics. K S and S K are syntactically distinct Terms with distinct normalization behavior, but semantically equivalent in any DynSemiring.
+
+More critically:
+
+```
+embed_not_simulation:
+  reduceStep(app (app K S) K) = some S     -- K-reduction fires
+  reduceStep(app (app S K) K) = none        -- no redex
+
+embed_reduction_diverges:
+  embed(reduce(KSK)) != obsRewrite(obs(embed(KSK)))
+```
+
+Combinator reduction and DynSemiring normalization produce **different results** on the same input. The embedding captures the differential (symmetric) decomposition of application, not the operational (asymmetric) execution.
+
+### Church Booleans (proved)
+
+```
+embed_cTrue:  embed(K)  = f_0                    -- TRUE = identity
+embed_cFalse: embed(SK) = compose(f_1, f_0)      -- FALSE = generator applied to identity
+
+embed_bool_normalized:
+  iterDeepRewrite 3 (obs(embed(TRUE)))  = z                                    -- D(constant) = 0
+  iterDeepRewrite 3 (obs(embed(FALSE))) = oplus(compose(f_1, f_0), compose(f_1, z))
+```
+
+The differential of TRUE is zero (constant function has zero derivative). The differential of FALSE preserves the f_1 structure in one branch and annihilates in the other.
+
+### SAT via Church-Encoded Combinators (proved)
+
+CNF formulas can be encoded as combinator terms using Church Booleans and Church AND/OR:
+
+```
+Church OR:  OR p q  = p TRUE q     (if p then TRUE else q)
+Church AND: AND p q = p q FALSE    (if p then q else FALSE)
+TRUE = K, FALSE = SK
+```
+
+For `(x_0 OR x_1) AND (x_2 OR x_3)` with assignment sigma:
+
+```
+formula(sigma) = AND(OR(sigma_0, sigma_1), OR(sigma_2, sigma_3))
+```
+
+Church AND/OR truth tables are proved correct (8 theorems). The full formula correctly reduces to K (TRUE) for SAT assignments and SK (FALSE) for UNSAT assignments (4 theorems).
+
+**The key finding: f_0 count after obs normalization for all 16 assignments:**
+
+```
+Assignment  SAT?   f_0 after   # true literals
+FFFF        NO      30          0
+FFFT        NO      29          1
+FFTF        NO      28          1
+FFTT        NO      27          2
+FTFF        NO      29          1
+FTFT        YES     28          2
+FTTF        YES     27          2
+FTTT        YES     26          3
+TFFF        NO      28          1
+TFFT        YES     27          2
+TFTF        YES     26          2
+TFTT        YES     25          3
+TTFF        NO      27          2
+TTFT        YES     26          3
+TTTF        YES     25          3
+TTTT        YES     24          4
+```
+
+All 16 values are proved in Lean (16 theorems, `native_decide`).
+
+**Observations:**
+
+1. **f_0 count = 30 - (number of true literals).** The count is determined by the assignment structure, not by satisfiability. This is anti-correlated with the CTerm encoding (where more true literals = more f_0), because K (true) maps to f_0 which obs annihilates.
+
+2. **countF0 STILL cannot separate SAT from UNSAT.** FFTT (UNSAT, f_0=27) equals TFFT (SAT, f_0=27). The indistinguishability obstruction survives the change of encoding (proved: `cnfComb_indistinguishable`).
+
+3. **The specific collision pairs are different.** In the CTerm encoding, TFTF and FFTT collide (both f_0=2). In the combinator encoding, FFTT and TFFT collide (both f_0=27). The encoding changes WHICH assignments are confused, but NOT the fact that confusion exists.
+
+### What this means for the 2-clause case
+
+The obstruction is encoding-independent for this formula. But the 2-clause formula has disjoint variables per clause, making SAT trivial (each clause is independent). The real test is whether the obstruction survives scaling to harder formulas with shared variables.
+
+### Scaling: 3-Clause Formula with Shared Variables (proved)
+
+The formula `(x_0 OR x_1) AND (NOT x_0 OR x_2) AND (NOT x_1 OR NOT x_2)` has:
+- 3 clauses, 3 variables
+- Variables shared across clauses with negation
+- Only 2 of 8 assignments are SAT: 010 and 101
+
+This uses Church NOT: `NOT p = p FALSE TRUE` (if p then FALSE else TRUE).
+
+**f_0 count after obs normalization (depth 5) for all 8 assignments:**
+
+```
+Assignment  SAT?   f_0 after   # true literals
+000         NO      92          0
+001         NO      92          1
+010         SAT     92          1
+011         NO      92          2
+100         NO      92          1
+101         SAT     92          2
+110         NO      92          2
+111         NO      92          3
+```
+
+All 8 values are proved in Lean (8 theorems, `native_decide`).
+
+**The indistinguishability is TOTAL.** All 8 assignments — SAT and UNSAT alike — give f_0 = 92. countF0 provides literally zero bits of information. Not even the number of true literals is recoverable. This is strictly stronger than the 2-clause result, where f_0 at least tracked the true count.
+
+The rewrite chain has NOT converged at depth 5 (depths 7-9 give different, oscillating values). At every depth tested, SAT/UNSAT collisions persist. The chain never separates.
+
+### 3-Clause Disjoint Formula (proved)
+
+For comparison, the 3-clause disjoint formula `(x_0 OR x_1) AND (x_2 OR x_3) AND (x_4 OR x_5)` was also tested. The simple `f_0 = C - true_count` pattern **breaks**: TFTFTF and FTFTFT both have 3 true literals but give f_0 = 54 vs 55. The f_0 value now depends on WHICH variables are true, not just how many.
+
+But indistinguishability persists: TTTTTT (SAT, f_0=53) = FFTTTT (UNSAT, f_0=53).
+
+### What the scaling reveals
+
+1. **The obstruction gets STRONGER with formula complexity.** The 2-clause formula allowed f_0 to track the number of true literals (partial information). The 3-clause formula with shared variables erases even that signal — total uniformity.
+
+2. **The C - true_count pattern was specific to 2 clauses.** It was a consequence of the formula's simplicity, not a general law. The underlying phenomenon (indistinguishability) is more robust than the specific pattern.
+
+3. **Variable sharing amplifies the obstruction.** Shared variables create cross-clause coupling in the combinator term structure. Under obs normalization, this coupling produces enough interference to make all assignments indistinguishable, rather than merely preventing SAT/UNSAT separation.
+
+4. **The chain does not converge for deeper formulas.** The 2-clause formula converges at depth 3. The 3-clause formula is still evolving at depth 9, with oscillating f_0 values. But the indistinguishability persists at every depth — the oscillation is uniform across assignments.
+
+### What remains open
+
+1. **Faithful simulation**: the embedding does not map combinator reduction to obsRewrite (proved to fail: `embed_reduction_diverges`). A different formulation of "correspondence" is needed — perhaps via Taylor coefficients rather than step-by-step simulation.
+
+2. **f_0 preservation for general terms**: f_0 count grows for compound combinator terms (see table in "net zero" section). The SAT encoding produces well-behaved f_0 patterns, but arbitrary combinator terms do not.
+
+3. **Distribution analysis**: can branchSAT (or an analog) distinguish SAT from UNSAT in the combinator encoding? The CTerm encoding's branchSAT works because the Leibniz decomposition creates clause-level branches. The combinator encoding's tree structure is different — it's unclear if a similar branch analysis applies.
+
+4. **Even larger formulas**: the 3-clause result is for 3 variables. Whether total uniformity persists at 4+ clauses and whether the convergence depth grows with formula size are untested.
 
 ## Assessment
 
+### What is proved (Lean 4, zero sorry)
+
+**In Combinator.lean (7 theorems):**
+- SK combinatory logic syntax, reduction, size
+- I reduces, K projects, S duplicates and grows
+- Church booleans
+
+**In Embedding.lean (89 theorems):**
+- The embedding is injective (`embed_injective`)
+- obs on embedded applications gives the Leibniz/product rule (`embed_obs_leibniz`)
+- obs(K) = z, obs(S) = f_1 (`embed_K_obs`, `embed_S_obs`)
+- f_0 count = K count in the original (`embed_countF0_eq_countK`)
+- f_0 count under normalization for 7 specific combinator terms
+- Size growth under obs normalization (`embed_obs_grows`)
+- The embedding is NOT a simulation (`embed_not_simulation`, `embed_reduction_diverges`)
+- Church TRUE annihilates, FALSE preserves structure (`embed_bool_normalized`)
+- Church AND/OR/NOT truth tables (10 theorems)
+- 2-clause CNF formula: correctness + all 16 f_0 values + indistinguishability
+- 3-clause shared variable formula: correctness (8 theorems) + all 8 f_0 values + total indistinguishability
+- 3-clause disjoint formula: pattern break + indistinguishability
+
 ### What is real
 
-The structural correspondence between the DynSemiring and differential lambda calculus is mathematically precise:
-- obs is a derivation satisfying the Leibniz/product rule (proved in our framework)
+The structural correspondence between the DynSemiring and differential lambda calculus is mathematically precise and machine-checked:
+- obs is a derivation satisfying the Leibniz/product rule (proved)
 - The sum rule is linearity of differentiation (proved)
-- The rewrite chain is a Taylor expansion (structural correspondence)
-- f_0 count is a linear resource count (structural correspondence)
+- K -> f_0 captures weakening/annihilation (proved)
+- S -> f_1 captures contraction as eigenstate (proved)
+- The embedding is injective (proved)
 
-The differential lambda calculus literature (Ehrhard-Regnier 2003, 2006) already has the tools for analyzing exactly the interaction between differentiation and contraction. The Taylor expansion of lambda terms is well-studied.
+### What the formalization disproved
+
+**The "contraction nets to zero" hypothesis is false for general terms.** The f_0 oscillation pattern (4 -> 8 -> 8 -> 4) that holds for CNF-encoded SAT terms does NOT hold for general combinator terms. Compound terms show f_0 growth: I goes from 2 to 3, K(KK) from 3 to 5, S(KK) from 2 to 4.
+
+**The embedding does not preserve reduction.** `embed(reduce(t)) != obsRewrite(obs(embed(t)))` for specific terms. This is proved, not just suspected. The commutativity of compose vs non-commutativity of application is a real structural mismatch, not a minor technical issue.
+
+### What the formalization revealed
+
+**The indistinguishability obstruction is encoding-independent and strengthens with formula complexity.**
+
+For the 2-clause formula (disjoint variables): f_0 = 30 - true_count. countF0 cannot separate SAT from UNSAT, but at least tracks the number of true literals. FFTT(UNSAT) = TFFT(SAT) = 27.
+
+For the 3-clause formula (shared variables with negation): ALL 8 assignments give f_0 = 92. countF0 provides zero bits of information. Total indistinguishability — the strongest possible form of the obstruction.
+
+The progression from partial information (2-clause: f_0 tracks true count) to zero information (3-clause shared: f_0 uniform) shows the obstruction is not merely persistent — it intensifies as formula structure becomes more complex. Variable sharing, which is what makes SAT computationally hard, also makes the formula more opaque to obs normalization.
 
 ### What is speculative
 
-Whether the f_0 preservation proof transfers via the Taylor expansion. The DynSemiring is a specific, small term algebra. The differential lambda calculus is infinite and expressive. The finite truncation result is proved by `native_decide` on concrete terms — it's not an abstract argument that obviously generalizes.
+Whether a **refined information measure** (not raw f_0 count) could separate SAT from UNSAT in the combinator encoding. Possibilities:
+- f_0 distribution across subtrees (as in branchSAT for CTerm)
+- A branch analysis adapted to the Church conditional structure
+- A measure that accounts for the depth-dependent f_0 growth in compound terms
 
-The "contraction nets to zero" observation (f_0 oscillation 4 -> 8 -> 8 -> 4) is proved for one formula with 4 variables. Whether it holds for arbitrary formulas, and whether it's a consequence of the Leibniz/sum rule axioms rather than specific term structure, is open.
+Whether the **indistinguishability** (not just f_0 count) holds at every truncation depth for the combinator encoding, as it does for the CTerm encoding (the finite truncation theorems). This would strengthen the encoding-independence claim.
 
-### What this provides
+Whether the total uniformity found for the 3-clause shared-variable formula persists at **4+ clauses**. The 2-clause result showed f_0 = C - true_count; the 3-clause result showed total uniformity. Does the uniformity strengthen further, or does a more complex pattern emerge?
 
-A concrete research program:
+### Research program status
 
-1. Formalize the map from lambda terms to DynSemiring terms
-2. Prove the map preserves beta-reduction (modulo Taylor expansion)
-3. Define f_0 count for differential lambda terms
-4. Prove f_0 preservation at each Taylor coefficient
-5. Prove contraction nets to zero for f_0 count
+1. ~~Formalize the map from lambda terms to DynSemiring terms~~ (DONE: `embed`)
+2. ~~Prove the map preserves beta-reduction~~ (DISPROVED: `embed_reduction_diverges`)
+3. ~~Define f_0 count for embedded terms~~ (DONE: `embed_countF0_eq_countK`)
+4. ~~Prove f_0 preservation at each normalization step~~ (PARTIALLY DISPROVED: fails for general terms, works for SAT-encoding terms)
+5. ~~Prove contraction nets to zero~~ (DISPROVED for general terms)
+6. ~~Encode SAT as combinator terms~~ (DONE: Church AND/OR on Church booleans)
+7. ~~Check whether indistinguishability survives encoding change~~ (DONE: YES, proved for all 16 assignments)
 
-Steps 1-3 are standard mathematical work (the differential lambda calculus literature provides the tools). Steps 4-5 are the hard ones, and they are precisely where the P vs NP difficulty concentrates. If step 5 fails — if contraction CAN compress SAT information — then a polynomial-time SAT solver might exist. If step 5 succeeds, P != NP.
+8. ~~Test larger formulas (3+ clauses, more variables)~~ (DONE: 3-clause shared-variable formula shows TOTAL uniformity — stronger than 2-clause result)
 
-The framework's contribution: making the problem VISIBLE. The f_0 oscillation pattern, the contraction-resolution cycle, the Taylor expansion structure — these give a concrete, measurable target for the lower bound argument. Instead of "prove P != NP somehow," the program is: "prove that contraction doesn't help compress f_0 count in differential lambda terms encoding SAT."
+**Remaining:**
+
+9. Develop a branch analysis for the combinator encoding (analog of branchSAT)
+10. Prove finite truncation indistinguishability for the combinator encoding
+11. Test 4+ clause formulas — does the total uniformity persist?
+12. Investigate convergence depth as a function of formula size
+
+The framework's contribution: making the problem VISIBLE, TESTABLE, and now ENCODING-INDEPENDENT. The formalization disproved one hypothesis (contraction nets to zero), confirmed a stronger one (the indistinguishability is not encoding-specific), and revealed that the obstruction INTENSIFIES with formula complexity (from partial information to zero information as variable sharing increases). This is genuine progress — the obstruction is more robust than initially expected.
 
 ## Key References
 
@@ -242,6 +461,15 @@ The framework's contribution: making the problem VISIBLE. The f_0 oscillation pa
 - Girard, J.-Y. (1987). "Linear logic." Theoretical Computer Science.
 - Girard, J.-Y. (1989). "Geometry of interaction I: Interpretation of system F." Logic Colloquium.
 - Girard, J.-Y. (2011). "Geometry of interaction V: Logic in the hyperfinite factor." Theoretical Computer Science.
+
+## Lean Files
+
+| File | Role |
+|---|---|
+| `Lambda/Combinator.lean` | SK combinatory logic: syntax, reduction, Church booleans (7 theorems) |
+| `Lambda/Embedding.lean` | Translation, differential correspondence, SAT encoding (2-clause + 3-clause), indistinguishability (89 theorems) |
+| `Obstruction/NANDEncoding.lean` | CNF encoding, f_0 distribution, regress, finite truncation |
+| `Obstruction/Encoding.lean` | Term algebra, obsRewrite, encoding obstruction |
 
 ## Related Documents
 
