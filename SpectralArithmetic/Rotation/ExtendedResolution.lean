@@ -170,23 +170,113 @@ def bestGlobalAssignment (formula : SATFormula) (group : List ℕ)
     if s > bestS then (some a, s) else (bestA, bestS)) (none, 0)
   (best.1, assigns.length)
 
+/-! ## Free inference: unit propagation + pure literals + subsumption
+
+    These are polynomial-time simplifications that eliminate variables
+    and clauses WITHOUT search. Applied between ExtRes recursion levels,
+    they cascade: each abstraction may create unit clauses that force
+    more assignments, which trigger more simplifications. -/
+
+/-- Simplify a formula given known assignments. Removes satisfied clauses,
+    shortens clauses with falsified literals. Returns simplified formula. -/
+def simplifyFormula (formula : SATFormula) (assign : List (ℕ × Bool))
+    : SATFormula :=
+  formula.filterMap fun clause =>
+    -- If any literal in the clause is satisfied, remove the clause
+    if clause.any fun (v, p) => assign.any fun (v', p') => v == v' && p == p'
+    then none
+    else
+      -- Remove falsified literals from the clause
+      let shortened := clause.filter fun (v, p) =>
+        !(assign.any fun (v', p') => v == v' && p != p')
+      some shortened
+
+/-- Find unit clauses (clauses with exactly one literal). -/
+def findUnits (formula : SATFormula) : List (ℕ × Bool) :=
+  formula.filterMap fun clause =>
+    match clause with
+    | [(v, p)] => some (v, p)
+    | _ => none
+
+/-- Find pure literals: variables appearing with only one polarity. -/
+def findPureLiterals (formula : SATFormula) (vars : List ℕ)
+    : List (ℕ × Bool) :=
+  vars.filterMap fun v =>
+    let posCount := formula.foldl (fun c clause =>
+      if clause.any fun (v', p) => v' == v && p == true then c + 1 else c) 0
+    let negCount := formula.foldl (fun c clause =>
+      if clause.any fun (v', p) => v' == v && p == false then c + 1 else c) 0
+    if posCount > 0 && negCount == 0 then some (v, true)
+    else if negCount > 0 && posCount == 0 then some (v, false)
+    else none
+
+/-- Subsumption: remove clauses subsumed by shorter clauses. -/
+def removeSubsumed (formula : SATFormula) : SATFormula :=
+  formula.filter fun clause =>
+    !formula.any fun other =>
+      other.length < clause.length &&
+      other.all fun lit => clause.contains lit
+
+/-- Run all free inferences to fixed point.
+    Returns (simplified_formula, forced_assignments, vars_remaining, cost). -/
+partial def freeInference (formula : SATFormula) (vars : List ℕ)
+    (assign : List (ℕ × Bool))
+    : SATFormula × List (ℕ × Bool) × List ℕ × ℕ :=
+  -- Unit propagation
+  let units := findUnits formula
+  -- Pure literal elimination
+  let freeVars := vars.filter fun v => !assign.any fun (v', _) => v == v'
+  let pures := findPureLiterals formula freeVars
+  let newAssign := (units ++ pures).filter fun (v, _) =>
+    !assign.any fun (v', _) => v == v'
+  if newAssign.isEmpty then
+    -- No more free inferences: subsumption and return
+    let cleaned := removeSubsumed formula
+    let remaining := freeVars.filter fun v =>
+      !newAssign.any fun (v', _) => v == v'
+    (cleaned, assign, remaining, 1)
+  else
+    -- Apply new assignments and recurse
+    let allAssign := assign ++ newAssign
+    let simplified := simplifyFormula formula newAssign
+    let remaining := freeVars.filter fun v =>
+      !newAssign.any fun (v', _) => v == v'
+    -- Check for empty clause (contradiction)
+    if simplified.any (·.isEmpty) then
+      (simplified, allAssign, remaining, 1)
+    else
+      -- Recurse: new assignments may create more units
+      let (f', a', r', c') := freeInference simplified remaining allAssign
+      (f', a', r', c' + 1)
+
 partial def extResSolve (formula : SATFormula) (vars : List ℕ)
     (groupSize : ℕ := 3) (depth : ℕ := 0) (maxDepth : ℕ := 5)
     (knownAssign : List (ℕ × Bool) := [])
     : Option (List (ℕ × Bool)) × ℕ × ℕ :=
-  if vars.length ≤ groupSize then
-    -- Small enough: solve directly with CDCL
-    let scopedFormula := clausesInScope formula vars
-    -- Use known assignments to constrain
-    let constraintClauses := knownAssign.map fun (v, p) => [(v, p)]
+  -- STEP 0: Run free inference first (unit prop + pure literals)
+  let (simpFormula, forcedAssign, remainingVars, inferCost) :=
+    freeInference formula vars knownAssign
+  let allKnown := forcedAssign
+  -- Check if free inference already solved it
+  if remainingVars.isEmpty then
+    if satisfiesFormula allKnown formula then
+      (some (allKnown.filter fun (v, _) => vars.contains v),
+       inferCost, 0)
+    else (none, inferCost, 0)
+  -- Check for contradiction (empty clause)
+  else if simpFormula.any (·.isEmpty) then
+    (none, inferCost, 0)
+  else if remainingVars.length ≤ groupSize then
+    let scopedFormula := clausesInScope simpFormula remainingVars
+    let constraintClauses := allKnown.map fun (v, p) => [(v, p)]
     let fullFormula := scopedFormula ++ constraintClauses
-    let (found, cdclCost, _) := cdclSearch fullFormula vars knownAssign
+    let (found, cdclCost, _) := cdclSearch fullFormula remainingVars allKnown
     let assign := if found then
-      let assigns := allVarAssignments vars
+      let assigns := allVarAssignments remainingVars
       assigns.find? fun a =>
-        satisfiesFormula (knownAssign ++ a) formula
+        satisfiesFormula (allKnown ++ a) formula
     else none
-    (assign, cdclCost, 0)
+    (assign.map (forcedAssign ++ ·), inferCost + cdclCost, 0)
   else if depth ≥ maxDepth then
     let (found, cdclCost, _) := cdclSearch formula vars knownAssign
     if found then
@@ -196,19 +286,19 @@ partial def extResSolve (formula : SATFormula) (vars : List ℕ)
       (valid, cdclCost, 0)
     else (none, cdclCost, 0)
   else
-    -- FIX 1: Graph-aware grouping
-    let groups := graphAwareGroups formula vars groupSize
+    -- Graph-aware grouping on REMAINING vars (after free inference)
+    let groups := graphAwareGroups simpFormula remainingVars groupSize
 
-    -- FIX 3: Pick globally-optimal local assignments
+    -- Pick globally-optimal local assignments
     let phase2 := groups.foldl
       (fun (acc : List Abstraction × List (List (ℕ × Bool)) × ℕ × ℕ)
        group =>
       let (abstractions, groupAssigns, cost, nextId) := acc
-      let (bestOpt, enumCost) := bestGlobalAssignment formula group vars
+      let (bestOpt, enumCost) := bestGlobalAssignment simpFormula group remainingVars
       let newCost := cost + enumCost
       match bestOpt with
       | some best =>
-        let abs := makeAbstraction formula best nextId
+        let abs := makeAbstraction simpFormula best nextId
         (abs :: abstractions, best :: groupAssigns,
          newCost, nextId + 1)
       | none => (abstractions, groupAssigns, newCost, nextId)
@@ -216,22 +306,33 @@ partial def extResSolve (formula : SATFormula) (vars : List ℕ)
     let (abstractions, groupAssigns, cost, _) := phase2
 
     let combined := groupAssigns.foldl (· ++ ·) []
-    -- Include known assignments in the check
-    let fullAssign := knownAssign ++ combined
+    -- Include ALL known assignments (forced + group) in the check
+    let fullAssign := allKnown ++ combined
     if satisfiesFormula fullAssign formula then
-      (some combined, cost, abstractions.length)
+      let result := (allKnown ++ combined).filter fun (v, _) =>
+        vars.contains v
+      (some result, inferCost + cost, abstractions.length)
     else
       -- Build reduced formula
       let coveredIndices := abstractions.foldl
         (fun acc abs => acc ++ abs.satisfiedClauses) []
       let indexed : List (ℕ × SATClause) :=
-        formula.zip (List.range formula.length)
+        simpFormula.zip (List.range simpFormula.length)
         |>.map fun (clause, i) => (i, clause)
-      let uncoveredClauses := (indexed.filter fun (i, _) =>
+      let uncoveredRaw := (indexed.filter fun (i, _) =>
         !coveredIndices.contains i).map (·.2)
 
-      if uncoveredClauses.isEmpty then
-        let (found, cdclCost, _) := cdclSearch formula vars knownAssign
+      -- CASCADE: run free inference on uncovered clauses with combined assignment
+      let (uncoveredClauses, cascadeAssign, cascadeVars, cascadeCost) :=
+        freeInference uncoveredRaw remainingVars (allKnown ++ combined)
+      let allKnownNow := cascadeAssign
+
+      if uncoveredClauses.isEmpty || cascadeVars.isEmpty then
+        if satisfiesFormula allKnownNow formula then
+          let result := allKnownNow.filter fun (v, _) => vars.contains v
+          (some result, inferCost + cost + cascadeCost, abstractions.length)
+        else
+        let (found, cdclCost, _) := cdclSearch formula vars allKnownNow
         if found then
           let assigns := allVarAssignments vars
           let valid := assigns.find? fun a =>
@@ -239,38 +340,37 @@ partial def extResSolve (formula : SATFormula) (vars : List ℕ)
           (valid, cost + cdclCost, abstractions.length)
         else (none, cost + cdclCost, abstractions.length)
       else
-        let uncoveredVars := (uncoveredClauses.flatMap fun clause =>
-          clause.map fun (v, _) => v).eraseDups
-        -- FIX 2: Pass known assignments (including group results) forward
+        -- RECURSE on cascade-reduced problem
         let (result, recCost, recAbs) :=
-          extResSolve uncoveredClauses uncoveredVars groupSize
-            (depth + 1) maxDepth (knownAssign ++ combined)
+          extResSolve uncoveredClauses cascadeVars groupSize
+            (depth + 1) maxDepth allKnownNow
+        let totalCost := inferCost + cost + cascadeCost + recCost
         match result with
         | some partialAssign =>
-          let merged := combined.filter (fun (v, _) =>
-            !partialAssign.any fun (v', _) => v == v') ++ partialAssign
-          if satisfiesFormula (knownAssign ++ merged) formula then
-            (some merged, cost + recCost,
-             abstractions.length + recAbs)
+          let merged := (allKnownNow ++ combined ++ partialAssign).filter
+            fun (v, _) => vars.contains v
+          -- Deduplicate: keep first occurrence per variable
+          let deduped := merged.foldl (fun acc (v, p) =>
+            if acc.any fun (v', _) => v == v' then acc
+            else acc ++ [(v, p)]) []
+          if satisfiesFormula deduped formula then
+            (some deduped, totalCost, abstractions.length + recAbs)
           else
-            let (found, cdclCost, _) :=
-              cdclSearch formula vars (knownAssign ++ merged)
+            let (found, cdclCost, _) := cdclSearch formula vars deduped
             if found then
-              (some merged, cost + recCost + cdclCost,
+              (some deduped, totalCost + cdclCost,
                abstractions.length + recAbs)
-            else
-              (none, cost + recCost + cdclCost,
+            else (none, totalCost + cdclCost,
                abstractions.length + recAbs)
         | none =>
-          let (found, cdclCost, _) := cdclSearch formula vars knownAssign
+          let (found, cdclCost, _) := cdclSearch formula vars allKnownNow
           if found then
             let assigns := allVarAssignments vars
             let valid := assigns.find? fun a =>
-              satisfiesFormula (knownAssign ++ a) formula
-            (valid, cost + recCost + cdclCost,
+              satisfiesFormula (allKnownNow ++ a) formula
+            (valid, totalCost + cdclCost,
              abstractions.length + recAbs)
-          else
-            (none, cost + recCost + cdclCost,
+          else (none, totalCost + cdclCost,
              abstractions.length + recAbs)
 
 /-- Wrapper. -/
