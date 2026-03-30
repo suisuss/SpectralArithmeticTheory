@@ -76,22 +76,21 @@ partial def boundedDAGSolve (formula : SATFormula)
     -- Local variables (not shared)
     let leftLocal := leftVars.filter fun v => !sharedVars.contains v
     let rightLocal := rightVars.filter fun v => !sharedVars.contains v
-    -- Solve subtrees (independent of shared assignment)
-    let leftFormula := clausesInScope formula leftVars
-    let (leftSols, lc) := boundedDAGSolve leftFormula leftLocal k
-    let rightFormula := clausesInScope formula rightVars
-    let (rightSols, rc) := boundedDAGSolve rightFormula rightLocal k
+    -- Solve subtrees: only pass clauses involving LOCAL vars
+    -- (clauses touching shared vars are handled at combination)
+    let leftOnlyFormula := clausesInScope formula leftLocal
+    let (leftSols, lc) := boundedDAGSolve leftOnlyFormula leftLocal k
+    let rightOnlyFormula := clausesInScope formula rightLocal
+    let (rightSols, rc) := boundedDAGSolve rightOnlyFormula rightLocal k
     -- For each shared assignment, combine with local solutions
+    -- Check all clauses in scope for the full variable set
+    let scopedFormula := clausesInScope formula vs
     let results := sharedAssigns.flatMap fun shared =>
-      if satisfiesFormula shared cross then
-        leftSols.flatMap fun lSol =>
-          rightSols.filterMap fun rSol =>
-            let merged := shared ++ lSol ++ rSol
-            -- Check all clauses involving any of our variables
-            let relevant := clausesInScope formula vs
-            if satisfiesFormula merged relevant then some merged
-            else none
-      else []
+      leftSols.flatMap fun lSol =>
+        rightSols.filterMap fun rSol =>
+          let merged := shared ++ lSol ++ rSol
+          if satisfiesFormula merged scopedFormula then some merged
+          else none
     let combineCost := sharedAssigns.length *
       (leftSols.length * rightSols.length + 1)
     (results, lc + rc + combineCost)
@@ -153,21 +152,21 @@ partial def smartDAGSolve (formula : SATFormula)
     let sharedAssigns := allVarAssignments sharedVars
     let leftLocal := leftVars.filter fun v => !sharedVars.contains v
     let rightLocal := rightVars.filter fun v => !sharedVars.contains v
-    let leftFormula := clausesInScope formula leftVars
-    let (leftSols, lc) := smartDAGSolve leftFormula leftLocal k
-    let rightFormula := clausesInScope formula rightVars
-    let (rightSols, rc) := smartDAGSolve rightFormula rightLocal k
+    -- Subtrees: only clauses involving local vars
+    let leftOnlyFormula := clausesInScope formula leftLocal
+    let (leftSols, lc) := smartDAGSolve leftOnlyFormula leftLocal k
+    let rightOnlyFormula := clausesInScope formula rightLocal
+    let (rightSols, rc) := smartDAGSolve rightOnlyFormula rightLocal k
+    -- Combine: check all in-scope clauses
+    let scopedFormula := clausesInScope formula vs
     let results := sharedAssigns.flatMap fun shared =>
-      if satisfiesFormula shared cross then
-        leftSols.flatMap fun lSol =>
-          rightSols.filterMap fun rSol =>
-            let merged := shared ++ lSol ++ rSol
-            let relevant := clausesInScope formula vs
-            if satisfiesFormula merged relevant then some merged
-            else none
-      else []
+      leftSols.flatMap fun lSol =>
+        rightSols.filterMap fun rSol =>
+          let merged := shared ++ lSol ++ rSol
+          if satisfiesFormula merged scopedFormula then some merged
+          else none
     let combineCost := sharedAssigns.length *
-      (leftSols.length * rightSols.length + 1) + 1  -- +1 for split search
+      (leftSols.length * rightSols.length + 1) + 1
     (results, lc + rc + combineCost)
 
 /-- Wrapper for smart DAG. -/
