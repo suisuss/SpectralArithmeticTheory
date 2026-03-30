@@ -1,0 +1,766 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+
+% Lean 4 syntax highlighting
+\lstdefinelanguage{Lean4}{
+  keywords={theorem,def,class,where,extends,inductive,namespace,end,import,
+            open,variable,instance,deriving,abbrev,let,have,exact,intro,
+            rfl,by,simp,rw,match,with,fun,forall,if,then,else,return},
+  keywordstyle=\color{blue}\bfseries,
+  ndkeywords={Term,State,Type,Bool,Prop,Nat,Function},
+  ndkeywordstyle=\color{teal},
+  comment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{red},
+  sensitive=true,
+  morestring=[b]",
+  literate={->}{$\to$}2 {!=}{$\neq$}2 {>=}{$\geq$}2
+}
+\lstset{
+  language=Lean4,
+  basicstyle=\small\ttfamily,
+  breaklines=true,
+  frame=single,
+  xleftmargin=1em,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  captionpos=b,
+}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Notation
+\newcommand{\compose}{\mathbin{\circ}}
+\newcommand{\opl}{\oplus}
+\newcommand{\obs}{\mathrm{obs}}
+\newcommand{\fzero}{f_0}
+\newcommand{\fone}{f_1}
+\newcommand{\fn}{f_n}
+\newcommand{\Term}{\mathsf{Term}}
+\newcommand{\eval}{\mathrm{eval}}
+\newcommand{\encode}[1]{\ulcorner #1 \urcorner}
+\newcommand{\obsRewrite}{\mathrm{obsRewrite}}
+\newcommand{\deepRewrite}{\mathrm{deepRewrite}}
+\newcommand{\termSize}{\mathrm{termSize}}
+\newcommand{\smul}[2]{#1 \cdot #2}
+\newcommand{\iterS}{\mathrm{iterS}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+
+\title{\textbf{The Encoding Obstruction:}\\ An Impossibility Theorem for Self-Representing Eigenvalue Systems}
+\author{[To be determined]}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We prove that no injective encoding of a self-representing algebraic system
+can simultaneously preserve eigenvalue arithmetic and commute with the
+observation operator. In any commutative semiring with a derivation (the
+Leibniz rule), the observation operator produces linear eigenvalues, while
+any injective encoding of structured terms requires super-linear pairing
+functions. These growth regimes are incompatible: no injective map from
+terms to natural numbers is a coalgebra morphism between the semantic
+observation (eigenvalue scaling) and the syntactic observation
+(rewrite-then-re-encode). We formalize the system as a
+\emph{DynSemiring}---a commutative semiring with a derivation, additive
+identity, and characteristic zero---and prove all results in Lean~4 with
+zero \texttt{sorry}. The impossibility has the structure of a trilemma:
+eigenvalue arithmetic, self-encoding, and coalgebra morphism are pairwise
+compatible but jointly unsatisfiable, and every escape route (redundant
+representations, residue number systems, tropical algebra) sacrifices a
+property required for self-encoding. We show that the Leibniz rule is the
+unique minimal correct rewrite, that extensionalization more than doubles
+term size, and that the intension/extension chain has no fixed point. The
+executable consequence is that any self-representing system with addition
+must maintain normalization state external to its encoding, because carry
+propagation in addition is non-local in any unique positional
+representation. We analyze the relationship of these results to the three
+known barriers in complexity theory and show that the encoding obstruction
+is non-relativizing by construction and plausibly avoids the other two
+barriers.
+\end{abstract}
+
+\tableofcontents
+
+%% ========================================================================
+\section{Introduction}
+\label{sec:intro}
+%% ========================================================================
+
+\subsection{The Problem}
+
+When a formal system is powerful enough to encode its own syntax as
+data---G\"odel encoding in Peano Arithmetic, the universal Turing machine
+encoding its own description---a natural question arises: can the system
+faithfully simulate its own dynamics through this encoding? That is, does
+applying the system's operations to the encoded representation produce the
+same result as encoding the result of applying those operations directly?
+
+For \emph{passive} encoding (inert labels assigned to terms), this question
+leads to G\"odel's incompleteness theorems: the system can name
+self-referential propositions but cannot resolve them. For \emph{executable}
+encoding (where the system operates on its own codes using its own
+operations), we show the question leads to a stronger impossibility: the
+encoding cannot commute with the system's observation operator, and the
+failure forces external computational state.
+
+\subsection{The Setting}
+
+We work in a \emph{DynSemiring}: a commutative monoid
+$(\mathrm{State}, \compose, \fzero)$ equipped with an observation operator
+$\obs$ satisfying the Leibniz (product) rule, an addition operation $\opl$
+with additive identity $z$, distributivity of $\compose$ over $\opl$, and
+characteristic zero. The complete axiom set is given in
+\Cref{def:dynsemiring}.
+
+From these axioms, eigenstates
+$\fn = \underbrace{\fone \compose \cdots \compose \fone}_{n}$ satisfy
+$\obs(\fn) = \smul{n}{\fn}$, producing the natural numbers as eigenvalues.
+This yields a structure equiconsistent with Peano Arithmetic, which provides
+the machinery for G\"odel encoding: prime factorization, primitive recursive
+predicates, and bounded quantification.
+
+\subsection{The Question}
+
+We define two coalgebra structures on the same carrier:
+\begin{itemize}
+  \item \textbf{Semantic coalgebra} $(\mathrm{State}, \obs_{\mathrm{sem}})$:
+    eigenvalue scaling, $\obs(\fn) = \smul{n}{\fn}$.
+  \item \textbf{Syntactic coalgebra} $(\mathrm{State}, \obs_{\mathrm{code}})$:
+    decode a G\"odel code to a term, apply the Leibniz rewrite, re-encode.
+\end{itemize}
+
+The eval-quote diagram asks whether these produce bisimilar behavior:
+\[
+\begin{array}{ccc}
+  \Term & \xrightarrow{\eval} & \mathrm{State} \\
+  \downarrow\scriptstyle{\encode{\cdot}} & & \downarrow\scriptstyle{\obs_{\mathrm{sem}}} \\
+  \mathrm{State} & \xrightarrow{\obs_{\mathrm{code}}} & \mathrm{State}
+\end{array}
+\]
+We prove this diagram does not commute. For any injective encoding and any
+compound term, the syntactic path produces a different code than the
+semantic path.
+
+\subsection{Summary of Results}
+
+All results are formalized in Lean~4 with zero \texttt{sorry}.
+
+\begin{enumerate}[label=\textbf{Theorem \arabic*.}, leftmargin=*]
+  \item \emph{(Encoding Obstruction)} For any injective
+    $\varepsilon : \Term \to \N$ and any terms $a, b$:
+    $\varepsilon(\obsRewrite(\obs(a \compose b)))
+    \neq \varepsilon(\obs(a \compose b))$.
+  \item \emph{(Semantic Invariance)} For any DynSemiring instance and any
+    terms $a, b$:
+    $\eval(\obsRewrite(\obs(a \compose b)))
+    = \eval(\obs(a \compose b))$.
+  \item \emph{(No Fixed Point)} The intensional, one-step extensional, and
+    deeply extensional forms are pairwise distinct.
+  \item \emph{(Size Growth)} Extensionalization more than doubles term size:
+    $\termSize(\obsRewrite(\obs(a \compose b)))
+    > 2 \cdot \termSize(\obs(a \compose b))$.
+  \item \emph{(Bitwise Impossibility)} No bitwise operation on $\N$ can
+    simultaneously satisfy commutativity, cancellation, identity, and
+    characteristic zero.
+  \item \emph{(Carry Propagation)} For any base $b \geq 2$ and position
+    $k \geq 1$, addition produces non-local effects.
+\end{enumerate}
+
+%% ========================================================================
+\section{The DynSemiring and Term Algebra}
+\label{sec:dynsemiring}
+%% ========================================================================
+
+\subsection{Definition}
+
+\begin{definition}[DynSemiring]
+\label{def:dynsemiring}
+A \emph{DynSemiring} is a type $\mathrm{State}$ equipped with operations
+$\compose$, $\opl$, $\obs$, and constants $\fzero$, $\fone$, $z$
+satisfying:
+\begin{enumerate}[label=(DS\arabic*)]
+  \item $\fone \compose s = s \compose \fone$ and $\fzero \compose s = s$
+    \hfill (monoid)
+  \item $z \compose s = z$ \hfill (annihilator)
+  \item $a \compose b = b \compose a$ \hfill (commutativity)
+  \item $\obs(\fone) = \fone$ \hfill (fixed point)
+  \item $\obs(a \compose b) = (\obs(a) \compose b) \opl (a \compose \obs(b))$
+    \hfill (Leibniz rule)
+  \item $\obs(\fzero) = z$ \hfill (obs of identity)
+  \item $\obs(a \opl b) = \obs(a) \opl \obs(b)$ \hfill (obs distributes)
+  \item $z \opl a = a$, $a \opl b = b \opl a$,
+    $a \opl (b \opl c) = (a \opl b) \opl c$ \hfill (abelian group)
+  \item $a \compose (b \opl c) = (a \compose b) \opl (a \compose c)$
+    \hfill (distributivity)
+  \item $\forall n \geq 1: \underbrace{\fzero \opl \cdots \opl \fzero}_{n} \neq z$
+    \hfill (characteristic zero)
+\end{enumerate}
+\end{definition}
+
+The Lean formalization:
+
+\begin{lstlisting}[caption={DynSemiring definition (Core/Semiring.lean)}]
+class DynSemiring (State : Type*) extends SpectralMonoid State where
+  oplus : State -> State -> State
+  oplus_assoc : forall a b c, oplus a (oplus b c) = oplus (oplus a b) c
+  oplus_comm : forall a b, oplus a b = oplus b a
+  oplus_z : forall a, oplus z a = a
+  compose_distrib : forall a b c, compose a (oplus b c)
+                    = oplus (compose a b) (compose a c)
+  obs_f0 : obs f0 = z
+  leibniz : forall a b, obs (compose a b)
+            = oplus (compose (obs a) b) (compose a (obs b))
+  obs_oplus : forall a b, obs (oplus a b) = oplus (obs a) (obs b)
+  char_zero : forall n : Nat, n >= 1 -> nfoldSum oplus z n f0 != z
+\end{lstlisting}
+
+\subsection{The Free Term Algebra}
+
+\begin{lstlisting}[caption={Term inductive type (Obstruction/Encoding.lean)}]
+inductive Term where
+  | f0 : Term
+  | f1 : Term
+  | z  : Term
+  | compose : Term -> Term -> Term
+  | oplus : Term -> Term -> Term
+  | obs : Term -> Term
+  deriving DecidableEq, Repr
+\end{lstlisting}
+
+The evaluation function $\eval : \Term \to \mathrm{State}$ interprets each
+constructor in any DynSemiring instance. The key operation is
+$\obsRewrite$, which applies the Leibniz rule at the root:
+
+\begin{lstlisting}[caption={One-step extensionalization (Obstruction/Encoding.lean)}]
+def obsRewrite : Term -> Term
+  | .obs (.compose a b) =>
+      .oplus (.compose (.obs a) b) (.compose a (.obs b))
+  | .obs (.oplus a b) => .oplus (.obs a) (.obs b)
+  | .obs .f1 => .f1
+  | .obs .f0 => .z
+  | .obs .z  => .z
+  | t => t
+\end{lstlisting}
+
+\subsection{The Eigenvalue Theorem}
+
+\begin{theorem}[Eigenvalue]
+\label{thm:eigenvalue}
+For all $n \in \N$:
+$\obs(\iterS\; n) = \smul{n}{\iterS\; n}$,
+where $\iterS\; n$ denotes the $n$-fold self-composition of $\fone$.
+\end{theorem}
+
+\begin{lstlisting}[caption={Eigenvalue theorem (Core/Semiring.lean)}]
+theorem eigenvalue (n : Nat) :
+    obs (iterS n) = smul n (iterS (State := State) n) := by
+  induction n with
+  | zero => simp [iterS, obs_f0, smul, nfoldSum]
+  | succ n ih =>
+    simp only [iterS, succ]
+    rw [leibniz, obs_f1, ih, compose_smul]
+    rfl
+\end{lstlisting}
+
+The eigenvalues $\{0, 1, 2, 3, \ldots\}$ form the natural numbers under
+$\opl$ and $\compose$, yielding a structure equiconsistent with PA.
+
+%% ========================================================================
+\section{The Encoding Obstruction}
+\label{sec:obstruction}
+%% ========================================================================
+
+\subsection{The Structural Gap}
+
+\begin{lemma}[Extensionalize $\neq$ Original]
+\label{lem:ext-ne-orig}
+For any terms $a, b$:
+$\obsRewrite(\obs(a \compose b)) \neq \obs(a \compose b)$.
+\end{lemma}
+
+\begin{proof}
+The left side has constructor $\opl$ at the root (the Leibniz rule produces
+a sum). The right side has constructor $\obs$ at the root. These are
+distinct constructors in the free term algebra, so the terms are distinct by
+$\mathsf{DecidableEq}$.
+\end{proof}
+
+\begin{lstlisting}[caption={General structural gap (Obstruction/Encoding.lean)}]
+theorem extensionalize_ne_original_general (a b : Term) :
+    obsRewrite (.obs (.compose a b)) != .obs (.compose a b) := by
+  simp [obsRewrite]
+\end{lstlisting}
+
+\begin{theorem}[No Coalgebra Morphism]
+\label{thm:no-coalgebra}
+For any injective $\varepsilon : \Term \to \N$ and any terms $a, b$:
+\[
+  \varepsilon(\obsRewrite(\obs(a \compose b)))
+  \neq \varepsilon(\obs(a \compose b)).
+\]
+\end{theorem}
+
+\begin{proof}
+By \Cref{lem:ext-ne-orig}, the two terms are distinct. By injectivity of
+$\varepsilon$, distinct terms receive distinct codes.
+\end{proof}
+
+\begin{lstlisting}[caption={Main theorem (Obstruction/Main.lean)}]
+theorem no_coalgebra_morphism
+    (e : Term -> Nat) (he : Function.Injective e) (a b : Term) :
+    e (obsRewrite (.obs (.compose a b))) != e (.obs (.compose a b)) :=
+  encoding_obstruction_general e he a b
+\end{lstlisting}
+
+The proof is elementary but the consequence is not: \textbf{no injective
+encoding of terms into natural numbers can serve as a coalgebra morphism
+between semantic observation and syntactic rewriting.}
+
+\subsection{Semantic Invariance}
+
+\begin{theorem}[Semantic Invariance]
+\label{thm:sem-inv}
+For any DynSemiring instance and any terms $a, b$:
+\[
+  \eval(\obsRewrite(\obs(a \compose b))) = \eval(\obs(a \compose b)).
+\]
+\end{theorem}
+
+\begin{proof}
+Direct application of the Leibniz axiom (DS5). The $\obsRewrite$ function
+applies this identity at the term level; evaluation in any model respects
+the axiom.
+\end{proof}
+
+\begin{lstlisting}[caption={Semantic invariance (Obstruction/Encoding.lean)}]
+theorem semantic_invariance_general
+    {State : Type*} [DynSemiring State] (a b : Term) :
+    eval (.obs (.compose a b))
+    = (eval (obsRewrite (.obs (.compose a b))) : State) :=
+  (obsRewrite_eval (.obs (.compose a b))).symm
+-- eval(original) = eval(rewritten) in ALL models
+\end{lstlisting}
+
+\Cref{thm:no-coalgebra,thm:sem-inv} together establish the core asymmetry:
+\textbf{the encoding changes the syntax while preserving the semantics.}
+
+\subsection{No Fixed Point}
+
+\begin{theorem}[Substitution Chain Distinct]
+\label{thm:no-fixpoint}
+Let $t_0 = \obs(a \compose b)$,
+$t_1 = \obsRewrite(t_0)$, and
+$t_2 = \deepRewrite(t_1)$.
+Then $t_0$, $t_1$, and $t_2$ are pairwise distinct.
+\end{theorem}
+
+\begin{lstlisting}[caption={No fixed point (Obstruction/Encoding.lean)}]
+theorem substitution_chain_distinct :
+    .obs t_f2 != obsRewrite (.obs t_f2) /\
+    obsRewrite (.obs t_f2) != deepRewrite (obsRewrite (.obs t_f2)) /\
+    .obs t_f2 != deepRewrite (obsRewrite (.obs t_f2)) :=
+  <fun h => absurd h.symm extensionalize_ne_original,
+   fun h => absurd h.symm deep_ne_shallow,
+   fun h => absurd h.symm deep_ne_original>
+\end{lstlisting}
+
+The chain of extensionalizations never stabilizes. Each level of unfolding
+produces a genuinely new syntactic form, even though the semantic value is
+preserved throughout.
+
+\subsection{Size Growth}
+
+\begin{theorem}[More Than Doubling]
+\label{thm:size-growth}
+For any terms $a, b$:
+\[
+  \termSize(\obsRewrite(\obs(a \compose b)))
+  > 2 \cdot \termSize(\obs(a \compose b)).
+\]
+\end{theorem}
+
+\begin{proof}
+Let $s_a = \termSize(a)$ and $s_b = \termSize(b)$. Then
+$\termSize(\obs(a \compose b)) = 2 + s_a + s_b$ and
+$\termSize(\obsRewrite(\obs(a \compose b))) = 5 + 2s_a + 2s_b$.
+Since $5 + 2s_a + 2s_b > 2(2 + s_a + s_b) = 4 + 2s_a + 2s_b$, the bound
+holds.
+\end{proof}
+
+%% ========================================================================
+\section{The Trilemma}
+\label{sec:trilemma}
+%% ========================================================================
+
+\subsection{Three Properties}
+
+Any self-representing eigenvalue system combines three structural properties:
+
+\begin{description}
+  \item[Property 1: Eigenvalue Arithmetic.] The Leibniz rule forces
+    eigenvalues to be linear: $\obs(\fn) = \smul{n}{\fn}$. This produces
+    $\N$, yielding PA-strength arithmetic.
+  \item[Property 2: Self-Encoding.] PA arithmetic enables G\"odel encoding:
+    an injective, decodable map $\Term \to \N$. Any such encoding requires
+    an injective pairing function
+    $\pi : \N \times \N \to \N$, which is necessarily super-linear:
+    $\pi(n,n) \in \omega(n)$.
+  \item[Property 3: Coalgebra Morphism.] The encoding commutes with
+    observation---the eval-quote diagram commutes.
+\end{description}
+
+\subsection{Pairwise Compatibility, Joint Impossibility}
+
+Properties 1 and 2 are compatible: linear eigenvalues produce arithmetic,
+which enables encoding. Properties 2 and 3 would be compatible if
+eigenvalues could be made super-linear to match the encoding's growth rate.
+But super-linear eigenvalue sets (e.g., $\{1, 2, 4, 8, \ldots\}$) are not
+closed under addition, destroying the semiring structure required by
+Property~2. Properties 1 and 3 would be compatible if the encoding could be
+linear. But a linear function $\N \times \N \to \N$ is not injective on
+pairs.
+
+\textbf{The trilemma:} self-encoding requires the arithmetic that only
+linear eigenvalues provide, but the coalgebra morphism requires encoding
+growth rates to match eigenvalue growth rates, and no injective encoding is
+linear.
+
+\subsection{Blocked Escape Routes}
+
+\textbf{Escape 1: Redundant Number Systems.} Signed-digit representations
+\cite{avizienis1961} achieve carry-free addition via non-unique
+representations. But self-encoding requires injective, decodable maps, which
+require unique representation. Carry reappears at equality testing and
+canonicalization.
+
+\textbf{Escape 2: Residue Number Systems.} RNS provides carry-free
+modular arithmetic, but comparison, ordering, and division are lost.
+G\"odel encoding requires positional access, which requires ordering.
+Carry reappears at conversion to positional form.
+
+\textbf{Escape 3: Tropical Algebra.} Replacing $(\N, +, \times)$ with
+$(\N, \max, +)$ makes addition local, but $\max$ is idempotent and
+non-cancellative. Without cancellation: no subtraction, no division, no
+prime factorization, no G\"odel encoding.
+
+%% ========================================================================
+\section{The Executable Consequence: External State}
+\label{sec:external-state}
+%% ========================================================================
+
+\subsection{From Obstruction to State}
+
+For passive encoding, the obstruction gives incompleteness. For executable
+encoding, it forces external state through the following chain:
+\begin{enumerate}
+  \item Self-encoding requires addition (the Leibniz rule introduces $\opl$).
+  \item Addition on unique positional representations requires carry
+    propagation.
+  \item Carry propagation is non-local (\Cref{thm:carry}).
+  \item Non-local operations require normalization state external to the
+    encoding.
+\end{enumerate}
+
+\subsection{The Bitwise Impossibility}
+
+\begin{theorem}[Bitwise Impossibility]
+\label{thm:bitwise}
+No operation $f : \mathrm{Bool} \to \mathrm{Bool} \to \mathrm{Bool}$ can
+simultaneously satisfy commutativity, identity, and cancellation without
+having characteristic~2.
+\end{theorem}
+
+\begin{lstlisting}[caption={Bitwise impossibility (Obstruction/Oplus.lean)}]
+theorem oplus_bitwise_impossible :
+    forall (f : Bool -> Bool -> Bool) (e : Bool),
+      (forall a b, f a b = f b a) ->
+      (forall x, f e x = x) ->
+      (forall a b c, f a b = f a c -> b = c) ->
+      (forall x, f x x = e) :=
+  bool_comm_cancel_id_implies_char_two
+\end{lstlisting}
+
+Since the DynSemiring requires characteristic zero (axiom DS10),
+characteristic~2 is contradictory. No bitwise realization of $\opl$ is
+possible.
+
+\subsection{Carry Propagation}
+
+\begin{theorem}[Carry Propagation]
+\label{thm:carry}
+For any base $b \geq 2$ and position $k \geq 1$, addition can produce
+output at position $k$ that depends on inputs at all positions $0$ through
+$k-1$.
+\end{theorem}
+
+This is formalized in \texttt{Pairing.lean} as
+\texttt{carry\_propagation\_general}.
+
+%% ========================================================================
+\section{Normalization and Complexity}
+\label{sec:normalization}
+%% ========================================================================
+
+\subsection{Confluence and Termination}
+
+The DynSemiring axioms, oriented as rewrite rules, form a confluent and
+terminating rewriting system. Every term has a unique normal form: a
+sum-of-products-of-atoms, the algebraic analogue of expanded polynomial form.
+
+\subsection{Normalization Depth}
+
+For the family
+$\mathrm{nestedObsCompose}(d) =
+\obs(\mathrm{nestedObsCompose}(d{-}1) \compose \mathrm{nestedObsCompose}(d{-}1))$
+with base case $\fone \compose \fone$, normalization depth is
+\textbf{constant}---exactly 2 passes of bottom-up rewriting, independent of
+nesting depth $d$.
+
+However, term size grows exponentially:
+$\termSize(\mathrm{nestedObsCompose}(d)) \geq 2^d$.
+
+The exponential cost lives in per-pass term size, not pass count. The
+Leibniz rule's branching doubles the term at each application.
+
+\subsection{The Leibniz Rule Is Forced}
+
+$\obsRewrite$ is the unique minimal correct expansion of
+$\obs(a \compose b)$ in any DynSemiring. No smaller term evaluates
+correctly in all models: dropping either branch of
+$(\obs(a) \compose b) \opl (a \compose \obs(b))$ produces an incorrect
+result whenever $\obs(a) \neq z$ and $\obs(b) \neq z$. The branching
+factor per rewrite step is algebraically inevitable.
+
+%% ========================================================================
+\section{Relationship to Complexity-Theoretic Barriers}
+\label{sec:barriers}
+%% ========================================================================
+
+\subsection{Relativization}
+
+The encoding obstruction is \textbf{non-relativizing by construction}. The
+proof examines internal algebraic structure via the $\obsRewrite$ function,
+which pattern-matches on the \texttt{.obs(.compose a b)} constructor. An
+oracle query has no constructor; the Leibniz decomposition cannot apply to
+opaque terms. This parallels how IP$=$PSPACE is non-relativizing:
+arithmetization looks inside formula gates, which fails for oracle gates.
+
+\subsection{Natural Proofs}
+
+The encoding obstruction \textbf{does not operate on truth tables}. The
+Razborov--Rudich framework~\cite{razborov1997} concerns properties of
+Boolean functions tested on their truth tables. The encoding obstruction
+concerns algebraic properties of self-encoding systems: eigenvalue
+structure, Leibniz extensionalization, carry propagation. The property is
+problem-specific (holds for specific algebraic systems, not a non-negligible
+fraction of random functions).
+
+\subsection{Algebrization}
+
+The encoding obstruction uses arithmetic in a structurally different way
+from the arithmetization that algebrization~\cite{aaronson2009} captures.
+Algebrization concerns proofs that convert Boolean computation into
+polynomial evaluation over finite fields and use low-degree extensions. The
+encoding obstruction examines growth rates of encoding functions and
+structural compatibility of eigenvalue scaling with injective
+pairing---properties of the meta-level relationship between encoding and
+execution.
+
+The key distinction: algebrization models Boolean-to-arithmetic as a
+one-directional extension $\{0,1\} \to \mathbb{F}_q$. In a self-encoding
+system, position (arithmetic) and existence (Boolean) are the same layer
+viewed at different scales, connected bidirectionally by the derivative. The
+algebrization framework does not capture proof techniques exploiting this
+bidirectional identity.
+
+\subsection{Assessment}
+
+The encoding obstruction avoids the three known barriers because it examines
+the internal algebraic structure of self-encoding systems, rather than
+input/output behavior (relativization), truth table properties (natural
+proofs), or polynomial evaluation of Boolean functions (algebrization).
+Avoiding barriers is necessary but not sufficient for resolving P vs NP.
+
+%% ========================================================================
+\section{Discussion}
+\label{sec:discussion}
+%% ========================================================================
+
+\subsection{What the Results Establish}
+
+The encoding obstruction establishes:
+\begin{enumerate}
+  \item The eval-quote diagram does not commute for any injective encoding,
+    while semantics is preserved. The gap is syntactic, not semantic.
+  \item The intension/extension chain has no fixed point.
+    Substitution is open-ended.
+  \item Each extensionalization step more than doubles term size.
+  \item No bitwise realization of addition satisfies the algebraic
+    requirements. Characteristic zero is incompatible with Boolean operations.
+  \item Carry propagation is non-local in any base.
+  \item Every known escape route is blocked.
+  \item The Leibniz rule is algebraically forced.
+\end{enumerate}
+
+\subsection{What the Results Do Not Establish}
+
+The encoding obstruction does not prove P$\neq$NP. The algebraic separation
+(linear vs.\ super-linear) operates at a different threshold than the
+complexity-theoretic separation (polynomial vs.\ super-polynomial). The
+structural analogy is genuine---verification is intensional, construction is
+extensional---but the logical implication is not established. The bridge
+from algebraic results to complexity separation requires showing that
+normalization cost corresponds to computational complexity for specific
+problem encodings. This connection is the central open question.
+
+\subsection{Relationship to G\"odel's Incompleteness}
+
+Both G\"odel's theorem and the encoding obstruction are consequences of the
+intension/extension gap in self-naming systems. G\"odel's theorem concerns
+passive self-reference: the system names a proposition about itself but
+cannot resolve it. The encoding obstruction concerns executable
+self-reference: the system attempts to run its own encoding, and the
+execution step introduces machinery the encoding cannot absorb.
+
+The relationship is not analogy but specialization. The encoding
+obstruction, restricted to passive encoding, gives G\"odel incompleteness.
+Extended to executable encoding, it gives the external state requirement.
+
+\subsection{Open Questions}
+
+\begin{enumerate}
+  \item \textbf{Algebraic to complexity separation.} Does exponential
+    term-size growth under Leibniz extensionalization for NP-complete
+    encodings imply super-polynomial time?
+  \item \textbf{Weakest behavioral equivalence.} Natural transformation,
+    asymptotic equivalence, or partial bisimulation?
+  \item \textbf{Generalization.} Do analogous obstructions hold for
+    self-representing systems with a homomorphism rule instead of a
+    derivation?
+  \item \textbf{A formal language for complexity.} Is there a language in
+    which contractibility to a ground state encodes complexity class
+    membership?
+\end{enumerate}
+
+%% ========================================================================
+\section{Formalization}
+\label{sec:formalization}
+%% ========================================================================
+
+All theorems are formalized in Lean~4 using the Mathlib library. The
+formalization is organized as follows:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{File} & \textbf{Contents} \\
+\midrule
+\texttt{Core/Semiring.lean}
+  & DynSemiring definition, eigenvalue theorem \\
+\texttt{Obstruction/Encoding.lean}
+  & obsRewrite, semantic invariance, encoding obstruction, size bounds \\
+\texttt{Obstruction/Main.lean}
+  & no\_coalgebra\_morphism, trajectory divergence \\
+\texttt{Obstruction/Oplus.lean}
+  & Bitwise impossibility, characteristic-2 inheritance \\
+\texttt{Obstruction/Pairing.lean}
+  & Carry propagation, pairing function bounds \\
+\texttt{Obstruction/Complexity.lean}
+  & Normalization depth, term size bounds \\
+\texttt{Obstruction/CostBounds.lean}
+  & Per-pass cost analysis, site persistence \\
+\texttt{Obstruction/SAT.lean}
+  & SAT formula encoding \\
+\texttt{Obstruction/VarSharing.lean}
+  & Variable sharing analysis \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The formalization contains zero \texttt{sorry}. Key conjectures disproved by
+formalization (e.g., the exponential normalization depth conjecture) have
+been corrected and documented.
+
+%% ========================================================================
+\bibliographystyle{plain}
+\begin{thebibliography}{10}
+
+\bibitem{avizienis1961}
+A.~Avizienis.
+\newblock Signed-digit number representations for fast parallel arithmetic.
+\newblock {\em IRE Trans.\ Electronic Computers}, EC-10(3):389--400, 1961.
+
+\bibitem{aaronson2009}
+S.~Aaronson and A.~Wigderson.
+\newblock Algebrization: A new barrier in complexity theory.
+\newblock {\em ACM Trans.\ Computation Theory}, 1(1):2, 2009.
+
+\bibitem{baker1975}
+T.~Baker, J.~Gill, and R.~Solovay.
+\newblock Relativizations of the {P=?NP} question.
+\newblock {\em SIAM J.\ Computing}, 4(4):431--442, 1975.
+
+\bibitem{goedel1931}
+K.~G\"odel.
+\newblock \"Uber formal unentscheidbare {S\"atze} der {Principia Mathematica}
+  und verwandter {Systeme I}.
+\newblock {\em Monatshefte f\"ur Mathematik und Physik}, 38:173--198, 1931.
+
+\bibitem{gurevich2000}
+Y.~Gurevich.
+\newblock Sequential abstract state machines capture sequential algorithms.
+\newblock {\em ACM Trans.\ Computational Logic}, 1(1):77--111, 2000.
+
+\bibitem{hastad1987}
+J.~H{\aa}stad.
+\newblock {\em Computational Limitations of Small-Depth Circuits}.
+\newblock MIT Press, 1987.
+
+\bibitem{mulmuley2001}
+K.~Mulmuley and M.~Sohoni.
+\newblock Geometric complexity theory {I}.
+\newblock {\em SIAM J.\ Computing}, 31(2):496--526, 2001.
+
+\bibitem{razborov1997}
+A.~Razborov and S.~Rudich.
+\newblock Natural proofs.
+\newblock {\em J.\ Computer and System Sciences}, 55(1):24--35, 1997.
+
+\bibitem{turing1936}
+A.~M. Turing.
+\newblock On computable numbers, with an application to the
+  {Entscheidungsproblem}.
+\newblock {\em Proc.\ London Math.\ Soc.}, 42:230--265, 1936.
+
+\bibitem{williams2011}
+R.~Williams.
+\newblock Non-uniform {ACC} circuit lower bounds.
+\newblock In {\em IEEE Conf.\ Computational Complexity}, 2011.
+
+\end{thebibliography}
+
+\end{document}
