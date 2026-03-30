@@ -88,3 +88,5 @@ import SpectralArithmetic.Rotation.AdaptiveSolver
 import SpectralArithmetic.Rotation.ClauseLearning
 -- Message passing (coupled trees, belief propagation)
 import SpectralArithmetic.Rotation.MessagePassing
+-- Belief propagation (soft constraints, marginals)
+import SpectralArithmetic.Rotation.BeliefProp
