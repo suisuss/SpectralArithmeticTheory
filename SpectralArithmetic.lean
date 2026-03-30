@@ -64,3 +64,39 @@ import SpectralArithmetic.Rotation.Factorization
 import SpectralArithmetic.Rotation.Construction
 -- Gap analysis (measuring P vs NP)
 import SpectralArithmetic.Rotation.GapAnalysis
+-- SAT encoding via tree arrangements
+import SpectralArithmetic.Rotation.SATEncoding
+-- DAG arrangements (shared subtrees, memoization)
+import SpectralArithmetic.Rotation.DAG
+-- Choice constructor (AND-OR trees, alternation)
+import SpectralArithmetic.Rotation.Choice
+-- Scaling comparison across treewidths
+import SpectralArithmetic.Rotation.Scaling
+-- Bounded DAG (treewidth-parameterized solver)
+import SpectralArithmetic.Rotation.DAGBounded
+-- Random 3-SAT generality test
+import SpectralArithmetic.Rotation.Random3SAT
+-- Graph-aware variable ordering (#12)
+import SpectralArithmetic.Rotation.GraphOrder
+-- Choice-based SAT via AND-OR trees (#13)
+import SpectralArithmetic.Rotation.ChoiceSAT
+-- Hybrid solver: SmartDAG + Choice
+import SpectralArithmetic.Rotation.HybridSolver
+-- Adaptive solver: evaluate then select
+import SpectralArithmetic.Rotation.AdaptiveSolver
+-- Clause learning / CDCL (general resolution)
+import SpectralArithmetic.Rotation.ClauseLearning
+-- Message passing (coupled trees, belief propagation)
+import SpectralArithmetic.Rotation.MessagePassing
+-- Belief propagation (soft constraints, marginals)
+import SpectralArithmetic.Rotation.BeliefProp
+-- Extended resolution (abstraction, proof compression)
+import SpectralArithmetic.Rotation.ExtendedResolution
+-- Formal proofs of soundness (#19)
+import SpectralArithmetic.Rotation.FormalProofs
+-- Composition theory (#22)
+import SpectralArithmetic.Rotation.CompositionTheory
+-- Phase transition study (#23)
+import SpectralArithmetic.Rotation.PhaseTransition
+-- Real pipeline: traced tactics through shared state
+import SpectralArithmetic.Rotation.Pipeline
