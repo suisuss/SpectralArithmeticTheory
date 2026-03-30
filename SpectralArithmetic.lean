@@ -94,3 +94,5 @@ import SpectralArithmetic.Rotation.BeliefProp
 import SpectralArithmetic.Rotation.ExtendedResolution
 -- Formal proofs of soundness (#19)
 import SpectralArithmetic.Rotation.FormalProofs
+-- Composition theory (#22)
+import SpectralArithmetic.Rotation.CompositionTheory
