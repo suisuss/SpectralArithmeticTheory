@@ -82,3 +82,5 @@ import SpectralArithmetic.Rotation.GraphOrder
 import SpectralArithmetic.Rotation.ChoiceSAT
 -- Hybrid solver: SmartDAG + Choice
 import SpectralArithmetic.Rotation.HybridSolver
+-- Adaptive solver: evaluate then select
+import SpectralArithmetic.Rotation.AdaptiveSolver
