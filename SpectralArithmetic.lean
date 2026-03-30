@@ -96,3 +96,5 @@ import SpectralArithmetic.Rotation.ExtendedResolution
 import SpectralArithmetic.Rotation.FormalProofs
 -- Composition theory (#22)
 import SpectralArithmetic.Rotation.CompositionTheory
+-- Phase transition study (#23)
+import SpectralArithmetic.Rotation.PhaseTransition
