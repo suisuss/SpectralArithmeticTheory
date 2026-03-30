@@ -42,3 +42,25 @@ import SpectralArithmetic.Lambda.UntypedExpr
 import SpectralArithmetic.Lambda.BCKW
 -- Polynomial arithmetization (commutative algebra test)
 import SpectralArithmetic.Lambda.Poly
+-- Rotation calculus (formal language for complexity)
+import SpectralArithmetic.Rotation.Syntax
+import SpectralArithmetic.Rotation.Rewrite
+import SpectralArithmetic.Rotation.Constraint
+import SpectralArithmetic.Rotation.Complexity
+import SpectralArithmetic.Rotation.Examples
+-- CSP equivalence investigation (falsification test)
+import SpectralArithmetic.Rotation.CSPEquivalence
+-- Generator fixed-point analysis (Direction 3 equivalence test)
+import SpectralArithmetic.Rotation.GeneratorFixedPoint
+-- Tree arrangements (Catalan space investigation)
+import SpectralArithmetic.Rotation.TreeArrangement
+-- Tree complexity hierarchy (level-by-level analysis)
+import SpectralArithmetic.Rotation.TreeComplexity
+-- Asymmetric information flow investigation
+import SpectralArithmetic.Rotation.TreeFlow
+-- Constraint factorization (treewidth connection)
+import SpectralArithmetic.Rotation.Factorization
+-- Checking vs constructing (catamorphism vs anamorphism)
+import SpectralArithmetic.Rotation.Construction
+-- Gap analysis (measuring P vs NP)
+import SpectralArithmetic.Rotation.GapAnalysis
