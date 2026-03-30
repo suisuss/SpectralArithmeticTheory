@@ -98,3 +98,5 @@ import SpectralArithmetic.Rotation.FormalProofs
 import SpectralArithmetic.Rotation.CompositionTheory
 -- Phase transition study (#23)
 import SpectralArithmetic.Rotation.PhaseTransition
+-- Real pipeline: traced tactics through shared state
+import SpectralArithmetic.Rotation.Pipeline
