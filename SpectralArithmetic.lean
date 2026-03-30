@@ -78,3 +78,5 @@ import SpectralArithmetic.Rotation.DAGBounded
 import SpectralArithmetic.Rotation.Random3SAT
 -- Graph-aware variable ordering (#12)
 import SpectralArithmetic.Rotation.GraphOrder
+-- Choice-based SAT via AND-OR trees (#13)
+import SpectralArithmetic.Rotation.ChoiceSAT
