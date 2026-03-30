@@ -127,30 +127,66 @@ def extResTraced (groupSize : ℕ := 3) : TracedTactic := fun s =>
     let (state', trace, _) := result
     (state', trace)
 
-/-! ## Tactic 5: CDCL (traced) -/
+/-! ## Tactic 5: CDCL (traced)
 
-/-- CDCL tactic with proof trace. -/
+    The old cdclTraced ran cdclSearch then re-enumerated assignments
+    via allVarAssignments — losing the actual search tree. This
+    version traces decisions, conflicts, backtracks, and learned
+    clauses as they happen during search. -/
+
+/-- CDCL search that produces a full proof trace.
+    Returns (found, assignment, trace). -/
+partial def cdclSearchTraced (formula : SATFormula)
+    (vars : List ℕ) (assign : List (ℕ × Bool))
+    : (Bool × List (ℕ × Bool) × ProofTrace) :=
+  let conflict := findConflict formula assign
+  match conflict with
+  | some clause =>
+    let learned := learnClause assign
+    (false, assign,
+     [ProofStep.conflict clause, ProofStep.learnedClause learned])
+  | none =>
+    match vars with
+    | [] => (true, assign, [])
+    | v :: rest =>
+      -- Decision: try v = true
+      let assignTrue := assign ++ [(v, true)]
+      let decideTrue := ProofStep.decision v true
+      let (foundT, assignT, traceT) :=
+        cdclSearchTraced formula rest assignTrue
+      if foundT then
+        (true, assignT, [decideTrue] ++ traceT)
+      else
+        -- Backtrack and try v = false
+        let formula' := formula ++ (traceT.filterMap fun s =>
+          match s with
+          | .learnedClause c => some c
+          | _ => none)
+        let assignFalse := assign ++ [(v, false)]
+        let decideFalse := ProofStep.decision v false
+        let bt := ProofStep.backtrack v
+        let (foundF, assignF, traceF) :=
+          cdclSearchTraced formula' rest assignFalse
+        (foundF, assignF,
+         [decideTrue] ++ traceT ++ [bt, decideFalse] ++ traceF)
+
+/-- CDCL tactic with full proof trace. -/
 def cdclTraced : TracedTactic := fun s =>
-  let (found, _, learned) := cdclSearch s.formula s.vars s.assign
+  let (found, finalAssign, trace) :=
+    cdclSearchTraced s.formula s.vars s.assign
   if found then
-    -- Find the actual assignment
-    let assigns := allVarAssignments s.vars
-    let valid := assigns.find? fun a =>
-      satisfiesFormula (s.assign ++ a) s.formula
-    match valid with
-    | some a =>
-      let trace := learned.map ProofStep.learnedClause
-      let decisions := a.map fun (v, p) => ProofStep.decision v p
-      ({ s with assign := s.assign ++ a,
-                vars := [],
-                formula := [] },
-       trace ++ decisions)
-    | none => (s, learned.map ProofStep.learnedClause)
-  else
-    -- UNSAT: learned clauses are the proof
-    let trace := learned.map ProofStep.learnedClause
-    ({ s with formula := s.formula ++ learned.map fun c => c },
+    let newAssign := finalAssign.filter fun (v, _) =>
+      !s.assign.any fun (v', _) => v == v'
+    ({ s with assign := finalAssign,
+              vars := [],
+              formula := [] },
      trace)
+  else
+    let learned := trace.filterMap fun step =>
+      match step with
+      | .learnedClause c => some c
+      | _ => none
+    ({ s with formula := s.formula ++ learned }, trace)
 
 /-! ## The full pipeline: composed traced tactics -/
 

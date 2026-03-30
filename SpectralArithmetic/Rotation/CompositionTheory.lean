@@ -178,6 +178,8 @@ inductive ProofStep where
   | abstraction : ℕ → List ℕ → ProofStep    -- group abstracted
   | learnedClause : SATClause → ProofStep    -- CDCL learned clause
   | decision : ℕ → Bool → ProofStep          -- search decision
+  | conflict : SATClause → ProofStep          -- clause violated
+  | backtrack : ℕ → ProofStep                -- undo decision on var
   deriving Repr
 
 /-- A proof trace is a sequence of justified steps. -/

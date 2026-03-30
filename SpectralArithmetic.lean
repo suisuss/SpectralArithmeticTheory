@@ -100,3 +100,31 @@ import SpectralArithmetic.Rotation.CompositionTheory
 import SpectralArithmetic.Rotation.PhaseTransition
 -- Real pipeline: traced tactics through shared state
 import SpectralArithmetic.Rotation.Pipeline
+-- Trajectory analysis: meta-rewriting feasibility test
+import SpectralArithmetic.Rotation.TrajectoryAnalysis
+-- Trajectory analysis: large-scale test
+import SpectralArithmetic.Rotation.TrajectoryLargeScale
+-- Rotation rule index: all possible rules and their structures
+import SpectralArithmetic.Rotation.RotationIndex
+-- Self-contained rotation calculus (A: rule selection, C: constraint as term)
+import SpectralArithmetic.Rotation.SelfContained
+-- Meta-rewriting #0: rotation calculus as rewriting system
+import SpectralArithmetic.Rotation.MetaRewrite0
+-- UNSAT proofs in the rotation calculus
+import SpectralArithmetic.Rotation.UNSATProof
+-- Resolution as contraction in the rotation calculus
+import SpectralArithmetic.Rotation.Resolution
+-- Resolution contraction: subsumption, UP bridge, extended resolution
+import SpectralArithmetic.Rotation.ResolutionContraction
+-- Resolution strategy as term (head-tape unification)
+import SpectralArithmetic.Rotation.StrategyAsTerm
+-- Constraint evolution (learned clauses as living constraints)
+import SpectralArithmetic.Rotation.ConstraintEvolution
+-- Symmetry breaking (orbit detection, breaking constraints, pruning)
+import SpectralArithmetic.Rotation.SymmetryBreaking
+-- Craig interpolation (UNSAT proof factorization)
+import SpectralArithmetic.Rotation.Interpolation
+-- Proof compression (dead steps, deduplication, subsumption collapse)
+import SpectralArithmetic.Rotation.ProofCompression
+-- Meta-rewriting #1: constraint evolution with complexity trajectories
+import SpectralArithmetic.Rotation.MetaRewriting
