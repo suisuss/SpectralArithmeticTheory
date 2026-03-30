@@ -128,5 +128,9 @@ import SpectralArithmetic.Rotation.Interpolation
 import SpectralArithmetic.Rotation.ProofCompression
 -- Width trajectories and proof system classification
 import SpectralArithmetic.Rotation.WidthTrajectory
+-- Fast resolution (variable-indexed clause database)
+import SpectralArithmetic.Rotation.FastResolution
+-- Proof system test: strategy independence
+import SpectralArithmetic.Rotation.ProofSystemTest
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
