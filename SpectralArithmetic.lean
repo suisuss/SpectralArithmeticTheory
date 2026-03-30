@@ -90,3 +90,5 @@ import SpectralArithmetic.Rotation.ClauseLearning
 import SpectralArithmetic.Rotation.MessagePassing
 -- Belief propagation (soft constraints, marginals)
 import SpectralArithmetic.Rotation.BeliefProp
+-- Extended resolution (abstraction, proof compression)
+import SpectralArithmetic.Rotation.ExtendedResolution
