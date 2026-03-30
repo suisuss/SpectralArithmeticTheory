@@ -175,7 +175,20 @@ def runPipeline (formula : SATFormula) (nVars : ℕ)
     else none
   (solution, trace, trace.length)
 
-/-! ## Comparison: pipeline vs individual solvers -/
+/-! ## UP-only baseline: how much does UP alone solve? -/
+
+/-- Run ONLY unit propagation to fixed point, then check if solved. -/
+def upOnly (formula : SATFormula) (nVars : ℕ)
+    : Option (List (ℕ × Bool)) × ℕ × ℕ :=  -- (solution, steps, vars_remaining)
+  let initState : TacticState :=
+    { formula := formula, vars := List.range nVars, assign := [] }
+  let (finalState, trace) := upFixpoint initState
+  let solution := if satisfiesFormula finalState.assign formula
+    then some finalState.assign
+    else none
+  (solution, trace.length, finalState.vars.length)
+
+/-! ## Comparison: pipeline vs individual solvers vs UP-only -/
 
 -- Random 3-SAT n=8
 #eval do
@@ -228,6 +241,26 @@ def runPipeline (formula : SATFormula) (nVars : ℕ)
       [UP={nUP} decide={nDecision}]"
   IO.println s!"Structured reach=3:"
   IO.println (String.intercalate "\n" data)
+
+-- UP-only comparison across all instance types
+-- UP-only on each instance type
+#eval do
+  let bench := fun (name : String) (f : SATFormula) (n : ℕ) =>
+    let (rUP, upSteps, upRemain) := upOnly f n
+    let (_, cdcl, _) := satCDCL f n
+    let (rPipe, trace, _) := runPipeline f n
+    s!"{name}: UP={upSteps}(left={upRemain},f={rUP.isSome}) \
+      pipe={trace.length}(f={rPipe.isSome}) cdcl={cdcl}"
+  let lines := [
+    bench "struct-8" (reachInstance 8 3) 8,
+    bench "struct-10" (reachInstance 10 3) 10,
+    bench "struct-12" (reachInstance 12 3) 12,
+    bench "rand-8" (random3SAT 8 32 42) 8,
+    bench "rand-10" (random3SAT 10 42 42) 10,
+    bench "PHP32" (pigeonhole 3 2) 6,
+    bench "PHP43" (pigeonhole 4 3) 12]
+  IO.println s!"UP-only vs Pipeline vs CDCL:"
+  IO.println (String.intercalate "\n" lines)
 
 -- PHP (UNSAT)
 #eval do
