@@ -126,5 +126,7 @@ import SpectralArithmetic.Rotation.SymmetryBreaking
 import SpectralArithmetic.Rotation.Interpolation
 -- Proof compression (dead steps, deduplication, subsumption collapse)
 import SpectralArithmetic.Rotation.ProofCompression
+-- Width trajectories and proof system classification
+import SpectralArithmetic.Rotation.WidthTrajectory
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
