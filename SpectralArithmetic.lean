@@ -92,3 +92,5 @@ import SpectralArithmetic.Rotation.MessagePassing
 import SpectralArithmetic.Rotation.BeliefProp
 -- Extended resolution (abstraction, proof compression)
 import SpectralArithmetic.Rotation.ExtendedResolution
+-- Formal proofs of soundness (#19)
+import SpectralArithmetic.Rotation.FormalProofs
