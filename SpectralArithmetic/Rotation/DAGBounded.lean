@@ -215,6 +215,36 @@ def satSmartDAG (formula : SATFormula) (nVars : ℕ) (k : ℕ)
   IO.println s!"n=10 reach=5 flat={flat}"
   IO.println (String.intercalate "\n" data)
 
+/-! ## SmartDAG varying k (reach=5, n=10) -/
+
+#eval do
+  let f := reachInstance 10 5
+  let data := [0, 1, 2, 3, 4, 5].map fun k =>
+    let (r, cost) := satSmartDAG f 10 k
+    s!"  smart k={k} cost={cost} found={r.isSome}"
+  IO.println s!"n=10 reach=5 smartDAG varying k:"
+  IO.println (String.intercalate "\n" data)
+
+/-! ## SmartDAG varying k (reach=9, n=10 — near clique) -/
+
+#eval do
+  let f := reachInstance 10 9
+  let data := [0, 1, 2, 3, 4, 5].map fun k =>
+    let (r, cost) := satSmartDAG f 10 k
+    s!"  smart k={k} cost={cost} found={r.isSome}"
+  IO.println s!"n=10 reach=9 smartDAG varying k:"
+  IO.println (String.intercalate "\n" data)
+
+/-! ## SmartDAG at larger n -/
+
+#eval do
+  let data := [8, 10, 12, 14].map fun n =>
+    let f := reachInstance n 5
+    let (r1, flat) := flatBruteForce f n
+    let (r2, smart) := satSmartDAG f n 2
+    s!"n={n} reach=5 flat={flat}(found={r1.isSome}) smart(k=2)={smart}(found={r2.isSome})"
+  IO.println (String.intercalate "\n" data)
+
 /-! ## n=12: scaling test -/
 
 #eval do
