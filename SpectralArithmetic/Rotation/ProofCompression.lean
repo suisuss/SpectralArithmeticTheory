@@ -51,18 +51,39 @@ def isUsed (resolvent : SATClause)
     Work backward: a step is live if its resolvent is either
     □ or used by a live step. -/
 def eliminateDeadSteps (deriv : Derivation)
+    (originalClauses : List SATClause := [])
     : Derivation :=
-  -- Work backward: collect live clauses starting from □
+  -- Work backward: a step is NEEDED if its result is □
+  -- or is used as input by a needed step.
+  -- A step is VALID if its inputs are either original clauses
+  -- or results of other kept steps.
   let reversed := deriv.steps.reverse
-  let liveResults := reversed.foldl (fun live step =>
-    if step.result.isEmpty || live.contains step.result
-    then step.clause1 :: step.clause2 :: live
-    else live
+  -- Pass 1: mark needed results (backward from □)
+  let neededResults := reversed.foldl (fun needed step =>
+    if step.result.isEmpty || needed.contains step.result
+    then step.clause1 :: step.clause2 :: needed
+    else needed
   ) ([] : List SATClause)
-  -- Keep steps whose result is live
-  let liveSteps := deriv.steps.filter fun step =>
-    step.result.isEmpty || liveResults.contains step.result
-  { steps := liveSteps, conclusion := deriv.conclusion }
+  -- Pass 2: keep steps whose result is needed
+  let candidates := deriv.steps.filter fun step =>
+    step.result.isEmpty || neededResults.contains step.result
+  -- Pass 3: verify soundness — keep only steps whose inputs
+  -- are available (original clause or result of a prior kept step)
+  let rec validate (remaining : List ResolutionStep)
+      (available : List SATClause)
+      (acc : List ResolutionStep)
+      : List ResolutionStep :=
+    match remaining with
+    | [] => acc
+    | step :: rest =>
+      let c1ok := available.contains step.clause1
+      let c2ok := available.contains step.clause2
+      if c1ok && c2ok then
+        validate rest (step.result :: available) (acc ++ [step])
+      else
+        validate rest available acc
+  let validSteps := validate candidates originalClauses []
+  { steps := validSteps, conclusion := deriv.conclusion }
 
 /-! ## Compression 2: Resolvent deduplication -/
 
@@ -109,12 +130,14 @@ def collapseSubsumedChains (deriv : Derivation) : Derivation :=
 
 /-! ## Combined compression pipeline -/
 
-/-- Apply all compressions in sequence. -/
-def compressProof (deriv : Derivation) : Derivation :=
+/-- Apply sound compressions in sequence.
+    Collapse is skipped because it can remove steps whose
+    results are needed by later steps. -/
+def compressProof (deriv : Derivation)
+    (originalClauses : List SATClause := []) : Derivation :=
   let d1 := deduplicateSteps deriv
-  let d2 := collapseSubsumedChains d1
-  let d3 := eliminateDeadSteps d2
-  d3
+  let d2 := eliminateDeadSteps d1 originalClauses
+  d2
 
 /-- Compression ratio. -/
 def compressionRatio (original compressed : ℕ) : String :=
@@ -134,7 +157,7 @@ def compressionRatio (original compressed : ℕ) : String :=
   let f : SATFormula :=
     [[(0, true)], [(0, false), (1, true)], [(1, false)]]
   let (deriv, _) := greedyResolution f 20
-  let compressed := compressProof deriv
+  let compressed := compressProof deriv f
   IO.println s!"  original: {List.length deriv.steps} steps"
   IO.println s!"  compressed: {List.length compressed.steps} steps"
   IO.println s!"  ratio: {compressionRatio (List.length deriv.steps) (List.length compressed.steps)}"
@@ -151,7 +174,7 @@ def compressionRatio (original compressed : ℕ) : String :=
   let (evolState, evolSteps) := evolvingResolution f 20
   let evolDeriv : Derivation :=
     { steps := evolSteps, conclusion := if evolState.isRefuted then [] else [(999, true)] }
-  let evolCompressed := compressProof evolDeriv
+  let evolCompressed := compressProof evolDeriv f
   IO.println s!"  evolving: {List.length evolSteps} steps"
   IO.println s!"  compressed: {List.length evolCompressed.steps} steps"
   IO.println s!"  ratio: {compressionRatio (List.length evolSteps) (List.length evolCompressed.steps)}"
@@ -161,7 +184,7 @@ def compressionRatio (original compressed : ℕ) : String :=
   IO.println "--- PHP(3,2) ---"
   let php := pigeonhole 3 2
   let (phpDeriv, _) := greedyResolution php 100
-  let phpCompressed := compressProof phpDeriv
+  let phpCompressed := compressProof phpDeriv php
   IO.println s!"  original: {List.length phpDeriv.steps} steps, \
     □={phpDeriv.conclusion.isEmpty}"
   IO.println s!"  compressed: {List.length phpCompressed.steps} steps, \
@@ -179,7 +202,7 @@ def compressionRatio (original compressed : ℕ) : String :=
      [(3, false), (4, true)],
      [(4, false)]]
   let (d5, _) := greedyResolution f5 50
-  let c5 := compressProof d5
+  let c5 := compressProof d5 f5
   IO.println s!"  original: {List.length d5.steps} steps, \
     □={d5.conclusion.isEmpty}"
   IO.println s!"  compressed: {List.length c5.steps} steps, \
@@ -204,7 +227,7 @@ def compressionRatio (original compressed : ℕ) : String :=
     else none
   let pseudoDeriv : Derivation :=
     { steps := pseudoSteps, conclusion := [] }
-  let compressed := compressProof pseudoDeriv
+  let compressed := compressProof pseudoDeriv php
   IO.println s!"  pseudo-derivation: {List.length pseudoSteps} steps"
   IO.println s!"  compressed: {List.length compressed.steps} steps"
 
@@ -227,7 +250,7 @@ def compressionRatio (original compressed : ℕ) : String :=
     ("PHP(4,3)", pigeonhole 4 3)]
   for (name, f) in formulas do
     let (d, _) := greedyResolution f 200
-    let c := compressProof d
+    let c := compressProof d f
     let orig := List.length d.steps
     let comp := List.length c.steps
     let r := compressionRatio orig comp
