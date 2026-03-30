@@ -72,3 +72,5 @@ import SpectralArithmetic.Rotation.DAG
 import SpectralArithmetic.Rotation.Choice
 -- Scaling comparison across treewidths
 import SpectralArithmetic.Rotation.Scaling
+-- Bounded DAG (treewidth-parameterized solver)
+import SpectralArithmetic.Rotation.DAGBounded
