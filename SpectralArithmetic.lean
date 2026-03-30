@@ -64,3 +64,5 @@ import SpectralArithmetic.Rotation.Factorization
 import SpectralArithmetic.Rotation.Construction
 -- Gap analysis (measuring P vs NP)
 import SpectralArithmetic.Rotation.GapAnalysis
+-- SAT encoding via tree arrangements
+import SpectralArithmetic.Rotation.SATEncoding
