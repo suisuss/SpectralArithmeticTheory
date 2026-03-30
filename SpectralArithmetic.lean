@@ -66,3 +66,7 @@ import SpectralArithmetic.Rotation.Construction
 import SpectralArithmetic.Rotation.GapAnalysis
 -- SAT encoding via tree arrangements
 import SpectralArithmetic.Rotation.SATEncoding
+-- DAG arrangements (shared subtrees, memoization)
+import SpectralArithmetic.Rotation.DAG
+-- Choice constructor (AND-OR trees, alternation)
+import SpectralArithmetic.Rotation.Choice
