@@ -224,126 +224,266 @@ def unsatLiterals := allLiterals 1  -- 2 elements
 #eval verifyTree (satConstraint unsatFormula)
   (.pair (literal 0 false) (literal 0 true))
 
-/-! ## SAT-aware search
+/-! ## Flat brute-force SAT (baseline)
 
-    The search space is NOT all arrangements of all 2n literals.
-    It's all ASSIGNMENTS (choose one literal per variable) times
-    all tree shapes for the chosen n literals.
+    Standard SAT solving: try all 2^n assignments, check each.
+    No tree structure. This is the baseline to beat. -/
 
-    Search space: 2^n assignments x Catalan(n-1) tree shapes x ... -/
-
-/-- Generate all possible assignments: choose true or false for each variable. -/
-def allAssignments (n : ℕ) : List (List Term) :=
+/-- Generate all truth assignments for n variables. -/
+def allAssignments (n : ℕ) : List (List (ℕ × Bool)) :=
   match n with
   | 0 => [[]]
   | n + 1 =>
     let rest := allAssignments n
-    rest.flatMap fun assignment =>
-      [literal n true :: assignment, literal n false :: assignment]
+    rest.flatMap fun a => [(n, true) :: a, (n, false) :: a]
 
-#eval (allAssignments 2).map (·.map fun t => (litVar t, litPol t))
-
-/-- Check a complete tree: verifyTree AND global clause satisfaction. -/
-def verifySATTree (formula : SATFormula) (t : Term) : Bool :=
-  let C := satConstraint formula
-  let assign := collectAssignment t
-  verifyTree C t && satisfiesFormula assign formula
-
-/-- Brute-force SAT search: try all assignments x all tree shapes. -/
-def satBruteForce (formula : SATFormula) (nVars : ℕ)
+/-- Flat brute-force: try all 2^n assignments. Count checks. -/
+def flatBruteForce (formula : SATFormula) (nVars : ℕ)
     : Option (List (ℕ × Bool)) × ℕ :=
   let assignments := allAssignments nVars
-  let rec go : List (List Term) → ℕ → Option (List (ℕ × Bool)) × ℕ
+  let rec go : List (List (ℕ × Bool)) → ℕ
+      → Option (List (ℕ × Bool)) × ℕ
     | [], cost => (none, cost)
-    | assignment :: rest, cost =>
-      let trees := allTrees assignment
-      let found := trees.find? fun t => verifySATTree formula t
-      match found with
-      | some t => (some (collectAssignment t), cost + trees.length)
-      | none => go rest (cost + trees.length)
+    | a :: rest, cost =>
+      if satisfiesFormula a formula then (some a, cost + 1)
+      else go rest (cost + 1)
   go assignments 0
 
-/-- Factorized SAT construction: try assignments, use factorized tree builder. -/
-def satFactorized (formula : SATFormula) (nVars : ℕ)
+/-! ## Tree-decomposition SAT (the factorized approach)
+
+    The key insight: don't enumerate complete assignments then check.
+    Instead, SPLIT VARIABLES into groups using the tree structure,
+    solve each group independently, and combine at the root.
+
+    At each tree node:
+    1. Split variables into left_vars and right_vars
+    2. Find all valid partial assignments for left_vars
+       (satisfying clauses involving ONLY left_vars)
+    3. Find all valid partial assignments for right_vars
+       (satisfying clauses involving ONLY right_vars)
+    4. Combine: check cross-partition clauses
+
+    For treewidth-k problems, each split has O(k) cross-partition
+    clauses. The combination step is O(|left_solutions| × |right_solutions|).
+    For low treewidth, the subtree solutions are few → fast combination.
+    For high treewidth, many cross-clauses → less pruning. -/
+
+/-- Get all variables mentioned in a formula. -/
+def formulaVars (formula : SATFormula) : List ℕ :=
+  (formula.flatMap fun clause =>
+    clause.map fun (v, _) => v).eraseDups
+
+/-- Filter clauses to those involving ONLY the given variables. -/
+def clausesInScope (formula : SATFormula) (vars : List ℕ) : SATFormula :=
+  formula.filter fun clause =>
+    clause.all fun (v, _) => vars.contains v
+
+/-- Filter clauses spanning two variable sets (involve vars from both). -/
+def crossClauses (formula : SATFormula)
+    (leftVars rightVars : List ℕ) : SATFormula :=
+  formula.filter fun clause =>
+    (clause.any fun (v, _) => leftVars.contains v) &&
+    (clause.any fun (v, _) => rightVars.contains v)
+
+/-- Tree-decomposition SAT solver.
+    Splits variables, solves subtrees, combines.
+    Returns (solution, operations_count). -/
+partial def treeDecompSolve (formula : SATFormula)
+    (vars : List ℕ)
+    : List (List (ℕ × Bool)) × ℕ :=
+  match vars with
+  | [] => ([[]], 0)
+  | [v] =>
+    -- Base case: one variable. Try both values.
+    let solutions := [true, false].filterMap fun pol =>
+      let assign := [(v, pol)]
+      let localClauses := clausesInScope formula [v]
+      if satisfiesFormula assign localClauses then some assign
+      else none
+    (solutions, 2)  -- 2 operations (tried both values)
+  | vs =>
+    -- Split variables in half
+    let mid := vs.length / 2
+    let leftVars := vs.take mid
+    let rightVars := vs.drop mid
+    -- Solve left subtree (only left-local clauses)
+    let (leftSolutions, leftCost) := treeDecompSolve formula leftVars
+    -- Solve right subtree (only right-local clauses)
+    let (rightSolutions, rightCost) := treeDecompSolve formula rightVars
+    -- Combine: check cross-partition clauses
+    let cross := crossClauses formula leftVars rightVars
+    let pairs := leftSolutions.flatMap fun lSol =>
+      rightSolutions.filterMap fun rSol =>
+        let merged := lSol ++ rSol
+        if satisfiesFormula merged cross then some merged
+        else none
+    let combineCost := leftSolutions.length * rightSolutions.length
+    (pairs, leftCost + rightCost + combineCost)
+
+/-- Wrapper: find first solution via tree decomposition. -/
+def satTreeDecomp (formula : SATFormula) (nVars : ℕ)
     : Option (List (ℕ × Bool)) × ℕ :=
-  let C := satConstraint formula
-  let assignments := allAssignments nVars
-  let rec go : List (List Term) → ℕ → Option (List (ℕ × Bool)) × ℕ
-    | [], cost => (none, cost)
-    | assignment :: rest, cost =>
-      let (result, factCost) := factorizedConstruct C assignment
-      match result with
-      | some t =>
-        -- Double-check with global satisfaction
-        if satisfiesFormula (collectAssignment t) formula then
-          (some (collectAssignment t), cost + factCost)
-        else go rest (cost + factCost)
-      | none => go rest (cost + factCost)
-  go assignments 0
+  let vars := List.range nVars
+  let (solutions, cost) := treeDecompSolve formula vars
+  -- Filter to only globally satisfying assignments
+  let valid := solutions.filter fun a => satisfiesFormula a formula
+  (valid.head?, cost)
 
-/-! ## Head-to-head: path vs triangle SAT -/
+/-! ## Test instances -/
 
--- Path formula (treewidth 1, 4 variables)
+/-! ### Instance A: Path formula (treewidth 1, 4 variables)
+
+    (x0 OR x1) AND (NOT x1 OR x2) AND (NOT x2 OR NOT x3)
+
+    Path structure: x0-x1-x2-x3. All-true FAILS (clause 3).
+    Forces actual search. -/
+
+def hardPath : SATFormula :=
+  [ [(0, true), (1, true)],       -- x0 OR x1
+    [(1, false), (2, true)],      -- NOT x1 OR x2
+    [(2, false), (3, false)] ]    -- NOT x2 OR NOT x3
+
+/-! ### Instance B: Dense formula (treewidth 3, 4 variables)
+
+    (x0 OR x1) AND (x1 OR x2) AND (x2 OR x3) AND
+    (x0 OR x3) AND (NOT x0 OR NOT x2)
+
+    Nearly complete interaction graph. Every split has many
+    cross-partition clauses. -/
+
+def denseFormula : SATFormula :=
+  [ [(0, true), (1, true)],       -- x0 OR x1
+    [(1, true), (2, true)],       -- x1 OR x2
+    [(2, true), (3, true)],       -- x2 OR x3
+    [(0, true), (3, true)],       -- x0 OR x3
+    [(0, false), (2, false)] ]    -- NOT x0 OR NOT x2
+
+/-! ### Instance C: Longer path (treewidth 1, 6 variables)
+
+    (x0 OR x1) AND (NOT x1 OR x2) AND (NOT x2 OR x3) AND
+    (NOT x3 OR x4) AND (NOT x4 OR NOT x5)
+
+    Path structure, 6 variables. Should show scaling. -/
+
+def longPath : SATFormula :=
+  [ [(0, true), (1, true)],       -- x0 OR x1
+    [(1, false), (2, true)],      -- NOT x1 OR x2
+    [(2, false), (3, true)],      -- NOT x2 OR x3
+    [(3, false), (4, true)],      -- NOT x3 OR x4
+    [(4, false), (5, false)] ]    -- NOT x4 OR NOT x5
+
+/-! ## Head-to-head comparison -/
+
+-- === Hard path (tw=1, 4 vars) ===
 #eval
-  let (result, cost) := satBruteForce pathFormula 4
-  (result, s!"brute: {cost} trees")
+  let (r, c) := flatBruteForce hardPath 4
+  (r, s!"flat-brute: {c} checks")
 
 #eval
-  let (result, cost) := satFactorized pathFormula 4
-  (result, s!"factorized: {cost}")
+  let (r, c) := satTreeDecomp hardPath 4
+  (r, s!"tree-decomp: {c} ops")
 
--- Triangle formula (treewidth 2, 3 variables)
+-- === Dense formula (tw=3, 4 vars) ===
 #eval
-  let (result, cost) := satBruteForce triangleFormula 3
-  (result, s!"brute: {cost} trees")
+  let (r, c) := flatBruteForce denseFormula 4
+  (r, s!"flat-brute: {c} checks")
 
 #eval
-  let (result, cost) := satFactorized triangleFormula 3
-  (result, s!"factorized: {cost}")
+  let (r, c) := satTreeDecomp denseFormula 4
+  (r, s!"tree-decomp: {c} ops")
 
--- Unsatisfiable (1 variable)
+-- === Long path (tw=1, 6 vars) ===
 #eval
-  let (result, cost) := satBruteForce unsatFormula 1
-  (result, s!"brute: {cost} trees")
+  let (r, c) := flatBruteForce longPath 6
+  (r, s!"flat-brute: {c} checks")
 
-/-! ## The treewidth test
+#eval
+  let (r, c) := satTreeDecomp longPath 6
+  (r, s!"tree-decomp: {c} ops")
 
-    If the framework captures treewidth:
-    - Path formula (tw=1): factorized should be MUCH cheaper than brute force
-    - Triangle formula (tw=2): factorized should be somewhat cheaper
-    - The ratio factorized/brute should correlate with treewidth
+-- === Original path (easy, 4 vars) ===
+#eval
+  let (r, c) := flatBruteForce pathFormula 4
+  (r, s!"flat-brute: {c} checks")
 
-    If the framework DOESN'T capture treewidth:
-    - Both construction strategies scale similarly regardless of structure
-    - The tree decomposition provides no leverage
+#eval
+  let (r, c) := satTreeDecomp pathFormula 4
+  (r, s!"tree-decomp: {c} ops")
 
-    The results above will tell us which case we're in. -/
+-- === Unsatisfiable ===
+#eval
+  let (r, c) := flatBruteForce unsatFormula 1
+  (r, s!"flat-brute: {c} checks")
 
-/-! ## Assessment (to be filled after results)
+#eval
+  let (r, c) := satTreeDecomp unsatFormula 1
+  (r, s!"tree-decomp: {c} ops")
 
-    The encoding works if:
-    1. Manual trees verify correctly (consistency + satisfaction)
-    2. Brute force finds solutions for satisfiable instances
-    3. Brute force exhausts search for unsatisfiable instances
-    4. Factorized construction shows speedup for low-treewidth instances
-    5. The speedup diminishes for high-treewidth instances
+/-! ## Hard instance: solution at the END of enumeration
 
-    What this demonstrates:
-    - The tree rotation framework CAN encode NP-complete problems
-    - The tree shape corresponds to the tree decomposition
-    - Factorizability correlates with treewidth
-    - The framework provides a concrete, computable complexity measure
+    Force brute force to search most of the space.
+    (NOT x0) AND (NOT x1) AND ... AND (NOT x_{n-1})
+    Only solution: all false. Enumeration tries all-true first. -/
 
-    What this does NOT demonstrate:
-    - A new algorithm for SAT (tree decomposition is well-known)
-    - A proof technique for P vs NP
-    - Anything beyond what treewidth theory already provides
+def allNegPath (n : ℕ) : SATFormula :=
+  (List.range n).map fun v => [(v, false)]  -- each clause: NOT x_v
 
-    The value is in the UNIFICATION: the same framework (one rule,
-    one data structure, one constraint) handles both the "easy"
-    examples (sorting, balanced partition) and NP-complete problems
-    (SAT). The tree shape is always the decomposition. The constraint
-    always gates the rotation. The factorizability is always the
-    complexity measure. -/
+-- 6 variables: flat brute must try 2^6 = 64 assignments
+-- (all-false is last in our enumeration order)
+#eval
+  let (r, c) := flatBruteForce (allNegPath 6) 6
+  (r, s!"flat-brute-6: {c} checks")
+
+#eval
+  let (r, c) := satTreeDecomp (allNegPath 6) 6
+  (r, s!"tree-decomp-6: {c} ops")
+
+-- 8 variables: flat brute tries 2^8 = 256
+#eval
+  let (r, c) := flatBruteForce (allNegPath 8) 8
+  (r, s!"flat-brute-8: {c} checks")
+
+#eval
+  let (r, c) := satTreeDecomp (allNegPath 8) 8
+  (r, s!"tree-decomp-8: {c} ops")
+
+-- 10 variables: flat brute tries 2^10 = 1024
+#eval
+  let (r, c) := flatBruteForce (allNegPath 10) 10
+  (r, s!"flat-brute-10: {c} checks")
+
+#eval
+  let (r, c) := satTreeDecomp (allNegPath 10) 10
+  (r, s!"tree-decomp-10: {c} ops")
+
+/-! ## Assessment
+
+    The comparison measures two things:
+
+    1. DOES TREE DECOMPOSITION GIVE SPEEDUP?
+       If tree-decomp cost << flat-brute cost for path instances,
+       the tree structure provides genuine leverage.
+
+    2. DOES TREEWIDTH PREDICT THE SPEEDUP?
+       If the speedup is larger for path (tw=1) than dense (tw=3),
+       treewidth correlates with factorizability.
+
+    What this demonstrates (if speedup is observed):
+    - The tree rotation framework naturally captures treewidth
+    - The tree shape IS the decomposition
+    - Splitting variables along the tree enables independent solving
+    - The factorization speedup is real and measurable
+
+    What this is:
+    - Tree decomposition (Arnborg, Robertson-Seymour) implemented
+      in the rotation calculus's term language
+    - Not a new algorithm, but a new ENCODING of a known algorithm
+
+    Why the encoding matters:
+    - The same framework handles sorting, partition, AND SAT
+    - The tree shape is always the strategy
+    - The constraint always gates the rotation
+    - Factorizability is always the complexity measure
+    - P vs NP is always "does the constraint factorize?" -/
 
 end RotationCalculus
