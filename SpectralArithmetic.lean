@@ -80,3 +80,5 @@ import SpectralArithmetic.Rotation.Random3SAT
 import SpectralArithmetic.Rotation.GraphOrder
 -- Choice-based SAT via AND-OR trees (#13)
 import SpectralArithmetic.Rotation.ChoiceSAT
+-- Hybrid solver: SmartDAG + Choice
+import SpectralArithmetic.Rotation.HybridSolver
