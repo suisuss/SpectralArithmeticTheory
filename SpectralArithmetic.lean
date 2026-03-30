@@ -76,3 +76,5 @@ import SpectralArithmetic.Rotation.Scaling
 import SpectralArithmetic.Rotation.DAGBounded
 -- Random 3-SAT generality test
 import SpectralArithmetic.Rotation.Random3SAT
+-- Graph-aware variable ordering (#12)
+import SpectralArithmetic.Rotation.GraphOrder
