@@ -133,54 +133,120 @@ def makeAbstraction (formula : SATFormula)
     The reduced problem has fewer "variables" (abstractions instead
     of raw variables) and fewer uncovered clauses. -/
 partial def extResSolve (formula : SATFormula) (vars : List ℕ)
-    (groupSize : ℕ := 3)
+    (groupSize : ℕ := 3) (depth : ℕ := 0) (maxDepth : ℕ := 5)
     : Option (List (ℕ × Bool)) × ℕ × ℕ :=  -- (solution, cost, abstractions_created)
   if vars.length ≤ groupSize then
-    -- Small enough: solve directly
-    let assigns := allVarAssignments vars
-    let valid := assigns.filter fun a =>
-      satisfiesFormula a (clausesInScope formula vars)
-    match valid.head? with
-    | some a => (some a, assigns.length, 0)
-    | none => (none, assigns.length, 0)
+    -- Small enough: solve directly with CDCL
+    let (found, cdclCost, learned) := cdclSearch formula vars []
+    let assign := if found then
+      -- Find an actual valid assignment
+      let assigns := allVarAssignments vars
+      assigns.find? fun a => satisfiesFormula a (clausesInScope formula vars)
+    else none
+    (assign, cdclCost, 0)
+  else if depth ≥ maxDepth then
+    -- Max depth: fall back to CDCL on remaining variables
+    let (found, cdclCost, _) := cdclSearch formula vars []
+    if found then
+      let assigns := allVarAssignments vars
+      let valid := assigns.find? fun a => satisfiesFormula a formula
+      (valid, cdclCost, 0)
+    else (none, cdclCost, 0)
   else
-    -- Phase 1: group variables
+    -- Phase 1: group variables into blocks
     let nGroups := (vars.length + groupSize - 1) / groupSize
     let groups := (List.range nGroups).map fun i =>
       let start := i * groupSize
       vars.drop start |>.take groupSize
 
-    -- Phase 2: for each group, find best partial assignment and abstract
-    let phase2 := groups.foldl (fun (acc : List Abstraction × List (List (ℕ × Bool)) × ℕ × ℕ) group =>
+    -- Phase 2: solve each group locally, create abstractions
+    let phase2 := groups.foldl
+      (fun (acc : List Abstraction × List (List (ℕ × Bool)) × ℕ × ℕ) group =>
       let (abstractions, groupAssigns, cost, nextId) := acc
       let localFormula := clausesInScope formula group
       let assigns := allVarAssignments group
       let newCost := cost + assigns.length
-      let best := assigns.foldl (fun (bestA, bestCount) a =>
-        let count := satisfactionCount a localFormula
-        if count > bestCount then (a, count) else (bestA, bestCount)
-      ) ([], 0)
-      if best.2 > 0 then
-        let abs := makeAbstraction formula best.1 nextId
-        (abs :: abstractions, best.1 :: groupAssigns, newCost, nextId + 1)
-      else
-        (abstractions, groupAssigns, newCost, nextId)
+      -- Find ALL valid local assignments (not just the best)
+      let validLocal := assigns.filter fun a =>
+        satisfiesFormula a localFormula
+      match validLocal.head? with
+      | some best =>
+        let abs := makeAbstraction formula best nextId
+        (abs :: abstractions, best :: groupAssigns, newCost, nextId + 1)
+      | none =>
+        -- No valid local assignment: try the best partial match
+        let best := assigns.foldl (fun (bestA, bestCount) a =>
+          let count := satisfactionCount a localFormula
+          if count > bestCount then (a, count) else (bestA, bestCount)
+        ) ([], 0)
+        if best.2 > 0 then
+          let abs := makeAbstraction formula best.1 nextId
+          (abs :: abstractions, best.1 :: groupAssigns, newCost, nextId + 1)
+        else (abstractions, groupAssigns, newCost, nextId)
     ) ([], [], 0, 0)
     let (abstractions, groupAssigns, cost, _) := phase2
 
-    -- Phase 3: check if the combined assignment works
+    -- Phase 3: check if combined group assignments solve the formula
     let combined := groupAssigns.foldl (· ++ ·) []
     if satisfiesFormula combined formula then
       (some combined, cost, abstractions.length)
     else
-      -- Phase 3b: use CDCL with abstracted starting point
-      let (found, cdclCost, _) := cdclSearch formula vars combined
-      if found then
-        (some combined, cost + cdclCost, abstractions.length)
+      -- Phase 4: build REDUCED formula and RECURSE
+      -- The reduced formula removes clauses covered by abstractions
+      let coveredIndices := abstractions.foldl
+        (fun acc abs => acc ++ abs.satisfiedClauses) []
+      let indexed : List (ℕ × SATClause) :=
+        formula.zip (List.range formula.length)
+        |>.map fun (clause, i) => (i, clause)
+      let uncoveredClauses := (indexed.filter fun (i, _) =>
+        !coveredIndices.contains i).map (·.2)
+
+      if uncoveredClauses.isEmpty then
+        -- All clauses covered! But combined didn't satisfy...
+        -- The abstractions are locally valid but globally inconsistent.
+        -- Try different group assignments via CDCL
+        let (found, cdclCost, _) := cdclSearch formula vars []
+        if found then
+          let assigns := allVarAssignments vars
+          let valid := assigns.find? fun a => satisfiesFormula a formula
+          (valid, cost + cdclCost, abstractions.length)
+        else (none, cost + cdclCost, abstractions.length)
       else
-        let (found2, cdclCost2, _) := cdclSearch formula vars []
-        (if found2 then some [] else none,
-         cost + cdclCost + cdclCost2, abstractions.length)
+        -- Uncovered clauses remain: extract their variables
+        let uncoveredVars := (uncoveredClauses.flatMap fun clause =>
+          clause.map fun (v, _) => v).eraseDups
+        -- RECURSE on the reduced problem
+        let (result, recCost, recAbs) :=
+          extResSolve uncoveredClauses uncoveredVars groupSize (depth + 1) maxDepth
+        match result with
+        | some partialAssign =>
+          -- Merge: use recursive solution for uncovered vars,
+          -- group assignments for covered vars
+          let merged := combined.filter (fun (v, _) =>
+            !partialAssign.any fun (v', _) => v == v') ++ partialAssign
+          if satisfiesFormula merged formula then
+            (some merged, cost + recCost, abstractions.length + recAbs)
+          else
+            -- Merge conflict: fall back to CDCL with partial knowledge
+            let (found, cdclCost, _) := cdclSearch formula vars merged
+            if found then
+              (some merged, cost + recCost + cdclCost,
+               abstractions.length + recAbs)
+            else
+              (none, cost + recCost + cdclCost,
+               abstractions.length + recAbs)
+        | none =>
+          -- Reduced problem unsolvable: original is UNSAT
+          -- (or our group assignments were wrong — try CDCL)
+          let (found, cdclCost, _) := cdclSearch formula vars []
+          if found then
+            let assigns := allVarAssignments vars
+            let valid := assigns.find? fun a => satisfiesFormula a formula
+            (valid, cost + recCost + cdclCost,
+             abstractions.length + recAbs)
+          else
+            (none, cost + recCost + cdclCost,
+             abstractions.length + recAbs)
 
 /-- Wrapper. -/
 def satExtRes (formula : SATFormula) (nVars : ℕ)
