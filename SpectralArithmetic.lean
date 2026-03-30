@@ -84,3 +84,5 @@ import SpectralArithmetic.Rotation.ChoiceSAT
 import SpectralArithmetic.Rotation.HybridSolver
 -- Adaptive solver: evaluate then select
 import SpectralArithmetic.Rotation.AdaptiveSolver
+-- Clause learning / CDCL (general resolution)
+import SpectralArithmetic.Rotation.ClauseLearning
