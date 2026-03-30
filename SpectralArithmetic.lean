@@ -86,3 +86,5 @@ import SpectralArithmetic.Rotation.HybridSolver
 import SpectralArithmetic.Rotation.AdaptiveSolver
 -- Clause learning / CDCL (general resolution)
 import SpectralArithmetic.Rotation.ClauseLearning
+-- Message passing (coupled trees, belief propagation)
+import SpectralArithmetic.Rotation.MessagePassing
