@@ -70,3 +70,5 @@ import SpectralArithmetic.Rotation.SATEncoding
 import SpectralArithmetic.Rotation.DAG
 -- Choice constructor (AND-OR trees, alternation)
 import SpectralArithmetic.Rotation.Choice
+-- Scaling comparison across treewidths
+import SpectralArithmetic.Rotation.Scaling
