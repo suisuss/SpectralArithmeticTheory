@@ -74,3 +74,5 @@ import SpectralArithmetic.Rotation.Choice
 import SpectralArithmetic.Rotation.Scaling
 -- Bounded DAG (treewidth-parameterized solver)
 import SpectralArithmetic.Rotation.DAGBounded
+-- Random 3-SAT generality test
+import SpectralArithmetic.Rotation.Random3SAT
