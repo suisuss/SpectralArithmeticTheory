@@ -134,5 +134,7 @@ import SpectralArithmetic.Rotation.FastResolution
 import SpectralArithmetic.Rotation.ProofSystemTest
 -- Adaptive meta-solver: monolithic/composed hybrid
 import SpectralArithmetic.Rotation.AdaptiveMetaSolver
+-- Tactic selector: meta-guided strategy dispatch
+import SpectralArithmetic.Rotation.TacticSelector
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
