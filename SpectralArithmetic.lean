@@ -148,5 +148,7 @@ import SpectralArithmetic.Rotation.IteratedCDCL
 import SpectralArithmetic.Rotation.CrawlContract
 -- Transition prediction: can we detect the phase jump early?
 import SpectralArithmetic.Rotation.TransitionPredictor
+-- Industrial-like modular instances
+import SpectralArithmetic.Rotation.IndustrialInstances
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
