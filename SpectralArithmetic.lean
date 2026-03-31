@@ -140,5 +140,7 @@ import SpectralArithmetic.Rotation.TacticSelector
 import SpectralArithmetic.Rotation.WidthGuidedSolver
 -- Chain analysis: do random UNSAT instances have single-chain proofs?
 import SpectralArithmetic.Rotation.ChainAnalysis
+-- CDCL with 1-UIP conflict analysis
+import SpectralArithmetic.Rotation.CDCL1UIP
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
