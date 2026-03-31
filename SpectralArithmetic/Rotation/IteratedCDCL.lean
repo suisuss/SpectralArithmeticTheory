@@ -95,18 +95,29 @@ def permuteWithSeed (xs : List ℕ) (seed : ℕ) : List ℕ :=
           arr := arr.set! j vi
     return arr.toList
 
+/-- Detect if the width trajectory suggests structured (narrowing)
+    or random (stable) conflict pattern. -/
+def shouldReorder (prevWidths : List ℕ) : Bool :=
+  -- If we have ≥2 rounds of data and width is NOT decreasing → reorder
+  match prevWidths.reverse with
+  | w2 :: w1 :: _ => w2 >= w1  -- width stable or increasing → reorder
+  | _ => false  -- not enough data → don't reorder yet
+
 def oneRound (formula : SATFormula) (vars : List ℕ)
     (assign : List (ℕ × Bool)) (roundSeed : ℕ := 0)
+    (prevWidths : List ℕ := [])
     : String × List SATClause × ℕ × SATFormula × List ℕ × List (ℕ × Bool) :=
-  -- Run 1-UIP on current formula with PERMUTED variable order
   let freeVars := vars.filter fun v =>
     !assign.any fun (v', _) => v == v'
   if List.length freeVars == 0 then
     ("done", [], 0, formula, [], assign)
   else
-    -- Permute variable order for diversity across rounds
-    let orderedVars := if roundSeed == 0 then freeVars
-      else permuteWithSeed freeVars roundSeed
+    -- Adaptive ordering: reorder if width trajectory is stable (random)
+    -- Keep fixed if width is narrowing (structured)
+    let doReorder := shouldReorder prevWidths
+    let orderedVars := if doReorder && roundSeed > 0
+      then permuteWithSeed freeVars roundSeed
+      else freeVars
     let (found1, _, learned) :=
       satCDCL1UIPOrdered formula orderedVars
     if found1 then
@@ -145,14 +156,17 @@ def iteratedSolve (formula : SATFormula) (nVars : ℕ)
     : List IterationLog × Bool :=
   let rec go (f : SATFormula) (vars : List ℕ)
       (assign : List (ℕ × Bool))
-      (logs : List IterationLog) (fuel : ℕ)
+      (logs : List IterationLog) (wHist : List ℕ) (fuel : ℕ)
       : List IterationLog × Bool :=
     match fuel with
     | 0 => (logs, false)
     | fuel + 1 =>
-      let roundSeed := maxRounds - fuel  -- different seed each round
+      let roundSeed := maxRounds - fuel
       let (status, learned, cascade, resF, resV, resA) :=
-        oneRound f vars assign roundSeed
+        oneRound f vars assign roundSeed wHist
+      let avgW := if learned.isEmpty then 0
+        else (learned.map List.length).foldl (· + ·) 0 /
+             List.length learned
       let log : IterationLog :=
         { round := maxRounds - fuel,
           status := status,
@@ -161,19 +175,19 @@ def iteratedSolve (formula : SATFormula) (nVars : ℕ)
           cascade := cascade,
           residualV := List.length resV }
       let newLogs := logs ++ [log]
+      let newWHist := wHist ++ [avgW]
       match status with
       | "UNSAT" => (newLogs, true)
       | "SAT" => (newLogs, false)
       | "done" => (newLogs, false)
-      | _ =>  -- "residual"
+      | _ =>
         if List.length resV == 0 then
-          (newLogs, false)  -- no more variables
+          (newLogs, false)
         else if List.length learned == 0 then
-          (newLogs, false)  -- no new clauses learned, stuck
+          (newLogs, false)
         else
-          -- Continue: formula was augmented with learned clauses
-          go resF resV resA newLogs fuel
-  go formula (List.range nVars) [] [] maxRounds
+          go resF resV resA newLogs newWHist fuel
+  go formula (List.range nVars) [] [] [] maxRounds
 
 /-! ## Demonstrations -/
 
