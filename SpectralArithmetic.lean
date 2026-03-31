@@ -136,5 +136,7 @@ import SpectralArithmetic.Rotation.ProofSystemTest
 import SpectralArithmetic.Rotation.AdaptiveMetaSolver
 -- Tactic selector: meta-guided strategy dispatch
 import SpectralArithmetic.Rotation.TacticSelector
+-- Width-guided solver: phase-aware resolution with BP and interpolation
+import SpectralArithmetic.Rotation.WidthGuidedSolver
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
