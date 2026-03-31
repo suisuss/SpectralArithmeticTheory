@@ -150,5 +150,7 @@ import SpectralArithmetic.Rotation.CrawlContract
 import SpectralArithmetic.Rotation.TransitionPredictor
 -- Industrial-like modular instances
 import SpectralArithmetic.Rotation.IndustrialInstances
+-- Promotion-aware learning
+import SpectralArithmetic.Rotation.PromotionAware
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
