@@ -144,5 +144,7 @@ import SpectralArithmetic.Rotation.ChainAnalysis
 import SpectralArithmetic.Rotation.CDCL1UIP
 -- Iterated 1-UIP: learn → augment → cascade → repeat
 import SpectralArithmetic.Rotation.IteratedCDCL
+-- Crawl-Contract: signal-driven inprocessing
+import SpectralArithmetic.Rotation.CrawlContract
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
