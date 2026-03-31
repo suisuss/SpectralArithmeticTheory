@@ -22,7 +22,7 @@
   what you've found. Resolution does the actual contraction.
 -/
 
-import SpectralArithmetic.Rotation.TacticSelector
+import SpectralArithmetic.Rotation.FastResolution
 
 set_option linter.style.longLine false
 set_option linter.style.whitespace false
@@ -30,6 +30,10 @@ set_option linter.style.whitespace false
 namespace RotationCalculus
 
 open Term
+
+/-- Variables in a formula (local copy to avoid cycle). -/
+private def wgCountVars (f : SATFormula) : List ℕ :=
+  (f.flatMap fun c => c.map (·.1)).eraseDups
 
 /-! ## Variable bias estimation -/
 
@@ -169,7 +173,7 @@ def widthStep (ws : WidthState) (targetVar : Option ℕ)
     monitor width, switch strategy at the peak. -/
 def widthGuidedResolve (formula : SATFormula) (maxSteps : ℕ)
     : WidthState :=
-  let vars := countVars formula
+  let vars := wgCountVars formula
   let biasRanking := rankByBias formula vars
   -- Use bias ranking as variable priority
   let varQueue := biasRanking.map (·.1)
@@ -224,8 +228,8 @@ def widthGuidedSolve (formula : SATFormula) (maxSteps : ℕ)
   let ws := widthGuidedResolve formula maxSteps
   let refuted := ws.isRefuted
   let nSteps := List.length ws.steps
-  let log := [s!"vars={List.length (countVars formula)}",
-    s!"bias_order={rankByBias formula (countVars formula) |>.map (·.1)}",
+  let log := [s!"vars={List.length (wgCountVars formula)}",
+    s!"bias_order={rankByBias formula (wgCountVars formula) |>.map (·.1)}",
     s!"peak_width={ws.peakWidth} at step {ws.peakStep}",
     s!"final_phase={ws.phase}",
     s!"refuted={refuted} in {nSteps} steps"]
@@ -282,7 +286,7 @@ def widthGuidedSolve (formula : SATFormula) (maxSteps : ℕ)
     ("chain-5", chainFormula 5),
     ("tseitin-5", tseitinCycle 5)]
   for (name, f) in formulas do
-    let vars := countVars f
+    let vars := wgCountVars f
     let biasR := rankByBias f vars
     let actR := rankByActivity f vars
     IO.println s!"  {name}:"

@@ -23,6 +23,7 @@
   sub-derivations = split).
 -/
 
+import SpectralArithmetic.Rotation.IteratedCDCL
 import SpectralArithmetic.Rotation.AdaptiveMetaSolver
 
 set_option linter.style.longLine false
@@ -176,10 +177,11 @@ partial def metaGuidedSolve (formula : SATFormula) (vars : List ℕ)
         cdclSearchTraced formula vars []
       ([entry], found, if found then finalAssign else [])
     | .resolution =>
-      -- Try resolution to prove UNSAT
-      let (deriv, _) := greedyResolution formula 500
-      let isUnsat := deriv.conclusion.isEmpty
-      ([s!"resolution→UNSAT={isUnsat}"], false, [])
+      -- Use iterated 1-UIP to prove UNSAT
+      let (logs, proven) := iteratedSolve formula (List.length vars) 5
+      let nRounds := List.length logs
+      ([s!"iterated1UIP→UNSAT={proven}(rounds={nRounds})"],
+       false, [])
 
 /-! ## Demonstrations -/
 

@@ -32,8 +32,11 @@ instance : Inhabited UPResult where
 
 /-- Unit propagation that detects conflicting assignments.
     If variable v is assigned both true and false → UNSAT. -/
-partial def upWithConflict (formula : SATFormula) (vars : List ℕ)
-    (assign : List (ℕ × Bool)) : UPResult :=
+def upWithConflict (formula : SATFormula) (vars : List ℕ)
+    (assign : List (ℕ × Bool)) (fuel : ℕ := 100) : UPResult :=
+  match fuel with
+  | 0 => .ok { formula := formula, vars := vars, assign := assign } []
+  | fuel + 1 =>
   let units := findUnits formula
   let pures := findPureLiterals formula
     (vars.filter fun v => !assign.any fun (v', _) => v == v')
@@ -69,7 +72,7 @@ partial def upWithConflict (formula : SATFormula) (vars : List ℕ)
       if simplified.any (·.isEmpty) then
         .conflict 0
       else
-        upWithConflict simplified newVars newAssign
+        upWithConflict simplified newVars newAssign fuel
 
 /-! ## Iterated 1-UIP pipeline -/
 
@@ -84,12 +87,15 @@ def oneRound (formula : SATFormula) (vars : List ℕ)
   if List.length freeVars == 0 then
     ("done", [], 0, formula, [], assign)
   else
-    -- First check: is the formula SAT by naive CDCL?
+    -- Guard: confirm UNSAT with naive CDCL first
+    -- (1-UIP has a soundness bug on some SAT instances)
     let (naiveFound, _, _) := cdclSearch formula freeVars assign
     if naiveFound then
       ("SAT", [], 0, formula, freeVars, assign)
     else
-    let (_, _, learned) := satCDCL1UIP formula (List.length freeVars)
+    -- UNSAT confirmed — use 1-UIP for short learned clauses
+    let (_, _, learned) :=
+      satCDCL1UIP formula (List.length freeVars)
     let varMap := freeVars
     let remappedLearned := learned.map fun c =>
       c.map fun (v, p) =>

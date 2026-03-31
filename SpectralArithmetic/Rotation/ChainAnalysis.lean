@@ -11,7 +11,7 @@
   If no, what's the minimum number of breaks (branches)?
 -/
 
-import SpectralArithmetic.Rotation.WidthGuidedSolver
+import SpectralArithmetic.Rotation.FastResolution
 
 set_option linter.style.longLine false
 set_option linter.style.whitespace false

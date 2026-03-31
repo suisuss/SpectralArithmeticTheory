@@ -10,7 +10,7 @@
   If lengths vary → strategy matters.
 -/
 
-import SpectralArithmetic.Rotation.FastResolution
+import SpectralArithmetic.Rotation.IteratedCDCL
 
 set_option linter.style.longLine false
 set_option linter.style.whitespace false

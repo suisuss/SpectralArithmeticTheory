@@ -12,7 +12,7 @@
   records which strategy was used at each level.
 -/
 
-import SpectralArithmetic.Rotation.ProofSystemTest
+import SpectralArithmetic.Rotation.IteratedCDCL
 
 set_option linter.style.longLine false
 set_option linter.style.whitespace false
@@ -111,22 +111,35 @@ partial def metaSolve (formula : SATFormula) (vars : List ℕ)
         rawSteps := cascadeLen,
         metaEvents := 1 }
     else if residualRatio ≤ 50 || List.length remainingVars ≤ 3 then
-      -- Residual is small: finish with CDCL
-      let (found, cdclAssign, cdclTrace) :=
-        cdclSearchTraced upState.formula remainingVars upState.assign
-      let cdclSteps := List.length cdclTrace
-      if found then
-        { solved := true,
-          assign := cdclAssign,
-          strategies := [.cascade cascadeLen, .cdclFinish],
-          rawSteps := cascadeLen + cdclSteps,
-          metaEvents := 2 }
-      else
-        { solved := false,
+      -- Residual is small: finish with iterated 1-UIP
+      let (logs, proven) := iteratedSolve upState.formula
+        (List.length remainingVars) 5
+      let iterSteps := logs.foldl
+        (fun a (l : IterationLog) => a + l.learned + l.cascade) 0
+      let iterEvents := List.length logs
+      if proven then
+        { solved := false,  -- UNSAT proven
           assign := upState.assign,
           strategies := [.cascade cascadeLen, .cdclFinish],
-          rawSteps := cascadeLen + cdclSteps,
-          metaEvents := 2 }
+          rawSteps := cascadeLen + iterSteps,
+          metaEvents := 1 + iterEvents }
+      else
+        -- 1-UIP found SAT or couldn't prove UNSAT — fallback
+        let (found, cdclAssign, cdclTrace) :=
+          cdclSearchTraced upState.formula remainingVars upState.assign
+        let cdclSteps := List.length cdclTrace
+        if found then
+          { solved := true,
+            assign := cdclAssign,
+            strategies := [.cascade cascadeLen, .cdclFinish],
+            rawSteps := cascadeLen + cdclSteps,
+            metaEvents := 2 }
+        else
+          { solved := false,
+            assign := upState.assign,
+            strategies := [.cascade cascadeLen, .cdclFinish],
+            rawSteps := cascadeLen + cdclSteps,
+            metaEvents := 2 }
     else
       -- Residual is large: try splitting
       let splitVar := bestSplitPoint upState.formula remainingVars

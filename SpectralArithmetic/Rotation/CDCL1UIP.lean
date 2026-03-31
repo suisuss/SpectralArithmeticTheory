@@ -21,7 +21,7 @@
   assignment — often width 1 or 2 for structured formulas.
 -/
 
-import SpectralArithmetic.Rotation.ChainAnalysis
+import SpectralArithmetic.Rotation.FastResolution
 
 set_option linter.style.longLine false
 set_option linter.style.whitespace false
@@ -96,15 +96,19 @@ def propagateWithReasons (formula : SATFormula)
   let newAssign := newAssigns.map fun (v, p, _) => (v, p)
   (newAssign, newGraph)
 
-/-- UP to fixpoint with reason tracking. -/
-partial def propagateFixpoint (formula : SATFormula)
+/-- UP to fixpoint with reason tracking. Uses fuel = nVars. -/
+def propagateFixpoint (formula : SATFormula)
     (assign : List (ℕ × Bool)) (graph : ImplGraph)
-    (level : ℕ) : List (ℕ × Bool) × ImplGraph :=
-  let (newAssigns, newGraph) :=
-    propagateWithReasons formula assign graph level
-  if newAssigns.isEmpty then (assign, newGraph)
-  else
-    propagateFixpoint formula (assign ++ newAssigns) newGraph level
+    (level : ℕ) (fuel : ℕ := 100) : List (ℕ × Bool) × ImplGraph :=
+  match fuel with
+  | 0 => (assign, graph)
+  | fuel + 1 =>
+    let (newAssigns, newGraph) :=
+      propagateWithReasons formula assign graph level
+    if newAssigns.isEmpty then (assign, newGraph)
+    else
+      propagateFixpoint formula (assign ++ newAssigns) newGraph
+        level fuel
 
 /-! ## 1-UIP conflict analysis -/
 
@@ -145,19 +149,17 @@ def analyze1UIP (conflictClause : SATClause) (graph : ImplGraph)
           -- Get the reason clause
           match findReason graph rv with
           | some { reason := .propagated reasonClause, .. } =>
-            -- Resolve: remove rv from clause, add reasonClause's
-            -- other literals (negated, since they forced rv)
+            -- Standard resolution: remove the pivot variable from both
+            -- clauses, merge the remaining literals.
             let without_rv := clause.filter fun (v, _) => v != rv
             let from_reason := reasonClause.filter fun (v, _) => v != rv
-            -- The reason clause's literals (except rv) contributed to
-            -- forcing rv, so their NEGATIONS go in the learned clause
-            let negated := from_reason.map fun (v, p) => (v, !p)
-            go (without_rv ++ negated) fuel
+            go (without_rv ++ from_reason) fuel
           | _ => clause.eraseDups
-  -- Start: negate the conflict clause (the conflict tells us which
-  -- literals are false, the learned clause says "not all of these")
-  let initial := conflictClause.map fun (v, p) => (v, !p)
-  let raw := go initial (List.length graph + 1)
+  -- Start with the CONFLICT CLAUSE itself. Its literals are all
+  -- falsified by the current assignment. Resolution with reason
+  -- clauses will replace propagated literals with their antecedents,
+  -- producing the 1-UIP learned clause.
+  let raw := go conflictClause (List.length graph + 1)
   -- Clean up: remove duplicate variables, remove tautologies
   let deduped := raw.eraseDups
   -- Remove complementary pairs (x and ¬x in same clause = tautology)
@@ -173,47 +175,57 @@ def analyze1UIP (conflictClause : SATClause) (graph : ImplGraph)
 /-! ## CDCL with 1-UIP -/
 
 /-- CDCL search with 1-UIP conflict analysis.
-    Tracks implication graph for learned clause minimization. -/
-partial def cdcl1UIP (formula : SATFormula) (vars : List ℕ)
+    Tracks implication graph for learned clause minimization.
+    Terminates: each recursive call removes one variable from vars. -/
+def cdcl1UIP (formula : SATFormula) (vars : List ℕ)
     (assign : List (ℕ × Bool)) (graph : ImplGraph)
     (level : ℕ)
     : Bool × ℕ × List SATClause × ImplGraph :=
-  -- Unit propagation with reason tracking
-  let (propAssign, propGraph) :=
-    propagateFixpoint formula assign graph level
-  -- Check for conflict
-  let conflict := findConflict formula propAssign
-  match conflict with
-  | some conflictClause =>
-    -- Conflict! Analyze with 1-UIP
-    let learned := analyze1UIP conflictClause propGraph level
-    (false, 1, [learned], propGraph)
-  | none =>
-    match vars.filter fun v =>
-      !(propAssign.any fun (v', _) => v == v') with
-    | [] =>
-      -- All assigned, no conflict → SAT
-      (true, 1, [], propGraph)
-    | v :: rest =>
-      -- Decision: try v = true
-      let decGraph := propGraph ++
-        [{ var := v, pol := true, level := level + 1,
-           reason := .decision (level + 1) }]
-      let trueAssign := propAssign ++ [(v, true)]
-      let (foundT, costT, learnedT, _) :=
-        cdcl1UIP formula rest trueAssign decGraph (level + 1)
-      if foundT then (true, costT + 1, learnedT, propGraph)
+  match vars with
+  | [] =>
+    -- No more variables to decide on
+    let (propAssign, propGraph) :=
+      propagateFixpoint formula assign graph level
+    let conflict := findConflict formula propAssign
+    match conflict with
+    | some conflictClause =>
+      let learned := analyze1UIP conflictClause propGraph level
+      (false, 1, [learned], propGraph)
+    | none => (true, 1, [], propGraph)
+  | v :: rest =>
+    -- Propagate first
+    let (propAssign, propGraph) :=
+      propagateFixpoint formula assign graph level
+    -- Check for conflict before deciding
+    let conflict := findConflict formula propAssign
+    match conflict with
+    | some conflictClause =>
+      let learned := analyze1UIP conflictClause propGraph level
+      (false, 1, [learned], propGraph)
+    | none =>
+      -- Skip already-assigned variables
+      if propAssign.any fun (v', _) => v == v' then
+        cdcl1UIP formula rest propAssign propGraph level
       else
-        -- Backtrack: try v = false with learned clauses
-        let formula' := formula ++ learnedT
-        let decGraph2 := propGraph ++
-          [{ var := v, pol := false, level := level + 1,
+        -- Decision: try v = true
+        let decGraph := propGraph ++
+          [{ var := v, pol := true, level := level + 1,
              reason := .decision (level + 1) }]
-        let falseAssign := propAssign ++ [(v, false)]
-        let (foundF, costF, learnedF, _) :=
-          cdcl1UIP formula' rest falseAssign decGraph2 (level + 1)
-        (foundF, costT + costF + 1,
-         learnedT ++ learnedF, propGraph)
+        let trueAssign := propAssign ++ [(v, true)]
+        let (foundT, costT, learnedT, _) :=
+          cdcl1UIP formula rest trueAssign decGraph (level + 1)
+        if foundT then (true, costT + 1, learnedT, propGraph)
+        else
+          let formula' := formula ++ learnedT
+          let decGraph2 := propGraph ++
+            [{ var := v, pol := false, level := level + 1,
+               reason := .decision (level + 1) }]
+          let falseAssign := propAssign ++ [(v, false)]
+          let (foundF, costF, learnedF, _) :=
+            cdcl1UIP formula' rest falseAssign decGraph2 (level + 1)
+          (foundF, costT + costF + 1,
+           learnedT ++ learnedF, propGraph)
+termination_by vars.length
 
 /-- Wrapper: CDCL with 1-UIP. -/
 def satCDCL1UIP (formula : SATFormula) (nVars : ℕ)
@@ -272,9 +284,7 @@ def satCDCL1UIP (formula : SATFormula) (nVars : ℕ)
       let (gd, _) := greedyResolution augmented 500
       IO.println s!"  greedy(orig+1UIP): {List.length gd.steps} □={gd.conclusion.isEmpty}"
       if gd.conclusion.isEmpty then
-        let (breaks, maxChain, _, _) :=
-          analyzeChain gd.steps augmented
-        IO.println s!"    breaks={breaks} maxChain={maxChain}"
+        IO.println s!"    □ derived"
       IO.println ""
 
 #eval! do
