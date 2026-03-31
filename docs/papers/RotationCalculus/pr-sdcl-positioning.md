@@ -161,3 +161,70 @@ The proof complexity context (PR, SDCL, RUP) should be cited as the theoretical 
 - [Pool Resolution and Its Relation to Regular Resolution and DPLL with Clause Learning (Van Gelder 2005)](https://link.springer.com/chapter/10.1007/11591191_40)
 - [Proof Complexity and SAT Solving (Buss, Nordstrom)](https://mathweb.ucsd.edu/~sbuss/ResearchWeb/ProofComplexitySAT/ProofComplexityChapter.pdf)
 - [Learning Shorter Redundant Clauses in SDCL Using MaxSAT (2023)](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.SAT.2023.18)
+
+
+---
+
+The due diligence reveals a clear picture:
+
+  What's known:
+  - The learning certificate is RUP — standard since ~2008
+  - The proof system hierarchy (RUP ⊂ RAT ⊂ SPR ⊂ PR) is established
+  - SDCL solves PHP/Tseitin in polynomial time; we're bounded by resolution
+  - PR clauses are the theoretical framework for "clauses that help UP"
+
+  What's novel:
+  - The SIGNALS we measure (contraction ratio trajectory, width trajectory,
+  promotion ratio) don't exist in any solver or proof system
+  - The ADAPTIVE DECISIONS driven by those signals (ordering, budget, split)
+  are new
+  - The CRAWL-CONTRACT architecture with signal-driven phase switching is new
+  - The promotion ratio as a cascade predictor (0% = no cascade, ≥33% =
+  breakthrough) is a concrete empirical finding
+
+  The correct framing: Not "a new proof system" but "signal-driven
+  inprocessing — using contraction ratio, width trajectory, and promotion
+  ratio as runtime signals for adaptive SAT solving." The contributions are
+  measurement infrastructure and the adaptive decisions it enables.
+
+  The next question from the priority list: should we lift from resolution to
+   PR (integrate SDCL-style learning into the iterated pipeline)? That would
+  give the system exponential speedups on PHP/Tseitin while keeping all the
+  measurement infrastructure. Or continue with the current resolution-level
+  system and focus on scaling/engineering?
+
+On lifting to PR/SDCL: don't do it yet. Here's why.
+
+  SDCL is a different solving paradigm — it finds satisfying assignments of
+  sub-formulas to generate clauses, rather than learning from conflicts.
+  Integrating it means building a second solver inside your solver. That's a
+  significant implementation effort, and it changes what you're testing.
+  You'd no longer know whether your signals helped or whether SDCL's
+  exponential power did the heavy lifting.
+
+  The cleaner path: fork CaDiCaL now. Your contributions are the signals and
+  the adaptive decisions they drive. CaDiCaL already has proper CDCL, watched
+   literals, clause deletion, restarts, LBD — all the engineering you'd spend
+   months reimplementing. You bolt on three things:
+
+  1. Width trajectory monitoring on learned clauses — suppress restarts
+  during narrowing, force restarts during sustained widening
+  2. Contraction ratio measurement after each inprocessing phase — adapt the
+  inprocessing budget (high ratio = inprocess more often, low ratio = search
+  longer)
+  3. Adaptive variable ordering — detect structured vs random from width
+  stability, switch between fixed VSIDS and periodic activity randomization
+
+  Each of these is a localized modification. You can A/B test each one
+  independently on competition benchmarks. You get definitive scaling data.
+  And the paper writes itself: "We introduce three runtime structural signals
+   for adaptive SAT solving, implement them as modifications to CaDiCaL, and
+  evaluate on SAT Competition 2024 benchmarks."
+
+  That's a clean, publishable, falsifiable contribution. If the signals help
+  on 5% of instances without hurting others, it's a competition contribution.
+   If they don't help at scale, you know and you stop.
+
+  Save SDCL integration for after you have the scaling data. If the signals
+  work at scale on resolution-level CDCL, adding PR-level power on top is a
+  natural follow-up paper. If they don't work at scale, SDCL won't save them.
