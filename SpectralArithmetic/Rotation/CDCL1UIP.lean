@@ -157,7 +157,18 @@ def analyze1UIP (conflictClause : SATClause) (graph : ImplGraph)
   -- Start: negate the conflict clause (the conflict tells us which
   -- literals are false, the learned clause says "not all of these")
   let initial := conflictClause.map fun (v, p) => (v, !p)
-  go initial (List.length graph + 1)
+  let raw := go initial (List.length graph + 1)
+  -- Clean up: remove duplicate variables, remove tautologies
+  let deduped := raw.eraseDups
+  -- Remove complementary pairs (x and ¬x in same clause = tautology)
+  let isTautology := deduped.any fun (v, p) =>
+    deduped.any fun (v', p') => v == v' && p != p'
+  if isTautology then
+    -- Remove one side of each complementary pair
+    let cleaned := deduped.filter fun (v, p) =>
+      !(deduped.any fun (v', p') => v == v' && p != p' && !p)
+    cleaned
+  else deduped
 
 /-! ## CDCL with 1-UIP -/
 
