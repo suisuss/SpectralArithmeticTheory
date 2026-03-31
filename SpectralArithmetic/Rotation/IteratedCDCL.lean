@@ -87,15 +87,13 @@ def oneRound (formula : SATFormula) (vars : List ℕ)
   if List.length freeVars == 0 then
     ("done", [], 0, formula, [], assign)
   else
-    -- Guard: confirm UNSAT with naive CDCL first
-    -- (1-UIP has a soundness bug on some SAT instances)
-    let (naiveFound, _, _) := cdclSearch formula freeVars assign
-    if naiveFound then
+    -- 1-UIP directly — soundness bug fixed (findUnitReasons
+    -- now skips satisfied clauses)
+    let (found1, _, learned) :=
+      satCDCL1UIP formula (List.length freeVars)
+    if found1 then
       ("SAT", [], 0, formula, freeVars, assign)
     else
-    -- UNSAT confirmed — use 1-UIP for short learned clauses
-    let (_, _, learned) :=
-      satCDCL1UIP formula (List.length freeVars)
     let varMap := freeVars
     let remappedLearned := learned.map fun c =>
       c.map fun (v, p) =>
@@ -155,9 +153,10 @@ def iteratedSolve (formula : SATFormula) (nVars : ℕ)
       | _ =>  -- "residual"
         if List.length resV == 0 then
           (newLogs, false)  -- no more variables
-        else if List.length resV == List.length vars then
-          (newLogs, false)  -- no progress
+        else if List.length learned == 0 then
+          (newLogs, false)  -- no new clauses learned, stuck
         else
+          -- Continue: formula was augmented with learned clauses
           go resF resV resA newLogs fuel
   go formula (List.range nVars) [] [] maxRounds
 

@@ -69,46 +69,70 @@ def findUnitReasons (formula : SATFormula)
     (assign : List (ℕ × Bool))
     : List (ℕ × Bool × SATClause) :=
   formula.filterMap fun clause =>
-    -- Count unfalsified literals
-    let unfalsified := clause.filter fun (v, p) =>
-      !(assign.any fun (v', p') => v == v' && p != p')
-    -- Count unassigned literals among unfalsified
-    let unassigned := unfalsified.filter fun (v, _) =>
-      !(assign.any fun (v', _) => v == v')
-    if List.length unassigned == 1 then
-      match unassigned with
-      | [(v, p)] => some (v, p, clause)
-      | _ => none
-    else none
+    -- Skip already-satisfied clauses
+    let satisfied := clause.any fun (v, p) =>
+      assign.any fun (v', p') => v == v' && p == p'
+    if satisfied then none
+    else
+      -- Among unsatisfied: find unassigned literals
+      let unassigned := clause.filter fun (v, _) =>
+        !(assign.any fun (v', _) => v == v')
+      if List.length unassigned == 1 then
+        match unassigned with
+        | [(v, p)] => some (v, p, clause)
+        | _ => none
+      else none
+
+/-- Result of propagation: either new assignments or a conflict. -/
+inductive PropResult where
+  | ok : List (ℕ × Bool) → ImplGraph → PropResult
+  | conflict : SATClause → ImplGraph → PropResult
 
 /-- Unit propagation with implication graph tracking.
-    Returns (new assignments, updated graph). -/
+    Detects conflicts: if a unit forces v=p but v is already
+    assigned !p, returns the conflicting clause. -/
 def propagateWithReasons (formula : SATFormula)
     (assign : List (ℕ × Bool)) (graph : ImplGraph)
-    (level : ℕ) : List (ℕ × Bool) × ImplGraph :=
+    (level : ℕ) : PropResult :=
   let units := findUnitReasons formula assign
   let newAssigns := units.filter fun (v, _, _) =>
     !(assign.any fun (v', _) => v == v')
-  let newGraph := newAssigns.foldl (fun g (v, p, clause) =>
-    g ++ [{ var := v, pol := p, level := level,
-             reason := .propagated clause }]
-  ) graph
-  let newAssign := newAssigns.map fun (v, p, _) => (v, p)
-  (newAssign, newGraph)
+  -- Check for conflicts: does any new assignment contradict existing?
+  let conflictUnit := newAssigns.find? fun (v, p, _) =>
+    assign.any fun (v', p') => v == v' && p != p'
+  match conflictUnit with
+  | some (_, _, clause) =>
+    .conflict clause graph
+  | none =>
+    -- Also check within new assignments for contradictions
+    let selfConflict := newAssigns.find? fun (v, p, _) =>
+      newAssigns.any fun (v', p', _) => v == v' && p != p'
+    match selfConflict with
+    | some (_, _, clause) =>
+      .conflict clause graph
+    | none =>
+      let newGraph := newAssigns.foldl (fun g (v, p, clause) =>
+        g ++ [{ var := v, pol := p, level := level,
+                 reason := .propagated clause }]
+      ) graph
+      let newAssign := newAssigns.map fun (v, p, _) => (v, p)
+      .ok newAssign newGraph
 
-/-- UP to fixpoint with reason tracking. Uses fuel = nVars. -/
+/-- UP to fixpoint with reason tracking.
+    Returns either (assignments, graph) or a conflict clause. -/
 def propagateFixpoint (formula : SATFormula)
     (assign : List (ℕ × Bool)) (graph : ImplGraph)
-    (level : ℕ) (fuel : ℕ := 100) : List (ℕ × Bool) × ImplGraph :=
+    (level : ℕ) (fuel : ℕ := 100) : PropResult :=
   match fuel with
-  | 0 => (assign, graph)
+  | 0 => .ok assign graph
   | fuel + 1 =>
-    let (newAssigns, newGraph) :=
-      propagateWithReasons formula assign graph level
-    if newAssigns.isEmpty then (assign, newGraph)
-    else
-      propagateFixpoint formula (assign ++ newAssigns) newGraph
-        level fuel
+    match propagateWithReasons formula assign graph level with
+    | .conflict clause g => .conflict clause g
+    | .ok newAssigns newGraph =>
+      if newAssigns.isEmpty then .ok assign newGraph
+      else
+        propagateFixpoint formula (assign ++ newAssigns) newGraph
+          level fuel
 
 /-! ## 1-UIP conflict analysis -/
 
@@ -184,29 +208,34 @@ def cdcl1UIP (formula : SATFormula) (vars : List ℕ)
   match vars with
   | [] =>
     -- No more variables to decide on
-    let (propAssign, propGraph) :=
-      propagateFixpoint formula assign graph level
-    let conflict := findConflict formula propAssign
-    match conflict with
-    | some conflictClause =>
-      let learned := analyze1UIP conflictClause propGraph level
-      (false, 1, [learned], propGraph)
-    | none => (true, 1, [], propGraph)
+    match propagateFixpoint formula assign graph level with
+    | .conflict clause g =>
+      let learned := analyze1UIP clause g level
+      (false, 1, [learned], g)
+    | .ok propAssign propGraph =>
+      let conflict := findConflict formula propAssign
+      match conflict with
+      | some cc =>
+        let learned := analyze1UIP cc propGraph level
+        (false, 1, [learned], propGraph)
+      | none => (true, 1, [], propGraph)
   | v :: rest =>
     -- Propagate first
-    let (propAssign, propGraph) :=
-      propagateFixpoint formula assign graph level
-    -- Check for conflict before deciding
-    let conflict := findConflict formula propAssign
-    match conflict with
-    | some conflictClause =>
-      let learned := analyze1UIP conflictClause propGraph level
-      (false, 1, [learned], propGraph)
-    | none =>
-      -- Skip already-assigned variables
-      if propAssign.any fun (v', _) => v == v' then
-        cdcl1UIP formula rest propAssign propGraph level
-      else
+    match propagateFixpoint formula assign graph level with
+    | .conflict clause g =>
+      let learned := analyze1UIP clause g level
+      (false, 1, [learned], g)
+    | .ok propAssign propGraph =>
+      let conflict := findConflict formula propAssign
+      match conflict with
+      | some cc =>
+        let learned := analyze1UIP cc propGraph level
+        (false, 1, [learned], propGraph)
+      | none =>
+        -- Skip already-assigned variables
+        if propAssign.any fun (v', _) => v == v' then
+          cdcl1UIP formula rest propAssign propGraph level
+        else
         -- Decision: try v = true
         let decGraph := propGraph ++
           [{ var := v, pol := true, level := level + 1,
