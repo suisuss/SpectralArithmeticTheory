@@ -132,5 +132,7 @@ import SpectralArithmetic.Rotation.WidthTrajectory
 import SpectralArithmetic.Rotation.FastResolution
 -- Proof system test: strategy independence
 import SpectralArithmetic.Rotation.ProofSystemTest
+-- Adaptive meta-solver: monolithic/composed hybrid
+import SpectralArithmetic.Rotation.AdaptiveMetaSolver
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
