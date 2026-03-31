@@ -142,5 +142,7 @@ import SpectralArithmetic.Rotation.WidthGuidedSolver
 import SpectralArithmetic.Rotation.ChainAnalysis
 -- CDCL with 1-UIP conflict analysis
 import SpectralArithmetic.Rotation.CDCL1UIP
+-- Iterated 1-UIP: learn → augment → cascade → repeat
+import SpectralArithmetic.Rotation.IteratedCDCL
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
