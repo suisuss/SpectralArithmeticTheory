@@ -152,5 +152,7 @@ import SpectralArithmetic.Rotation.TransitionPredictor
 import SpectralArithmetic.Rotation.IndustrialInstances
 -- Promotion-aware learning
 import SpectralArithmetic.Rotation.PromotionAware
+-- Scaling test
+import SpectralArithmetic.Rotation.ScalingTest
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
