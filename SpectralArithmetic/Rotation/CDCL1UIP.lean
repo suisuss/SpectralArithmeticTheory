@@ -264,6 +264,13 @@ def satCDCL1UIP (formula : SATFormula) (nVars : ℕ)
     cdcl1UIP formula vars [] [] 0
   (found, cost, learned)
 
+/-- CDCL with 1-UIP using a custom variable ordering. -/
+def satCDCL1UIPOrdered (formula : SATFormula) (vars : List ℕ)
+    : Bool × ℕ × List SATClause :=
+  let (found, cost, learned, _) :=
+    cdcl1UIP formula vars [] [] 0
+  (found, cost, learned)
+
 /-! ## Demonstrations -/
 
 #eval! do

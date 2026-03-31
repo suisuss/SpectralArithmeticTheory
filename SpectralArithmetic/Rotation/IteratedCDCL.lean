@@ -76,30 +76,44 @@ def upWithConflict (formula : SATFormula) (vars : List ℕ)
 
 /-! ## Iterated 1-UIP pipeline -/
 
-/-- One round: 1-UIP → augment → UP cascade.
-    Returns (status, learned, cascade_size, residual). -/
+/-- Permute a list using xorshift seed (Fisher-Yates shuffle). -/
+def permuteWithSeed (xs : List ℕ) (seed : ℕ) : List ℕ :=
+  if xs.isEmpty then xs
+  else Id.run do
+    let mut arr := xs.toArray
+    let mut state := seedToState (seed + 1)
+    for i in [:arr.size] do
+      let (rval, next) := xorshift32 state
+      state := next
+      let remaining := arr.size - i
+      if remaining > 0 then
+        let j := i + rval.toNat % remaining
+        if j < arr.size then
+          let vi := arr[i]!
+          let vj := arr[j]!
+          arr := arr.set! i vj
+          arr := arr.set! j vi
+    return arr.toList
+
 def oneRound (formula : SATFormula) (vars : List ℕ)
-    (assign : List (ℕ × Bool))
+    (assign : List (ℕ × Bool)) (roundSeed : ℕ := 0)
     : String × List SATClause × ℕ × SATFormula × List ℕ × List (ℕ × Bool) :=
-  -- Run 1-UIP on current formula
+  -- Run 1-UIP on current formula with PERMUTED variable order
   let freeVars := vars.filter fun v =>
     !assign.any fun (v', _) => v == v'
   if List.length freeVars == 0 then
     ("done", [], 0, formula, [], assign)
   else
-    -- 1-UIP directly — soundness bug fixed (findUnitReasons
-    -- now skips satisfied clauses)
+    -- Permute variable order for diversity across rounds
+    let orderedVars := if roundSeed == 0 then freeVars
+      else permuteWithSeed freeVars roundSeed
     let (found1, _, learned) :=
-      satCDCL1UIP formula (List.length freeVars)
+      satCDCL1UIPOrdered formula orderedVars
     if found1 then
       ("SAT", [], 0, formula, freeVars, assign)
     else
-    let varMap := freeVars
-    let remappedLearned := learned.map fun c =>
-      c.map fun (v, p) =>
-        match varMap[v]? with
-        | some realV => (realV, p)
-        | none => (v, p)
+    -- No remapping needed: satCDCL1UIPOrdered uses actual variable names
+    let remappedLearned := learned
     let augmented := formula ++ remappedLearned
     -- UP with conflict detection
     match upWithConflict augmented freeVars assign with
@@ -136,8 +150,9 @@ def iteratedSolve (formula : SATFormula) (nVars : ℕ)
     match fuel with
     | 0 => (logs, false)
     | fuel + 1 =>
+      let roundSeed := maxRounds - fuel  -- different seed each round
       let (status, learned, cascade, resF, resV, resA) :=
-        oneRound f vars assign
+        oneRound f vars assign roundSeed
       let log : IterationLog :=
         { round := maxRounds - fuel,
           status := status,
