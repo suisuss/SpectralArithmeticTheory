@@ -138,5 +138,7 @@ import SpectralArithmetic.Rotation.AdaptiveMetaSolver
 import SpectralArithmetic.Rotation.TacticSelector
 -- Width-guided solver: phase-aware resolution with BP and interpolation
 import SpectralArithmetic.Rotation.WidthGuidedSolver
+-- Chain analysis: do random UNSAT instances have single-chain proofs?
+import SpectralArithmetic.Rotation.ChainAnalysis
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
