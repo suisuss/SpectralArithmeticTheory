@@ -156,3 +156,5 @@ import SpectralArithmetic.Rotation.PromotionAware
 import SpectralArithmetic.Rotation.ScalingTest
 -- Meta-rewriting #1: constraint evolution with complexity trajectories
 import SpectralArithmetic.Rotation.MetaRewriting
+-- Interleaved representation: verification = construction
+import SpectralArithmetic.Rotation.InterRepresentation
