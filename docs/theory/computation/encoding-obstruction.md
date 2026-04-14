@@ -572,5 +572,4 @@ See [information-domain.md](information-domain.md) for the full analysis, includ
 - [information-domain.md](information-domain.md) — The information-domain analysis: bitwise encoding, tropical algebra, and the refined ⊕ obstruction
 - [self-representation.md](self-representation.md) — The Gödel encoding, self-representation chain, and original discrete-continuous conjecture
 - [confluence.md](confluence.md) — The oriented rewriting system that defines obs_code
-- [../assessments/lean-formalization-assessment.md](../assessments/lean-formalization-assessment.md) — Full theory assessment identifying the bisimulation conjecture as the most original question
 - [../assessments/novelty.md](../assessments/novelty.md) — Novelty analysis, the eval-quote diagram, and the intensional/extensional framing

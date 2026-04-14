@@ -389,5 +389,4 @@ If Leibniz produced a single term (no sum, no branching), there would be no obst
 - [encoding-obstruction.md](encoding-obstruction.md) — The original trilemma and impossibility argument
 - [self-representation.md](self-representation.md) — Gödel encoding and the discrete-continuous conjecture
 - [confluence.md](confluence.md) — The oriented rewriting system
-- [../assessments/lean-formalization-assessment.md](../assessments/lean-formalization-assessment.md) — Full theory assessment
 - [../assessments/novelty.md](../assessments/novelty.md) — Novelty analysis
