@@ -533,7 +533,179 @@ The outline-level claim we draw from §7 is narrow and honest: the halting probl
 
 ## 8. Beta Reduction and Curry-Howard
 
-> TODO — ~3 pages. `BetaReduction.lean` + `CurryHoward.lean`. Statman 1979 must be read before drafting.
+The third and fourth instances fit the pattern of §§4-5 from a different direction. Beta reduction on lambda terms is an `EvalRewriteWitness`; via Curry-Howard, it is cut elimination on proof terms. The formalization — `BetaReduction.lean` and `CurryHoward.lean` together — establishes both instances and sets up the quantitative lever used in §9: beta reduction's duplicator strictly grows term size, and iterated it blows up exponentially, which under Curry-Howard is the mechanism behind Statman's non-elementary cut elimination bound.
+
+### 8.1 Lambda terms with de Bruijn indices
+
+We use de Bruijn representation to sidestep alpha-equivalence entirely:
+
+```lean
+inductive Term where
+  | var : Nat → Term
+  | abs : Term → Term
+  | app : Term → Term → Term
+```
+
+Substitution and lifting are defined in the standard way; the key operation for §8's purposes is head beta reduction:
+
+```lean
+def betaStep : Term → Term
+  | .app (.abs body) arg => subst 0 arg body
+  | t => t
+```
+
+On the head redex `(λ. body) arg` the rewrite produces `body[arg/0]`; on every other input it is the identity. Head reduction is a one-step operation and is sufficient for the obstruction argument — the full reduction relation adds convergence and confluence content we do not need.
+
+### 8.2 The witness: `(λ. 0) (λ. 0)`
+
+The minimal closed redex is the identity combinator applied to itself:
+
+```lean
+def identity : Term := .abs (.var 0)
+def witness  : Term := .app identity identity
+```
+
+On this input, `betaStep` reduces `witness` to `identity`:
+
+```lean
+theorem betaStep_witness : betaStep witness = identity := by rfl
+```
+
+The root changes from `.app` to `.abs`. Form change is then a three-line proof by discharging the constructor distinctness:
+
+```lean
+theorem betaStep_changes_form : betaStep witness ≠ witness := by
+  rw [betaStep_witness]
+  intro h
+  exact witness_ne_identity h.symm
+```
+
+Semantic invariance under evaluation (iterated `betaStep` with generous fuel) is immediate by reflexivity: both `witness` and `betaStep witness` evaluate to `identity` within one step. The `EvalRewriteWitness` instance is then just a packaging:
+
+```lean
+def betaWitness : EvalRewrite.EvalRewriteWitness Term Term where
+  rewrite           := betaStep
+  eval              := eval
+  witness           := witness
+  changes_form      := betaStep_changes_form
+  preserves_meaning := eval_betaStep_witness
+```
+
+and the obstruction is inherited by `eval_rewrite_obstruction` (§5.2).
+
+The content of 8.2 is narrow. What makes beta reduction interesting from the paper's perspective is not the single-step form-change — that is trivial on any reducible redex — but the size-growth behavior of the next subsection, which carries the quantitative load in §9.
+
+### 8.3 The duplicator and size growth
+
+Beta reduction can *strictly increase* term size. The duplicator combinator `λ. 0 0`, applied to any term `t`, reduces to `t t`:
+
+```lean
+def dup : Term := .abs (.app (.var 0) (.var 0))
+
+theorem betaStep_dupApplied (t : Term) :
+    betaStep (dupApplied t) = .app t t := by rfl
+```
+
+Term size before and after:
+
+```lean
+theorem size_dupApplied (t : Term) :
+    size (dupApplied t) = 5 + size t
+
+theorem size_app_self (t : Term) :
+    size (.app t t : Term) = 1 + 2 * size t
+```
+
+For `size t ≥ 5`, the output is strictly larger than the input:
+
+```lean
+theorem beta_grows_for_large (t : Term) (ht : size t ≥ 5) :
+    size (betaStep (dupApplied t)) > size (dupApplied t) := by
+  rw [betaStep_dupApplied, size_app_self, size_dupApplied]
+  omega
+```
+
+Iterated — a term that keeps applying `dup` to its growing self — this pattern produces size growth that is at least exponential in the number of reduction steps. The same pattern appears in `Universal.lean` as `leibniz_more_than_doubles` (§4.7); there and here, size growth is the mechanism by which trajectory divergence produces quantitative lower bounds in §9.
+
+The dual behavior — the non-terminating fixed point `Ω = (λ. 0 0) (λ. 0 0)` — illustrates an adjacent phenomenon. Ω reduces to itself (`betaStep Ω = Ω`), exhibiting no form change under `betaStep`. Ω is a witness that "form change" is the active ingredient for the obstruction: a term can be non-terminating yet have an identity reduction step; what produces the obstruction is not non-termination per se but the mismatch between a step that would change form and an encoding that cannot commute with it. For Ω, `betaStep` is the identity on this particular point and the obstruction argument does not fire; for `witness` and `dupApplied t`, it does.
+
+### 8.4 Curry-Howard: cut elimination is beta reduction
+
+Under the Curry-Howard correspondence, lambda terms are proof terms of minimal implicational logic:
+
+| Lambda term | Natural-deduction reading |
+|---|---|
+| `.var n` | a hypothesis |
+| `.abs body` | implication introduction (discharge a hypothesis) |
+| `.app f a` | implication elimination (modus ponens) |
+| `betaStep` | a single cut-elimination step |
+| normal form | cut-free proof |
+
+`CurryHoward.lean` makes this identification syntactically:
+
+```lean
+abbrev Proof : Type := BetaReduction.Term
+def cutElim : Proof → Proof := BetaReduction.Term.betaStep
+```
+
+`cutElim` is *definitionally* equal to `betaStep`. Every theorem about beta reduction is a theorem about cut elimination under this renaming. The `EvalRewriteWitness` instance for beta reduction lifts immediately:
+
+```lean
+def cutWitness : EvalRewrite.EvalRewriteWitness Proof Proof :=
+  BetaReduction.Term.betaWitness
+
+theorem cut_elim_obstruction
+    (ε : Proof → ℕ) (hε : Function.Injective ε) :
+    ε (cutElim proofWithCut) ≠ ε proofWithCut :=
+  BetaReduction.Term.beta_encoding_obstruction ε hε
+```
+
+The witness `proofWithCut = (λ. 0) (λ. 0)` corresponds, under Curry-Howard, to a proof that uses the identity as a lemma and immediately discharges it; the cut-free version is the identity proof with no cut. The reduction from one to the other is a single beta step, which is a single cut-elimination step.
+
+We emphasize what this gives and what it does not. It gives: a machine-checked statement that cut elimination on proof terms is a form-changing, meaning-preserving rewrite, i.e., that cut elimination is an `EvalRewriteWitness`. It does not give: any specific complexity-theoretic result about cut elimination. That comes from composition with §9's size argument applied to Statman's specific terms, discussed next.
+
+### 8.5 Statman's blowup as an instance
+
+Statman 1979 constructs families of proofs for which every cut-free proof is of non-elementary size in the cut proof. Under Curry-Howard, these correspond to lambda terms whose normal forms are non-elementary in the initial term's size. The mechanism that produces the blowup is exactly the duplicator pattern of §8.3: a proof that uses a hypothesis twice (a Curry-Howard analog of `(λ. 0 0) t`) reduces by duplicating the hypothesis's proof structure; iterated, this gives towers of exponentials.
+
+`CurryHoward.lean` records the single-step instance:
+
+```lean
+theorem cut_elim_grows_proof
+    (hypothesis : Proof) (h : BetaReduction.Term.size hypothesis ≥ 5) :
+    BetaReduction.Term.size (cutElim (BetaReduction.Term.dupApplied hypothesis)) >
+    BetaReduction.Term.size (BetaReduction.Term.dupApplied hypothesis)
+```
+
+This is `beta_grows_for_large` under the Curry-Howard renaming. It is not Statman's theorem — Statman's theorem requires constructing specific terms whose iterated-reduction trajectory realizes the non-elementary bound. What we have shown is that the *mechanism* Statman exploits (the hypothesis-duplication step that strictly grows proof size) fits the framework of §4.7 and §9: a size-bounded rewrite with a step-wise growth factor. Given Statman's specific term families and our proof-length lower bound theorem from §9, one can read off a non-elementary lower bound on cut elimination length.
+
+To be precise about the division of labor: Statman 1979 provides the combinatorial construction (specific proofs with non-elementary normal forms); the formalization here provides the structural frame (cut elimination is `EvalRewriteWitness`, size growth is lower-bounded per step, iteration gives exponential blowup). We do not claim to derive Statman's bound from the obstruction alone; we claim the obstruction organizes the mechanism Statman identified.
+
+### 8.6 Universal proof systems via Curry-Howard
+
+`CurryHoward.lean` generalizes beyond lambda calculus to a structural characterization of proof systems that inherits the obstruction:
+
+```lean
+structure NormalizationProofSystem where
+  Proof              : Type*
+  Theorem            : Type*
+  normStep           : Proof → Proof
+  proves             : Proof → Theorem
+  normStep_preserves : ∀ p, proves (normStep p) = proves p
+```
+
+Any proof system whose verification involves a normalization-like step — natural deduction, sequent calculus, Hilbert systems, type-theoretic proof checkers — is a `NormalizationProofSystem`. The obstruction fires whenever there is a form-changing witness:
+
+```lean
+theorem verification_has_obstruction
+    (witness : PS.Proof) (changes_form : PS.normStep witness ≠ witness)
+    (ε : PS.Proof → ℕ) (hε : Function.Injective ε) :
+    ε (PS.normStep witness) ≠ ε witness
+```
+
+This is `general_obstruction` at the proof-system level. It is a sufficient (not necessary) characterization: there may be proof systems whose verification does not factor through a normalization step, and the theorem says nothing about those. What it says, honestly, is: *if* verification is normalization-style, *and* normalization has at least one form-changing witness, *then* no injective encoding of proofs commutes with verification.
+
+The practical upshot is that the obstruction is not pinned to lambda calculus or to any specific inference system. Any proof system structurally compatible with Curry-Howard inherits it. We use this generality in §9 when we turn to resolution, whose "rewrite" is the clause-extension step rather than beta reduction but whose structural profile fits the same abstraction.
 
 ---
 
