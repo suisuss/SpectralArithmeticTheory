@@ -711,7 +711,189 @@ The practical upshot is that the obstruction is not pinned to lambda calculus or
 
 ## 9. Proof Complexity
 
-> TODO — ~3 pages. `ProofComplexity.lean` + `Resolution.lean` + `VerificationArithmetic.lean`. Haken 1985 must be read before drafting. Decide whether to include `HakenBottleneck.lean` in the headline figure.
+This is the section where the framework does quantitative work. §§4-8 showed that a variety of rewrites satisfy the `EvalRewriteWitness` pattern; §9 turns the pattern into proof-length lower bounds by combining it with per-step size bounds. The result we re-derive is Haken 1985's exponential bound on resolution proofs of the pigeonhole principle. The section is written with care about the division of labor: the framework contributes a length-from-states bound; Haken contributes the combinatorial state-count bound; neither alone recovers the result.
+
+### 9.1 The dual framing: `SizeGrowth` and `SizeBounded`
+
+Two structures with opposite directions of bound:
+
+```lean
+structure SizeGrowth (T : Type*) where
+  rewrite  : T → T
+  size     : T → ℕ
+  positive : ∀ t, size t ≥ 1
+  grows    : ∀ t, size (rewrite t) ≥ 2 * size t
+
+structure SizeBounded (T : Type*) where
+  rewrite  : T → T
+  size     : T → ℕ
+  positive : ∀ t, size t ≥ 1
+  bounded  : ∀ t, size (rewrite t) ≤ 2 * size t
+```
+
+`SizeGrowth` yields an *upper* bound on how few iterations suffice to reach a large size (size grows exponentially, so size 2^k is reached in at most k steps). `SizeBounded` yields a *lower* bound on how many iterations are required (size grows at most exponentially per step, so reaching size M requires at least log₂(M/initial) steps). For proof-length lower bounds we want `SizeBounded`: a rewrite where each step cannot jump the state too far, composed with a target whose size must be large.
+
+Both structures are instantiated by a straightforward induction:
+
+```lean
+theorem iter_size (t : T) (k : ℕ) :                    -- SizeGrowth
+    S.size (iter S.rewrite k t) ≥ 2^k * S.size t
+
+theorem iter_size_upper (t : T) (k : ℕ) :              -- SizeBounded
+    B.size (iter B.rewrite k t) ≤ 2^k * B.size t
+```
+
+The factor "2" is cosmetic — either structure could parameterize over an arbitrary growth constant c ≥ 1. We keep 2 as the canonical threshold since it is the rate exhibited by `leibniz_more_than_doubles` (§4.7) and by the `dup` pattern (§8.3).
+
+### 9.2 The proof-length lower bound
+
+From `SizeBounded` and a target-size hypothesis the lower bound is immediate:
+
+```lean
+theorem proof_length_lower_bound (t : T) (k : ℕ) (M : ℕ)
+    (hM : B.size (iter B.rewrite k t) ≥ M) :
+    2^k * B.size t ≥ M
+```
+
+Unpacking: if the trajectory of length `k` from `t` reaches size at least `M`, then `2^k ≥ M / size t`. Taking log base 2, any proof reaching a size-M state must have at least `log₂(M / initial_size)` steps.
+
+Composed with an injective encoding (the obstruction), we get the combined statement:
+
+```lean
+theorem obstruction_length_bound (t : T) (k : ℕ) (M : ℕ)
+    (hM : B.size (iter B.rewrite k t) ≥ M)
+    (ε : T → ℕ) (hε : Function.Injective ε) :
+    2^k ≥ M / B.size t
+```
+
+This is the structural form of a proof complexity result: size bound + encoding injectivity + target size = length bound. The theorem is logically content-light — it is the composition of `iter_size_upper` with division. What makes it useful is that it plugs into the `EvalRewriteWitness` picture: each step of the rewrite is form-changing (so the obstruction holds), and each step is size-bounded (so the length bound holds), and the obstruction guarantees that distinct points in the trajectory have distinct codes.
+
+### 9.3 Cut elimination as the first application
+
+Beta reduction on duplicator-style terms is size-bounded at the 2× threshold:
+
+```lean
+theorem dup_bounded_by_two
+    (t : BetaReduction.Term) (_ht : BetaReduction.Term.size t ≥ 5) :
+    BetaReduction.Term.size (BetaReduction.Term.betaStep
+      (BetaReduction.Term.dupApplied t)) ≤
+    2 * BetaReduction.Term.size (BetaReduction.Term.dupApplied t)
+```
+
+Composed with Statman's specific terms (§8.5), whose cut-free form is of non-elementary size in the cut form, `proof_length_lower_bound` gives a non-elementary lower bound on cut elimination length. We do not formalize Statman's construction; what we formalize is the structural mechanism (size-bounded step + obstruction) that his argument requires. Stating this precisely: if one has a family of proofs whose cut forms are of size `s(n)` and whose cut-free forms are of size `M(n)`, and the per-step growth is bounded by 2, then cut elimination on that family requires at least `log₂(M(n) / s(n))` steps. For Statman's family, this is non-elementary; for generic families, the bound may be trivial.
+
+### 9.4 Resolution: each step adds exactly one clause
+
+Resolution is the second, sharper application. A proof state is a list of clauses; a resolution step identifies two clauses and a pivot and appends the resolvent:
+
+```lean
+abbrev ProofState := List Clause
+
+def resolutionStep (state : ProofState) (c1 c2 : Clause) (v : ℕ) : ProofState :=
+  resolveOn c1 c2 v :: state
+```
+
+Size grows by exactly one per step:
+
+```lean
+theorem resolutionStep_size (state : ProofState) (c1 c2 : Clause) (v : ℕ) :
+    stateSize (resolutionStep state c1 c2 v) = stateSize state + 1
+```
+
+This is much stronger than `SizeBounded`'s 2× threshold — resolution is size-bounded by +1 per step, the tightest possible linear bound. Form change is a trivial consequence: sizes differ, so states differ.
+
+```lean
+theorem resolutionStep_changes_form
+    (state : ProofState) (c1 c2 : Clause) (v : ℕ) :
+    resolutionStep state c1 c2 v ≠ state
+```
+
+Along a resolution trajectory, all state sizes are distinct, hence all states are distinct:
+
+```lean
+theorem stateAtStep_distinct (initial : ProofState) (proof : ResolutionProof)
+    (i j : ℕ) (hi : i ≤ proof.length) (hj : j ≤ proof.length) (hne : i ≠ j) :
+    stateAtStep initial proof i ≠ stateAtStep initial proof j
+```
+
+The encoding obstruction then guarantees distinct codes along the trajectory. The length of the proof equals the difference between final and initial state sizes:
+
+```lean
+theorem proof_length_eq_size_growth
+    (initial final : ProofState) (proof : ResolutionProof)
+    (h : applyProof initial proof = final) :
+    proof.length = stateSize final - stateSize initial
+```
+
+So far everything holds for *any* resolution proof of *any* unsatisfiable formula. The content is: resolution length equals state-size growth, and all intermediate states are distinguishable by any injection. There is no lower bound on length yet — that requires a hypothesis that the proof must reach a large state.
+
+### 9.5 Haken's bound: the honest separation
+
+Haken 1985 proved: any resolution refutation of PHP(n+1, n) uses at least 2^(n/20) clauses. The argument has two parts in our framework:
+
+1. **Combinatorial (Haken's contribution):** any refutation of PHP must pass through proof states containing certain "wide" clauses, and the number of such clauses is 2^(n/20). This is a non-trivial combinatorial bottleneck argument about pigeonhole instances; it does not follow from anything in the obstruction framework.
+
+2. **Structural (what the framework gives for free):** given that the final state is of size at least `initial + 2^(n/20)`, and each resolution step adds exactly one clause, the proof length is at least 2^(n/20).
+
+The formalization makes the separation explicit. We axiomatize Haken's contribution:
+
+```lean
+opaque PHP_state_lower_bound (n : ℕ) : ℕ
+axiom PHP_state_lower_bound_spec (n : ℕ) : PHP_state_lower_bound n ≥ 2^(n / 20)
+```
+
+and prove the structural composition:
+
+```lean
+theorem haken_lower_bound (n : ℕ) (proof : ResolutionProof)
+    (h_size : stateSize (applyProof (PHP_initial n) proof) ≥
+              stateSize (PHP_initial n) + PHP_state_lower_bound n) :
+    proof.length ≥ 2^(n / 20)
+```
+
+The proof is four lines: use `applyProof_size` to equate size growth with length, rewrite the hypothesis, `omega`.
+
+We state the position plainly: the framework recovers Haken's exponential bound given his state-count lemma as input. The framework does not derive the state-count lemma. That is the honest scope. A formalization that derived `PHP_state_lower_bound_spec` from primitives would require porting Haken's proof — a substantial independent project, tracked as issue #37 and positioned as medium-term follow-up (see §12).
+
+This separation is what the outline's "framework provides LENGTH-from-STATES, Haken provides STATE-COUNT-from-COMBINATORICS" phrase refers to. A reviewer skeptical of the obstruction's proof-complexity relevance should note the following: the length-from-states step is almost trivial once resolution is cast as a +1-per-step rewrite, so the structural contribution is organizational rather than deep. Its value is in saying that proof-complexity lower bounds for size-bounded rewrite systems fit a uniform pattern, and in making the division of labor between combinatorial content and structural content explicit at the level of Lean proofs.
+
+### 9.6 Universal proof systems via verification arithmetic
+
+`VerificationArithmetic.lean` gives an alternative route to the obstruction for arbitrary proof systems, complementary to the Curry-Howard route of §8.6. The structural assumption is Cook-Reckhow:
+
+```lean
+structure CookReckhowSystem where
+  Proof                   : Type*
+  Theorem                 : Type*
+  verify                  : Proof → Theorem → Bool
+  verifyStep              : Proof → Proof
+  verifyStep_witness      : Proof
+  verifyStep_changes_form : verifyStep verifyStep_witness ≠ verifyStep_witness
+  verifyStep_preserves    : ∀ p T, verify (verifyStep p) T = verify p T
+```
+
+The assumption is that a proof system's verifier factors through at least one form-changing, verification-preserving internal computation. Given this, the obstruction is immediate:
+
+```lean
+theorem verification_obstruction (T : CR.Theorem)
+    (ε : CR.Proof → ℕ) (hε : Function.Injective ε) :
+    ε (CR.verifyStep CR.verifyStep_witness) ≠ ε CR.verifyStep_witness
+```
+
+The concrete inhabitant: a toy system in which proofs are PA terms, the verification step is `mulStep` from `EvalRewrite.lean`, and verification decides numerical equality in the standard model:
+
+```lean
+def paArithmeticSystem : CookReckhowSystem where
+  Proof      := PATerm
+  Theorem    := PATerm
+  verify     := fun p T => decide (evalN p = evalN T)
+  verifyStep := mulStep
+  ...
+```
+
+This makes concrete the claim that "verification requires arithmetic" in the weakest possible form: the PA arithmetic system is a Cook-Reckhow proof system, and its verification step is a PA evaluation rule whose form-changing character is exactly §4.3's `mulStep_changes_form`. Any real proof system (Hilbert, sequent, natural deduction) that internally performs PA arithmetic inherits the obstruction via this structural route. The claim is honest about its form: we do not instantiate the structure for a full-strength proof system; we demonstrate the structure is inhabited by PA arithmetic and state that any proof system meeting the assumption inherits the obstruction.
+
+Together with §8.6's `NormalizationProofSystem`, this gives two complementary sufficient conditions for the obstruction at the proof-system level: *verification involves normalization* (Curry-Howard route) and *verification involves arithmetic* (Cook-Reckhow route). Both route to the same intermediate `EvalRewriteWitness`; the choice between them is about which structural feature of a given proof system is more natural to expose. Neither route is claimed necessary.
 
 ---
 
