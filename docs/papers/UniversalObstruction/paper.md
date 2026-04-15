@@ -453,7 +453,81 @@ This is as good as it gets at the present level of abstraction. A stronger forma
 
 ## 7. The Halting Problem
 
-> TODO — ~1 page. Short section; `Halting.lean` is compact.
+The halting problem is the second instance. The proof is a century-old diagonal argument and the formalization adds no new mathematical content; what it contributes is the observation — made concrete in Lean — that the argument uses the same self-substitution mechanism as the Gödel construction of §6. We state the setup, the theorem, and the structural equivalence in under a page.
+
+### 7.1 Setup
+
+A computation system is a type of programs with an execution function and an injective coding:
+
+```lean
+structure ComputationSystem where
+  Program        : Type*
+  exec           : Program → ℕ → Option Bool
+  code           : Program → ℕ
+  code_injective : Function.Injective code
+```
+
+`exec p n = none` models non-termination on input `n`; `exec p n = some b` models halting with output `b`. The type `Option Bool` is the minimal commitment that keeps the argument clean: we do not need a halting oracle over an arbitrary output type, only a predicate that can say "halts with true," "halts with false," or "loops."
+
+A halting decider is a program that correctly identifies which programs halt on which inputs:
+
+```lean
+structure HaltingDecider where
+  decider     : C.Program
+  pair        : ℕ → ℕ → ℕ
+  sound_halts : ∀ p n, C.halts p n → C.exec decider (pair (C.code p) n) = some true
+  sound_loops : ∀ p n, C.loops p n → C.exec decider (pair (C.code p) n) = some false
+```
+
+Finally, `HasDiagonal C H` packages the assumption that the diagonal program exists in the system — a weak universality assumption: whatever behavior is computable in terms of `H`, there is a program realizing it.
+
+```lean
+structure HasDiagonal (C : ComputationSystem) (H : HaltingDecider C) where
+  diagProg      : C.Program
+  diagProg_spec : C.exec diagProg (C.code diagProg) =
+    diagonalBehavior C H (C.code diagProg)
+```
+
+where `diagonalBehavior` is the defining behavior: on input `n`, consult `H` about whether `n` halts on `n` and do the opposite.
+
+### 7.2 The contradiction
+
+From a halting decider and the diagonal program the contradiction is immediate:
+
+```lean
+theorem halting_undecidable (H : HaltingDecider C) (D : HasDiagonal C H) :
+    False
+```
+
+Proof by case on `exec D.diagProg (code D.diagProg)`. In both cases — `some val` (halting) and `none` (looping) — the soundness hypothesis of the decider combined with `diagProg_spec` produces a contradiction with the case assumption. The proof is twenty lines and completely routine. Its content is entirely in the setup: once `HaltingDecider` and `HasDiagonal` are written as Lean structures, `halting_undecidable` is a direct case analysis.
+
+### 7.3 The structural equivalence with incompleteness
+
+The halting problem and first incompleteness use the same mechanism and the same ingredients:
+
+| Role | Incompleteness (§6) | Halting (§7) |
+|---|---|---|
+| Self-substitution | `G = diag (neg ∘ prov)` | `D` applied to `code(D)` |
+| The decider | Provability predicate `prov` | Halting decider `H.decider` |
+| The fixed point | Gödel sentence `godelSentence` | Diagonal program `diagProg` |
+| The contradiction | `G` provable iff `G` not provable | `D(code D)` halts iff `D(code D)` loops |
+| The encoding assumption | `decode ∘ fcode = id` | `code_injective` |
+
+In both cases: self-substitution is the form-changing operation (§4 content at the abstract level; §6.2's `diagN_spec` in the incompleteness case; `diagProg_spec` in the halting case), the decider is required to commute with self-substitution, and the obstruction of §4-§5 blocks that commutation. The incompleteness proof is a deductive contradiction in a formal theory; the halting proof is a computational contradiction in an execution system. The structural content is the same.
+
+The file makes the local connection explicit with a one-theorem bridge:
+
+```lean
+theorem execution_obstruction
+    {State : Type*} (step : State → State) (s : State) (hne : step s ≠ s)
+    (ε : State → ℕ) (hε : Function.Injective ε) :
+    ε (step s) ≠ ε s := by
+  intro h; exact absurd (hε h) hne
+```
+
+This is `general_obstruction` from §5, renamed for the computational setting. It is not a new theorem; it is a relabeling that makes the §5 abstraction visibly present in the halting proof's vocabulary. Under this reading, a halting decider is a function that would need to agree across an encoding/execution pair; `execution_obstruction` says no such function can exist when execution is genuinely form-changing.
+
+The outline-level claim we draw from §7 is narrow and honest: the halting problem fits the `EvalRewriteWitness` pattern in the same way the Gödel construction does, and the shared pattern is not a loose analogy but the same formal ingredient (`general_obstruction`) applied to a different term/state algebra. The halting result is not a consequence of the obstruction in any stronger sense than incompleteness is; it is a second instance of the same argument, presented here to corroborate the unification claim.
 
 ---
 
