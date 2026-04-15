@@ -244,6 +244,72 @@ lemma lift_refutation_to_derivation
       d'.steps.length ≤ d.steps.length := by
   sorry
 
+/-! ## Restriction-by-empty is the identity -/
+
+@[simp] lemma literalSat_empty (lit : Nat × Bool) :
+    literalSat [] lit = false := rfl
+
+@[simp] lemma literalFals_empty (lit : Nat × Bool) :
+    literalFals [] lit = false := rfl
+
+@[simp] lemma restrictFormula_empty (F : SATFormula) :
+    restrictFormula F [] = F := by
+  unfold restrictFormula
+  induction F with
+  | nil => rfl
+  | cons c rest ih =>
+    simp only [List.filterMap_cons]
+    have hAny : c.any (literalSat []) = false := by
+      simp [List.any_eq_false]
+    have hFilt : c.filter (fun lit => !literalFals [] lit) = c := by
+      apply List.filter_eq_self.mpr
+      intro lit _
+      simp
+    rw [if_neg (by simp [hAny])]
+    rw [hFilt]
+    simp
+    -- ih closes the recursive call on `rest`
+
+/-! ## Monotonicity of `RefutesFrom`
+
+    If `d` refutes `F` and `F ⊆ F'` (pointwise list containment), then
+    `d` also refutes `F'`. Used to lift a refutation of `F₁` or `F₂`
+    to a refutation of `F = F₁ ++ F₂`. -/
+
+/-- Per-step monotonicity: if step `i`'s premises come from `F` or prior
+    results, and `F ⊆ F'`, then they come from `F'` or prior results. -/
+private lemma stepPremisesValid_mono
+    {d : Derivation} {F F' : SATFormula}
+    (hSub : ∀ c ∈ F, c ∈ F') (i : Nat)
+    (h : stepPremisesValid d F i) : stepPremisesValid d F' i := by
+  simp only [stepPremisesValid] at h ⊢
+  match hs : d.steps[i]? with
+  | none => trivial
+  | some step =>
+    rw [hs] at h
+    obtain ⟨h1, h2⟩ := h
+    refine ⟨?_, ?_⟩
+    · rcases h1 with hF | hPrev
+      · exact Or.inl (hSub _ hF)
+      · exact Or.inr hPrev
+    · rcases h2 with hF | hPrev
+      · exact Or.inl (hSub _ hF)
+      · exact Or.inr hPrev
+
+/-- Extension of `RefutesFrom` under formula subsetting. -/
+lemma RefutesFrom_mono
+    (d : Derivation) (F F' : SATFormula)
+    (hSub : ∀ c ∈ F, c ∈ F')
+    (hRef : RefutesFrom d F) : RefutesFrom d F' := by
+  obtain ⟨hConcl, hDerived, hSteps⟩ := hRef
+  refine ⟨hConcl, ?_, ?_⟩
+  · rcases hDerived with hF | hPrev
+    · exact Or.inl (hSub _ hF)
+    · exact Or.inr hPrev
+  · intro i hi
+    obtain ⟨hPrem, hResult⟩ := hSteps i hi
+    exact ⟨stepPremisesValid_mono hSub i hPrem, hResult⟩
+
 /-! ## Combining two derivations via a final resolution step -/
 
 /-- Concatenate `d1 ++ d2` and append one resolution step whose premises
@@ -269,6 +335,52 @@ def concatResolve (d1 d2 : Derivation) (pivot : Nat) : Derivation :=
 /-- Shorthand: the length of a derivation. -/
 def Derivation.length (d : Derivation) : Nat := d.steps.length
 
+/-- **Base case: empty interface.**
+
+    When `D.interface = []` the only assignment is `[]`, both `F_i|[] = F_i`,
+    so the hypothesis directly gives a refutation of either `F₁` or `F₂`.
+    Since `F = F₁ ++ F₂`, monotonicity (`RefutesFrom_mono`) lifts the
+    side-refutation to a refutation of `F`. The length bound `L ≤ 2L + 1`
+    matches `2^0 * (2L + 1)`.
+
+    This is closed (no `sorry`), provides the base case for the general
+    induction, and demonstrates the lift-free part of the proof. -/
+lemma interfaceComposition_emptyInterface
+    (F : SATFormula)
+    (D : InterfaceDecomposition)
+    (hValid : D.IsValid F)
+    (hEmpty : D.interface = [])
+    (L : Nat)
+    (hSides :
+      ∀ α ∈ allInterfaceAssignments D.interface,
+        (∃ d1 : Derivation,
+           RefutesFrom d1 (restrictFormula D.formula1 α) ∧
+           d1.length ≤ L) ∧
+        (∃ d2 : Derivation,
+           RefutesFrom d2 (restrictFormula D.formula2 α) ∧
+           d2.length ≤ L))
+    : ∃ d : Derivation,
+        RefutesFrom d F ∧
+        d.length ≤ 2 * L + 1 := by
+  -- Empty interface ⇒ allInterfaceAssignments is just `[[]]`.
+  have hAssign : allInterfaceAssignments D.interface = [[]] := by
+    rw [hEmpty]; rfl
+  have hMem : ([] : PartialAssignment) ∈ allInterfaceAssignments D.interface := by
+    rw [hAssign]; simp
+  -- Pick the F₁ refutation under the trivial assignment.
+  obtain ⟨⟨d1, hd1Ref, hd1Len⟩, _⟩ := hSides [] hMem
+  -- restrictFormula F₁ [] = F₁.
+  rw [restrictFormula_empty] at hd1Ref
+  -- Lift d1 from F₁ to F = F₁ ++ F₂ via monotonicity.
+  have hSub : ∀ c ∈ D.formula1, c ∈ F := by
+    intro c hc
+    obtain ⟨hF, _, _, _⟩ := hValid
+    rw [hF]; exact List.mem_append_left _ hc
+  refine ⟨d1, RefutesFrom_mono d1 D.formula1 F hSub hd1Ref, ?_⟩
+  -- Length bound: d1.length ≤ L ≤ 2L + 1.
+  unfold Derivation.length at hd1Len ⊢
+  omega
+
 /-- **Theorem (Interface Composition) — Phase A statement.**
 
     Let D be a valid interface decomposition of F. Suppose for every
@@ -282,9 +394,9 @@ def Derivation.length (d : Derivation) : Nat := d.steps.length
 theorem interfaceComposition_length
     (F : SATFormula)
     (D : InterfaceDecomposition)
-    (_hValid : D.IsValid F)
+    (hValid : D.IsValid F)
     (L : Nat)
-    (_hSides :
+    (hSides :
       ∀ α ∈ allInterfaceAssignments D.interface,
         (∃ d1 : Derivation,
            RefutesFrom d1 (restrictFormula D.formula1 α) ∧
@@ -295,7 +407,26 @@ theorem interfaceComposition_length
     : ∃ d : Derivation,
         RefutesFrom d F ∧
         d.length ≤ 2 ^ D.interface.length * (2 * L + 1) := by
-  sorry
+  -- Case-split on |interface|: base = 0, inductive step ≥ 1.
+  match hLen : D.interface.length with
+  | 0 =>
+    -- Empty interface: dispatch to the closed base case.
+    have hEmpty : D.interface = [] := by
+      match h : D.interface with
+      | [] => rfl
+      | _ :: _ => rw [h] at hLen; simp at hLen
+    obtain ⟨d, hRef, hLenBound⟩ :=
+      interfaceComposition_emptyInterface F D hValid hEmpty L hSides
+    refine ⟨d, hRef, ?_⟩
+    -- 2^0 * (2L + 1) = 2L + 1, so the bound matches.
+    simp only [pow_zero, one_mul]
+    exact hLenBound
+  | _ + 1 =>
+    -- Inductive step: peel off one variable from the interface, apply
+    -- the single-bridge composition (or its k-fold iterate) recursively.
+    -- Open obligation: depends on `interfaceComposition_singleBridge`
+    -- (and hence on `lift_refutation_to_derivation`).
+    sorry
 
 /-! ## Corollary for single-variable interfaces
 
