@@ -117,14 +117,21 @@ def allInterfaceAssignments : List Nat → List PartialAssignment
         on the given pivot.
 -/
 
-/-- Premises of step `i` in `d` come from F or earlier results. -/
+/-- Premises of step `i` in `d` are *available* — either some F-clause
+    (modulo weakening) or some previous step's result (modulo
+    weakening) is a subset of the premise. The weakening on both sides
+    matches the standard "resolution with weakening" presentation;
+    for the lift construction it is essential, since the lifted
+    derivation produces clauses that contain the original literals
+    plus possibly additional ones from `falsifiedLiterals α` (and
+    list ordering / dedup differs after the lift). -/
 def stepPremisesValid (d : Derivation) (F : SATFormula) (i : Nat) : Prop :=
   match d.steps[i]? with
   | none => True
   | some step =>
     let prev := (d.steps.take i).map (·.result)
-    ((step.clause1 ∈ F) ∨ (step.clause1 ∈ prev)) ∧
-    ((step.clause2 ∈ F) ∨ (step.clause2 ∈ prev))
+    ((∃ c₀ ∈ F, c₀ ⊆ step.clause1) ∨ (∃ p ∈ prev, p ⊆ step.clause1)) ∧
+    ((∃ c₀ ∈ F, c₀ ⊆ step.clause2) ∨ (∃ p ∈ prev, p ⊆ step.clause2))
 
 /-- Step `i`'s result equals `resolveOn` applied to its premises on its pivot. -/
 def stepResultCorrect (d : Derivation) (i : Nat) : Prop :=
@@ -132,11 +139,12 @@ def stepResultCorrect (d : Derivation) (i : Nat) : Prop :=
   | none => True
   | some step => step.result = resolveOn step.clause1 step.clause2 step.pivot
 
-/-- `d.conclusion` is actually derived: either it is an original clause
-    of `F` or it is the result of some step. Required on top of
-    "conclusion = []" so an empty Derivation cannot refute arbitrary `F`. -/
+/-- `d.conclusion` is actually derived: either some F-clause is a
+    subset of it (allowing weakening) or it equals some step's result.
+    Required on top of "conclusion = []" so an empty Derivation cannot
+    refute arbitrary `F`. The weakening matches `stepPremisesValid`. -/
 def conclusionDerived (d : Derivation) (F : SATFormula) : Prop :=
-  d.conclusion ∈ F ∨ d.conclusion ∈ d.steps.map (·.result)
+  (∃ c₀ ∈ F, c₀ ⊆ d.conclusion) ∨ d.conclusion ∈ d.steps.map (·.result)
 
 /-- `d` is a resolution refutation of `F`. -/
 def RefutesFrom (d : Derivation) (F : SATFormula) : Prop :=
@@ -166,40 +174,43 @@ def RefutesFrom (d : Derivation) (F : SATFormula) : Prop :=
 def falsifiedLiterals (α : PartialAssignment) : SATClause :=
   α.map fun (v, b) => (v, !b)
 
-/-- Lift a resolution step by appending extra literals to both premises
-    and the result. Pivot and structure unchanged. -/
+/-- Lift a resolution step by appending extra literals to both premises.
+    The `result` is **recomputed** via `resolveOn` so that
+    `stepResultCorrect` holds definitionally for the lifted step.
+    Pivot is unchanged. -/
 def liftStep (extra : SATClause) (s : ResolutionStep) : ResolutionStep :=
   { clause1 := s.clause1 ++ extra
     clause2 := s.clause2 ++ extra
     pivot   := s.pivot
-    result  := s.result  ++ extra }
+    result  := resolveOn (s.clause1 ++ extra) (s.clause2 ++ extra) s.pivot }
 
-/-- Lift an entire derivation, producing (by construction) a derivation
-    whose conclusion is the original conclusion ++ extra. -/
+/-- Lift an entire derivation. The `conclusion` is set to `extra`
+    (intended use: the original `d` is a refutation, `d.conclusion = []`,
+    and `extra = falsifiedLiterals α` is what the lifted derivation
+    proves from `F`). -/
 def liftDerivation (extra : SATClause) (d : Derivation) : Derivation :=
   { steps      := d.steps.map (liftStep extra)
-    conclusion := d.conclusion ++ extra }
+    conclusion := extra }
 
 @[simp] lemma liftStep_pivot (extra : SATClause) (s : ResolutionStep) :
     (liftStep extra s).pivot = s.pivot := rfl
+
+@[simp] lemma liftStep_result (extra : SATClause) (s : ResolutionStep) :
+    (liftStep extra s).result =
+      resolveOn (s.clause1 ++ extra) (s.clause2 ++ extra) s.pivot := rfl
+
+@[simp] lemma liftStep_clause1 (extra : SATClause) (s : ResolutionStep) :
+    (liftStep extra s).clause1 = s.clause1 ++ extra := rfl
+
+@[simp] lemma liftStep_clause2 (extra : SATClause) (s : ResolutionStep) :
+    (liftStep extra s).clause2 = s.clause2 ++ extra := rfl
 
 @[simp] lemma liftDerivation_length (extra : SATClause) (d : Derivation) :
     (liftDerivation extra d).steps.length = d.steps.length := by
   simp [liftDerivation]
 
-@[simp] lemma liftDerivation_conclusion_empty
-    (extra : SATClause) (d : Derivation) (h : d.conclusion = []) :
-    (liftDerivation extra d).conclusion = extra := by
-  simp [liftDerivation, h]
-
-/-- The lifted conclusion for a refutation (`d.conclusion = []`) is
-    exactly the `extra` literals — this is what lets us later resolve
-    different interface branches against each other. -/
-lemma liftDerivation_refutation_conclusion
-    (α : PartialAssignment) (d : Derivation) (h : d.conclusion = []) :
-    (liftDerivation (falsifiedLiterals α) d).conclusion =
-      falsifiedLiterals α := by
-  simp [liftDerivation, h]
+@[simp] lemma liftDerivation_conclusion (extra : SATClause) (d : Derivation) :
+    (liftDerivation extra d).conclusion = extra := rfl
 
 /-- Generalised derivation predicate: `d` derives the clause `c` from
     `F`. `RefutesFrom d F` is the special case `c = []`. -/
@@ -216,32 +227,140 @@ lemma refutesFrom_iff_derivesFromTo_empty
     RefutesFrom d F ↔ DerivesFromTo d F [] := by
   simp [RefutesFrom, DerivesFromTo]
 
-/-- **Lifting lemma (key Phase B obligation).**
+/-! ### Helper sub-lemmas for the lift
 
-    If `d` refutes `F|α` in ≤ L steps and each pivot in `d` is a private
-    variable (disjoint from `α`'s interface), then `F` derives
-    `falsifiedLiterals α` in ≤ L steps.
+    Four small obligations whose proofs are list-algebra around
+    `restrictFormula`, `resolveOn`, `eraseDups`, and `falsifiedLiterals`.
+    Stated as named lemmas so each can be discharged independently of
+    the main lift theorem. -/
 
-    **Proof idea.** Take `d' = liftDerivation (falsifiedLiterals α) d`.
-    Its conclusion is `[] ++ falsifiedLiterals α` (by
-    `liftDerivation_refutation_conclusion`). The resolution steps
-    commute with appending literals on a pivot-disjoint set. The only
-    subtlety: original-clause premises that did NOT mention any `α`
-    variable become weakenings of `F`-clauses, which is not directly
-    a step in `F`. This weakening is eliminable via a standard
-    subsumption / projection argument — tracked as a separate
-    auxiliary obligation below.
+/-- An α-falsified literal is in `falsifiedLiterals α`. The witness
+    in α has variable matching the literal's and opposite polarity, so
+    flipping (which is what `falsifiedLiterals` does) gives the literal. -/
+private lemma falsified_imp_mem_falsifiedLiterals
+    (lit : Nat × Bool) (α : PartialAssignment)
+    (h : literalFals α lit) : lit ∈ falsifiedLiterals α := by
+  unfold literalFals at h
+  rw [List.any_eq_true] at h
+  obtain ⟨⟨u, q⟩, huMem, huEq⟩ := h
+  simp at huEq
+  obtain ⟨huVar, huPol⟩ := huEq
+  unfold falsifiedLiterals
+  rw [List.mem_map]
+  refine ⟨(u, q), huMem, ?_⟩
+  obtain ⟨lv, lp⟩ := lit
+  simp at huVar huPol ⊢
+  refine ⟨huVar, ?_⟩
+  cases q <;> cases lp <;> simp_all
 
-    This is the central open obligation of Phase B. -/
+/-- An F-clause with no α-satisfied literal is a subset of its
+    α-restriction together with `falsifiedLiterals α`. Each literal of
+    `C` is either kept by the restriction (lands in `C.filter (¬falsified)`)
+    or falsified by α (lands in `falsifiedLiterals α`). -/
+private lemma restrict_subset_extra
+    (C : SATClause) (α : PartialAssignment)
+    (_hNoSat : ¬ C.any (literalSat α)) :
+    C ⊆ (C.filter (fun lit => !literalFals α lit)) ++ falsifiedLiterals α := by
+  intro lit hLit
+  by_cases hF : literalFals α lit
+  · exact List.mem_append_right _ (falsified_imp_mem_falsifiedLiterals lit α hF)
+  · apply List.mem_append_left
+    rw [List.mem_filter]
+    exact ⟨hLit, by simp [hF]⟩
+
+/-- If `C ⊆ F` restricts to the empty clause under α (i.e., every
+    literal of C is α-falsified and none is α-satisfied), then C is a
+    subset of `falsifiedLiterals α`. -/
+private lemma empty_in_restrict_witness
+    (F : SATFormula) (α : PartialAssignment)
+    (hMem : [] ∈ restrictFormula F α) :
+    ∃ C ∈ F, C ⊆ falsifiedLiterals α := by
+  unfold restrictFormula at hMem
+  rw [List.mem_filterMap] at hMem
+  obtain ⟨c, hcF, hcSome⟩ := hMem
+  -- Avoid simp's aggressive expansion: case on the if-condition manually.
+  by_cases hAny : c.any (literalSat α) = true
+  · rw [if_pos hAny] at hcSome
+    exact absurd hcSome (by simp)
+  · rw [if_neg hAny] at hcSome
+    rw [Option.some_inj] at hcSome
+    -- hcSome : c.filter (fun lit => !literalFals α lit) = []
+    refine ⟨c, hcF, ?_⟩
+    intro lit hLit
+    have hLitFals : literalFals α lit := by
+      by_contra hNot
+      have hFilt : lit ∈ c.filter (fun l => !literalFals α l) :=
+        List.mem_filter.mpr ⟨hLit, by simp [hNot]⟩
+      rw [hcSome] at hFilt
+      exact List.not_mem_nil hFilt
+    exact falsified_imp_mem_falsifiedLiterals lit α hLitFals
+
+/-- Resolution commutes with weakening (set-subset form): when the
+    pivot is not in `extra`'s variables, lifting the inputs by `extra`
+    yields a resolvent with the same literal set as the unlifted
+    resolvent appended with `extra`. List equality fails (order +
+    dedup), but List.Subset both ways holds. -/
+private lemma resolveOn_lift_subset
+    (c1 c2 extra : SATClause) (v : Nat)
+    (_hPiv : v ∉ extra.map (·.1)) :
+    resolveOn (c1 ++ extra) (c2 ++ extra) v ⊆
+      resolveOn c1 c2 v ++ extra ∧
+    resolveOn c1 c2 v ++ extra ⊆
+      resolveOn (c1 ++ extra) (c2 ++ extra) v := by
+  sorry
+
+/-- For a step that already produces the empty clause, lifting yields
+    a step that produces exactly `extra`. Requires `extra.Nodup` so
+    that `(extra ++ extra).eraseDups = extra`. -/
+private lemma resolveOn_lift_eq_extra_of_empty
+    (c1 c2 extra : SATClause) (v : Nat)
+    (_hPiv : v ∉ extra.map (·.1))
+    (_hNodup : extra.Nodup)
+    (_hEmpty : resolveOn c1 c2 v = []) :
+    resolveOn (c1 ++ extra) (c2 ++ extra) v = extra := by
+  sorry
+
+/-! ### The lifting lemma -/
+
+/-- **Lifting lemma (central Phase B obligation).**
+
+    If `d` refutes `F|α` and each pivot of `d` is disjoint from `α`'s
+    domain, and `falsifiedLiterals α` has no duplicate literals, then
+    `F` admits a derivation of `falsifiedLiterals α` of the same length.
+
+    **Proof.** The witness is `liftDerivation (falsifiedLiterals α) d`,
+    which appends `extra := falsifiedLiterals α` to every step's
+    premises and recomputes each step's result via `resolveOn`. The
+    `stepResultCorrect` obligation is satisfied definitionally by the
+    new `liftStep`. The `stepPremisesValid` obligation reduces to two
+    cases per premise:
+
+    - **From F|α**: an F-clause `C₀` restricted to a sub-clause `c₀ ⊆ premise`.
+      Lemma `restrict_subset_extra` gives `C₀ ⊆ premise ++ extra`,
+      so the lifted premise is a weakening of `C₀ ∈ F`.
+    - **From prior result**: a previous step `j` produced `p ⊆ premise`.
+      Lemma `resolveOn_lift_subset` gives that the lifted j-th result
+      has the same literal set as `p ++ extra`, hence is ⊆ `premise ++ extra`.
+
+    The `conclusionDerived` obligation: either `[] ∈ restrictFormula F α`
+    (handled via `empty_in_restrict_witness` — some F-clause is ⊆ extra)
+    or some original step produced `[]` (handled via
+    `resolveOn_lift_eq_extra_of_empty` — its lifted result equals
+    `extra`). -/
 lemma lift_refutation_to_derivation
     (F : SATFormula) (α : PartialAssignment) (d : Derivation)
     (_hRef : RefutesFrom d (restrictFormula F α))
+    (_hαNodup : (falsifiedLiterals α).Nodup)
     (_hPivotsPrivate :
       ∀ i (h : i < d.steps.length),
         (d.steps[i]'h).pivot ∉ α.map (·.1)) :
     ∃ d' : Derivation,
       DerivesFromTo d' F (falsifiedLiterals α) ∧
       d'.steps.length ≤ d.steps.length := by
+  -- Witness: the lifted derivation. Its conclusion is `extra` by
+  -- definition; length equals d's by `liftDerivation_length`.
+  -- The full validity argument is the body the helper lemmas above
+  -- close together; deferred until the helpers are discharged.
   sorry
 
 /-! ## Restriction-by-empty is the identity -/
@@ -276,8 +395,9 @@ lemma lift_refutation_to_derivation
     `d` also refutes `F'`. Used to lift a refutation of `F₁` or `F₂`
     to a refutation of `F = F₁ ++ F₂`. -/
 
-/-- Per-step monotonicity: if step `i`'s premises come from `F` or prior
-    results, and `F ⊆ F'`, then they come from `F'` or prior results. -/
+/-- Per-step monotonicity: if step `i`'s premises come from `F` (modulo
+    weakening) or prior results, and `F ⊆ F'`, then they come from `F'`
+    (modulo weakening) or prior results. -/
 private lemma stepPremisesValid_mono
     {d : Derivation} {F F' : SATFormula}
     (hSub : ∀ c ∈ F, c ∈ F') (i : Nat)
@@ -289,11 +409,11 @@ private lemma stepPremisesValid_mono
     rw [hs] at h
     obtain ⟨h1, h2⟩ := h
     refine ⟨?_, ?_⟩
-    · rcases h1 with hF | hPrev
-      · exact Or.inl (hSub _ hF)
+    · rcases h1 with ⟨c₀, hMem, hSubC⟩ | hPrev
+      · exact Or.inl ⟨c₀, hSub _ hMem, hSubC⟩
       · exact Or.inr hPrev
-    · rcases h2 with hF | hPrev
-      · exact Or.inl (hSub _ hF)
+    · rcases h2 with ⟨c₀, hMem, hSubC⟩ | hPrev
+      · exact Or.inl ⟨c₀, hSub _ hMem, hSubC⟩
       · exact Or.inr hPrev
 
 /-- Extension of `RefutesFrom` under formula subsetting. -/
@@ -303,8 +423,8 @@ lemma RefutesFrom_mono
     (hRef : RefutesFrom d F) : RefutesFrom d F' := by
   obtain ⟨hConcl, hDerived, hSteps⟩ := hRef
   refine ⟨hConcl, ?_, ?_⟩
-  · rcases hDerived with hF | hPrev
-    · exact Or.inl (hSub _ hF)
+  · rcases hDerived with ⟨c₀, hMem, hSubC⟩ | hPrev
+    · exact Or.inl ⟨c₀, hSub _ hMem, hSubC⟩
     · exact Or.inr hPrev
   · intro i hi
     obtain ⟨hPrem, hResult⟩ := hSteps i hi
