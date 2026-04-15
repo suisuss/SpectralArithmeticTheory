@@ -304,7 +304,150 @@ The sections that follow instantiate this pattern six times. The burden on each 
 
 ## 6. Self-Reference and Incompleteness
 
-> TODO — ~3 pages. The `Diagonal.lean` + `Incompleteness.lean` pair.
+The first instance where the abstraction of §§4-5 buys something non-trivial is Gödel's first and second incompleteness theorems. The formalization follows two parallel paths, both machine-checked and sorry-free: one in `Diagonal.lean` that axiomatizes the low-level Gödel-encoding primitives and proves the diagonal lemma as a theorem, and one in `Incompleteness.lean` that axiomatizes the diagonal property directly and gets to incompleteness faster. We describe both, then relate them back to §§4-5.
+
+### 6.1 The `GodelSystem` abstraction
+
+The lower of the two paths isolates what must be assumed about a theory for the diagonal construction to work. The key move is that the diagonal lemma is *not* among the assumptions:
+
+```lean
+structure GodelSystem (Sentence : Type*) where
+  provable          : Sentence → Prop
+  neg               : Sentence → Sentence
+  Formula           : Type*
+  subst             : Formula → ℕ → Sentence
+  scode             : Sentence → ℕ
+  fcode             : Formula → ℕ
+  decode            : ℕ → Formula
+  decode_fcode      : ∀ φ, decode (fcode φ) = φ
+  diagN             : ℕ → ℕ
+  diagN_spec        : ∀ n, diagN n = scode (subst (decode n) n)
+  compose_diag      : Formula → Formula
+  compose_diag_prov : ∀ β n,
+    provable (subst (compose_diag β) n) ↔ provable (subst β (diagN n))
+  compose_diag_neg  : ∀ β n, ...
+```
+
+The axioms fall into three classes:
+
+1. **Coding/decoding**: `scode`, `fcode`, `decode`, with `decode_fcode` stating that decoding inverts formula coding.
+2. **The diagonal function**: `diagN` with `diagN_spec` stating that `diagN n` is the code of what you get by decoding `n` into a formula and substituting `n` back in as its argument.
+3. **Representability of composition with `diagN`**: `compose_diag β` is a formula whose substitution is equivalent to substituting `β` at `diagN n`.
+
+These are the *genuine* primitives of Gödel encoding. In PA they correspond to Gödel's 1931 representability theorem (for `compose_diag_prov`) and to the unique prime factorization argument (for `decode_fcode`). The PA instance of this structure is scaffolded in `PAGodelSystem.lean`, with Phase 1 (prime factorization) now fully discharged (PR #49) and Phases 2-4 tracked under issues #50-#52; we discuss this in §10.
+
+### 6.2 The diagonal lemma is a theorem
+
+From these axioms the diagonal lemma is provable in ~10 lines. The key computation is:
+
+```lean
+theorem diagN_at_compose (β : G.Formula) :
+    G.diagN (G.fcode (G.compose_diag β)) =
+    G.scode (godelConstruction G β) := by
+  simp only [godelConstruction, selfApply]
+  rw [G.diagN_spec]
+  congr 1; congr 1
+  exact G.decode_fcode _
+```
+
+This says: the diagonal number of the code of `compose_diag β` equals the sentence code of the Gödel construction `godelConstruction β = selfApply (compose_diag β)`. Unpacking: `diagN_spec` rewrites `diagN n` as the code of a substitution, `decode_fcode` cancels `decode ∘ fcode`, and the two substitutions are definitionally equal. All three ingredients are axioms of `GodelSystem`, but each is substantially more primitive than the diagonal lemma itself.
+
+The lemma follows as a biconditional:
+
+```lean
+theorem diagonal_lemma (β : G.Formula) :
+    G.provable (godelConstruction G β) ↔
+    G.provable (G.subst β (G.scode (godelConstruction G β))) :=
+  ⟨diagonal_lemma_mp G β, diagonal_lemma_mpr G β⟩
+```
+
+This is the fixed-point statement: for every formula `β`, there is a sentence whose provability is equivalent to `β` applied to its own code. Most textbook treatments of incompleteness take the diagonal lemma itself as the primitive step; here it is decomposed into coding, decoding, and representability of `diagN`, each of which is independently meaningful and independently checkable against a concrete instantiation.
+
+### 6.3 First incompleteness
+
+Provability must be internalized before the Gödel sentence can be constructed. `ProvabilityData` packages what is needed:
+
+```lean
+structure ProvabilityData (G : GodelSystem Sentence) where
+  prov            : G.Formula
+  neg_prov        : G.Formula
+  neg_prov_spec   : ∀ n, G.subst neg_prov n = G.neg (G.subst prov n)
+  sigma1_complete : ∀ s, G.provable s → G.provable (G.subst prov (G.scode s))
+  sigma1_sound    : ∀ s, G.provable (G.subst prov (G.scode s)) → G.provable s
+  dne             : ∀ s, G.provable (G.neg (G.neg s)) → G.provable s
+```
+
+The Gödel sentence is `godelSentence = godelConstruction neg_prov`. The diagonal lemma gives us `provable(gs) ↔ provable(subst(neg_prov, scode(gs))) = provable(neg(subst(prov, scode(gs))))`. The two halves of first incompleteness are then immediate:
+
+```lean
+theorem godel_not_provable (D : ProvabilityData G) (hcon : consistent G) :
+    ¬G.provable (godelSentence G D)
+
+theorem godel_not_refutable (D : ProvabilityData G) (hcon : consistent G) :
+    ¬G.provable (G.neg (godelSentence G D))
+```
+
+`godel_not_provable` uses Σ₁-completeness; `godel_not_refutable` uses Σ₁-soundness and double-negation elimination. Both are direct contradictions from the diagonal lemma, the provability-data properties, and consistency. Combined:
+
+```lean
+theorem first_incompleteness (D : ProvabilityData G) (hcon : consistent G) :
+    ¬G.provable (godelSentence G D) ∧
+    ¬G.provable (G.neg (godelSentence G D))
+```
+
+### 6.4 Second incompleteness
+
+We formalize the second theorem via the contrapositive of internalization. If the theory can prove `con → G` (its own consistency implies the Gödel sentence), then it cannot prove `con`:
+
+```lean
+theorem second_incompleteness (D : ProvabilityData G) (hcon : consistent G)
+    (con : Sentence)
+    (con_implies_G : G.provable con → G.provable (godelSentence G D)) :
+    ¬G.provable con
+```
+
+The proof is two lines: assume the theory proves `con`; apply `con_implies_G` to get a proof of the Gödel sentence; contradict `godel_not_provable`. The assumption `con_implies_G` is the hard part and is itself a substantial theorem in the concrete PA setting — we do not discharge it. What the formalization contributes is the explicit, minimal dependency structure: second incompleteness is no more than first incompleteness plus an internalized proof.
+
+### 6.5 The abstract path: `DiagonalTheory`
+
+The parallel file `Incompleteness.lean` axiomatizes the diagonal property directly, skipping the coding/decoding infrastructure:
+
+```lean
+structure DiagonalTheory (Sentence : Type*) extends FormalTheory Sentence where
+  diag         : (Sentence → Sentence) → Sentence
+  diag_mp      : ∀ P, provable (diag P) → provable (P (diag P))
+  diag_mpr     : ∀ P, provable (P (diag P)) → provable (diag P)
+  diag_neg_mp  : ∀ P, provable (neg (diag P)) → provable (neg (P (diag P)))
+  diag_neg_mpr : ∀ P, provable (neg (P (diag P))) → provable (neg (diag P))
+```
+
+`DiagonalTheory` trades precision for brevity. Its axioms are what a theory with Gödel encoding *does*, not how it does it. The incompleteness proofs (`godel_not_provable`, `godel_not_refutable`, `first_incompleteness`, `second_incompleteness`) go through with the same structure as §6.3-§6.4 but shorter, because the diagonal property is given rather than derived.
+
+The two paths are complementary:
+- `Diagonal.lean` answers "what must be true for the diagonal lemma to hold?"
+- `Incompleteness.lean` answers "what follows from the diagonal property?"
+
+A concrete theory such as PA satisfies the lower-level `GodelSystem` axioms, which gives the diagonal lemma, which gives the `DiagonalTheory` structure. Both paths terminate in the same incompleteness theorems; the choice is about where to place the axiomatic burden.
+
+### 6.6 Why the obstruction explains diagonalization
+
+The claim of §§4-5 was that the obstruction is the structural content underlying classical impossibility results. The connection to incompleteness is not decorative, it is the formal bridge statement in `Incompleteness.lean`:
+
+```lean
+theorem obstruction_and_incompleteness
+    (T : DiagonalTheory Sentence) (prov : ...) (...)
+    (w : EvalRewrite.EvalRewriteWitness Sentence S)
+    (ε : Sentence → ℕ) (hε : Function.Injective ε) :
+    (ε (w.rewrite w.witness) ≠ ε w.witness ∧
+     w.eval (w.rewrite w.witness) = w.eval w.witness) ∧
+    T.toFormalTheory.undecidable (DiagonalTheory.godelSentence T prov)
+```
+
+This gives, from a single set of hypotheses: (a) an `EvalRewriteWitness` exhibits the eval-quote failure on the sentence type, and (b) the theory is incomplete. These are not presented as independent facts. The theorem's role is to record, in the proof-carrying record, that the two are available together.
+
+The informal claim we draw from this is stronger than the theorem: the obstruction (a) is the *structural reason* the diagonal property (and therefore incompleteness) exists. Substitution in a theory with a non-trivial syntax is a form-changing, meaning-preserving rewrite — precisely the pattern of §5. The fact that the formal substitution is a rewrite is what gives `diagN_spec` its force: `diagN` is not the identity, it computes the code of a genuinely different object, and it is precisely this gap that the diagonal construction exploits. We do not prove this informal claim, and cannot within the present scaffolding: `DiagonalTheory` is agnostic about whether `diag` comes from substitution or from an arbitrary fixed-point operator. What we do prove is that when both structures are present, they cohabit; the deeper claim that the obstruction is *the* source of the diagonal property is a hypothesis the paper defends through its collection of instances, not a theorem within any single instance.
+
+This is as good as it gets at the present level of abstraction. A stronger formal link would require giving `DiagonalTheory.diag` a concrete construction from `EvalRewriteWitness`, which would effectively be porting all of `Diagonal.lean`'s `GodelSystem` story into the abstract setting. We have chosen instead to keep the two paths separate and let the reader trace the informal connection — and to make the concrete connection in §10 via `PAGodelSystem.lean`, where the `GodelSystem` axioms do bottom out in PA's own substitution, which is an `EvalRewriteWitness` (by `EvalRewrite.lean`'s `paMulWitness`/`paAddWitness`).
 
 ---
 
