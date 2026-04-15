@@ -1010,13 +1010,171 @@ This is the honest statement of what we have. §11 situates it against related w
 
 ## 11. Related Work, In Detail
 
-> TODO — ~2 pages. Extends §3.
+> DRAFTING BLOCKED on careful reading. This section requires substantive engagement with Lawvere 1969, Yanofsky 2003, Flypitch (Han, van Doorn), Statman 1979, and Haken 1985. The skeleton below sets the structural positions the paper must take and flags the specific reading obligations before each subsection can be written. Do not merge §11 into a submission draft until the flagged readings are complete.
+
+### 11.1 Lawvere 1969: categorical fixed-point theorem
+
+> READ BEFORE DRAFTING: F. W. Lawvere, "Diagonal arguments and cartesian closed categories," *Reports of the Midwest Category Seminar IV*, Lecture Notes in Mathematics 92, Springer 1969.
+
+**The position the paper must take:** Lawvere's theorem abstracts Cantor, Gödel, and Tarski into a categorical fixed-point argument in cartesian closed categories. The encoding obstruction refines this in one specific way: by working in a term-rewriting setting rather than at the level of arrows in a CCC, the form-change mechanism becomes an explicit constructor-level fact rather than an existential claim about diagonal arrows. This refinement is the basis for machine-checkability in Lean.
+
+**What to write:** a careful comparison of Lawvere's diagonal construction with `diagN_at_compose` in §6.2. What does Lawvere's theorem *not* say that §6 does say? The honest answer is probably: not much at the level of logical content, but the term-rewriting formulation makes the form-change mechanism explicit and amenable to formalization in a type-theoretic proof assistant. Lawvere's abstraction is more general (any CCC, not just term algebras); ours is more concrete (specific syntactic constructors).
+
+**What NOT to claim:** that this work supersedes or improves on Lawvere. The paper's position is that Lawvere identified the categorical core; we formalize a concrete term-rewriting instance of it in Lean, which is a complementary contribution.
+
+### 11.2 Yanofsky 2003: universal self-reference paradoxes
+
+> READ BEFORE DRAFTING: N. S. Yanofsky, "A universal approach to self-referential paradoxes, incompleteness and fixed points," *Bulletin of Symbolic Logic* 9(3), 2003.
+
+**The position:** Yanofsky extends Lawvere to a broader class of self-referential paradoxes — Russell, Epimenides, Gödel, Tarski, Löb, Rice, halting, Berry — using the same CCC fixed-point machinery. Our `EvalRewriteWitness` is a syntactic counterpart organized around rewrites and encodings rather than diagonal arrows.
+
+**What to write:** a table-based comparison showing which of Yanofsky's instances correspond to which of ours (§6 incompleteness ↔ Yanofsky's Gödel; §7 halting ↔ Yanofsky's Turing/halting; etc.) and which do not (Yanofsky's Russell paradox has no direct `EvalRewriteWitness` analog in our formalization). The paper's position is that Yanofsky's machinery is broader but less formalization-friendly; our machinery is narrower but Lean-formalized.
+
+**What NOT to claim:** that this work is a Lean port of Yanofsky. It is not; our starting point (the Leibniz rewrite in eigenvalue arithmetic) is different, and the unifying abstraction emerged from a different direction. Yanofsky is a convergent prior result, not a source.
+
+### 11.3 Flypitch (Han and van Doorn): Lean 3 incompleteness from PA
+
+> READ BEFORE DRAFTING: J. M. Han and F. van Doorn, "A formal proof of the independence of the continuum hypothesis," *CPP 2020*; and the Flypitch project source code. Relevant comparison point: their formalization of Gödel's representability theorem.
+
+**The position:** Flypitch formalized Gödel's incompleteness in Lean 3, from PA primitives, over ~20,000 lines. Our formalization takes a different organizing principle: rather than deriving incompleteness directly, we derive it as an instance of a universal obstruction that also covers halting, cut elimination, and resolution bounds. Our Phase 1 is discharged, Phases 2-4 are axiomatized at precise boundary points corresponding to Flypitch's representability theorem.
+
+**What to write:** (a) a scope comparison — Flypitch proves more, about incompleteness specifically; we prove less about incompleteness but cover more impossibility results under one abstraction; (b) a Lean-version comparison — Flypitch is Lean 3, we are Lean 4 with Mathlib v4.28.0, so direct porting is not possible but the architectural techniques transfer; (c) an honest statement that Flypitch's representability theorem is the template for discharging issues #50-#52.
+
+**What NOT to claim:** that our formalization matches Flypitch's depth on incompleteness alone. It does not. The paper's contribution is different in kind, not a competitor on the same axis.
+
+### 11.4 Statman 1979 and Orevkov 1979: cut elimination blowup
+
+> READ BEFORE DRAFTING: R. Statman, "Lower bounds on Herbrand's theorem," *Proc. AMS* 75(1), 1979. V. P. Orevkov, "Lower bounds for increasing complexity of derivations after cut elimination" (Russian), *Zapiski Nauchnykh Seminarov LOMI* 88, 1979.
+
+**The position:** Statman and Orevkov independently proved that cut elimination can produce proofs of non-elementary size. The combinatorial content is a specific construction of formula families whose cut-free normal forms are towers of exponentials. §8.5 recovers the *mechanism* of this blowup (size growth under iterated duplication) but not the specific formula families.
+
+**What to write:** a clear statement of what Statman/Orevkov's theorems are, a clear statement of what §8.5 contributes (the structural mechanism via `beta_grows_for_large` composed with iteration), and an explicit separation — we do not formalize Statman's combinatorial construction, we formalize the size-growth mechanism his construction exploits.
+
+**What NOT to claim:** that our framework *derives* non-elementary cut elimination blowup. It does not; Statman's construction provides the specific terms that realize the bound.
+
+### 11.5 Haken 1985: PHP resolution lower bound
+
+> READ BEFORE DRAFTING: A. Haken, "The intractability of resolution," *Theoretical Computer Science* 39, 1985.
+
+**The position:** Haken proved any resolution refutation of PHP(n+1, n) requires at least 2^(n/20) clauses. The proof has a combinatorial core (the bottleneck lemma: any refutation must pass through "wide" clauses whose count is exponential). §9.5 recovers Haken's bound given this combinatorial lemma as input; the lemma itself is `PHP_state_lower_bound_spec`, axiomatized.
+
+**What to write:** (a) a precise statement of Haken's theorem and proof structure; (b) a precise statement of our separation between the length-from-states composition (proved) and the state-count bound (axiomatized); (c) a reference to issue #37 as the tracking item for discharging the state-count axiom from Haken's primitives.
+
+**What NOT to claim:** that the obstruction framework *derives* Haken's PHP bound from scratch. It does not. We recover it modulo Haken's combinatorial input.
+
+### 11.6 Cook-Reckhow 1979: proof complexity foundations
+
+> READ BEFORE DRAFTING: S. A. Cook and R. A. Reckhow, "The relative efficiency of propositional proof systems," *Journal of Symbolic Logic* 44(1), 1979.
+
+**The position:** Cook-Reckhow define proof systems as polynomial-time verifiers. §9.6's `CookReckhowSystem` structure is a direct formalization of their definition plus the assumption that verification factors through a form-changing internal step. This assumption is not part of Cook-Reckhow's original definition; it is a structural hypothesis under which the obstruction fires.
+
+**What to write:** how our structural hypothesis relates to Cook-Reckhow's original definition (namely, it is a refinement, not a requirement), and how §9.6's claim compares to the classical expectation that super-polynomial proof lengths imply P ≠ NP.
+
+### 11.7 Coalgebraic logic
+
+> READ BEFORE DRAFTING: J. J. M. M. Rutten, "Universal coalgebra: a theory of systems," *Theoretical Computer Science* 249, 2000; B. Jacobs, *Introduction to Coalgebra: Towards Mathematics of States and Observation*, Cambridge 2017.
+
+**The position:** Coalgebra studies bisimulation between syntactic and semantic structures. The encoding obstruction's "no injective encoding commutes with evaluation" statement is structurally related but distinct: coalgebraic bisimulation is about behavioral equivalence, while the obstruction is about failure of commutation under an additional encoding step.
+
+**What to write:** a brief comparison noting the adjacent but distinct subject matter. We do not claim a coalgebraic formulation; we note the neighborhood.
+
+**What NOT to claim:** a coalgebraic generalization of our framework. Not formalized; not obviously meaningful without additional structure.
+
+### 11.8 Differential algebra: Ritt and Kolchin
+
+> READ BEFORE DRAFTING: E. R. Kolchin, *Differential Algebra and Algebraic Groups*, Academic Press 1973. J. F. Ritt, *Differential Algebra*, AMS Colloquium Publications 1950.
+
+**The position:** The Leibniz rule (§4.2's `leibnizRewrite`) comes from differential algebra. Ritt and Kolchin develop the algebraic theory of derivations. Part 1 of the `SpectralArithmeticTheory` project (not the focus of this paper) uses the Leibniz rule in a spectral / eigenvalue setting; Part 2 (the universal obstruction, this paper) uses it in a term-rewriting setting.
+
+**What to write:** a short note placing the Leibniz rule in its original algebraic context, and explaining why its term-rewriting presentation is the relevant one for this paper.
+
+---
+
+**Summary of §11's obligations before submission:**
+
+| Citation | Required reading | Status |
+|---|---|---|
+| Lawvere 1969 | LNM 92 Springer, full paper | not read |
+| Yanofsky 2003 | BSL 9(3), full paper | not read |
+| Flypitch | Han-van Doorn CPP 2020 + source | partial |
+| Statman 1979 | Proc. AMS 75(1) | not read |
+| Orevkov 1979 | Zapiski LOMI 88 (Russian) | not read, translation needed |
+| Haken 1985 | TCS 39 | partial |
+| Cook-Reckhow 1979 | JSL 44(1) | partial |
+| Rutten 2000 / Jacobs 2017 | background texts | not required for tone |
+| Kolchin / Ritt | background texts | not required for tone |
+
+Until these are read, §11's substantive claims remain speculative. The skeleton records the positions the paper must take and flags reading as prerequisite work. Do not treat §11 as draft-complete without completing the reading list.
 
 ---
 
 ## 12. Future Directions
 
-> TODO — ~2 pages. Be explicit about P vs NP as speculation, not deliverable.
+We organize this section by tractability rather than by ambition. Three tiers: concrete axiom-discharge work with known techniques (tractable); new bounds that the framework organizes but does not yet derive (medium-term); and genuinely speculative directions toward P vs NP and its known barriers (speculative — explicitly *not* a deliverable). The GitHub issue numbers are the project's live tracking of these items; we include them so the reader can check the current status.
+
+### 12.1 Discharging the twelve named axioms
+
+The formalization contains twelve named axioms at `Obstruction/` boundary points. Each corresponds to a known classical result; none are known to be wrong. Discharging any of them strengthens the paper's claims; none are required for §§4-9.
+
+**PA GödelSystem Phases 2-4** (seven axioms, issues #50-#52). Sub-projects of issue #40, tracked as independent follow-ups. Phase 2 (syntactic formulas + decoding) is estimated at ~2 weeks; Phase 3 (representability of PR functions in PA) is the hard one at 1-2 months and is the Flypitch-scale piece; Phase 4 (PA deductive system) is ~2 weeks. Discharging all three yields a machine-checked derivation of Gödel's first and second incompleteness theorems from PA primitives, through the obstruction framework.
+
+**Haken's state-count (three axioms in `HakenBottleneck.lean`, one in `Resolution.lean`, issue #37).** The `PHP_state_lower_bound_spec` axiom (§9.5) encodes Haken's combinatorial bottleneck argument as an input. Discharging it requires formalizing Haken 1985 from primitives — a multi-month project of independent value, currently the most paper-adjacent medium-term item. The expected deliverable is an axiom-free derivation of `haken_lower_bound` and corresponding statements in `HakenBottleneck.lean`.
+
+**Natural proofs evasion (one axiom in `NaturalProofsEvasion.lean`, issue #39).** The axiom `obstruction_property_not_large` states that the obstruction property does not satisfy the Razborov-Rudich "largeness" condition, hence is not subject to the natural proofs barrier. Discharging this axiom is small in scope (the argument is structural, not combinatorial), and its presence converts the framework's relationship to natural proofs from commentary to theorem. Positioned in §12.3 under barriers.
+
+The paper's framing is that these axioms are *bookkeeping for future work*, not hidden gaps. Each is stated precisely in Lean, each has a known classical proof, and each is tracked as an issue. A reader skeptical of the scaffolding is invited to read any single axiom's statement and confirm that it is not smuggling non-trivial content.
+
+### 12.2 New proof complexity results
+
+§9 recovers Haken modulo his combinatorial input. The framework's value-add is a uniform lens on *any* size-bounded rewrite system, and the natural question is whether that lens produces *new* bounds — not merely re-organizations of known ones.
+
+**Tree-like resolution, Frege, extended Frege (issues #38, #44).** Each of these is a proof system for which classical lower bounds are either open or rely on specialized techniques. The obstruction framework's claim is that length lower bounds for any size-bounded form-changing rewrite system follow from target-size growth. Whether this perspective yields a new bound is a research question, not a resolved one. The framework organizes the question; it does not answer it.
+
+**Trajectory-structure-based bounds (#41).** The observation that `EvalRewriteWitness` comes with both form-change data (blocks encoding) and size-growth data (bounds length) invites a more refined invariant. Can the structure of the *trajectory* — what is preserved and what changes at each step — give sharper bounds than size alone? This is currently speculation; an honest account is that size is the only invariant we have exploited quantitatively.
+
+**Multiplicative-to-additive transformation (#42).** The Leibniz pattern (§4) is specifically multiplication becoming addition under differentiation/evaluation. If this transformation itself is a complexity measure — tracking how many `comp`-to-`add` steps occur in a proof's internal computation — it may provide a structural lower bound mechanism. Currently exploratory.
+
+**Craig interpolation (#43).** Craig interpolation lower bounds (Krajíček, Pudlák) are a known route to proof complexity separations. The framework's relationship to interpolation is untested; the obstruction's structural content may or may not be compatible with interpolation-based lower bounds. Research direction, not planned work.
+
+Each of these items is speculation-colored work: the framework is the organizing principle, not a proof engine that mechanically produces new bounds.
+
+### 12.3 Speculative: P vs NP and its known barriers
+
+A framework that connects encoding obstructions to proof complexity invites the question: does it suggest an approach to P vs NP?
+
+We are explicit that it does not, and that this section is speculation colored by a commitment to stating scope honestly.
+
+**The structural argument.** An NP-complete problem has a verifier; any verifier is a computation; computation has `EvalRewriteWitness` structure (§9.6's two routes); therefore an NP-complete problem's verifier has the obstruction. If the obstruction's quantitative consequences (size growth in trajectories) could be shown to force super-polynomial verification length for NP-complete problems, P ≠ NP would follow. This is the informal claim we state and the informal claim we have not proved.
+
+**The three classical barriers** to separating P from NP (Razborov-Rudich 1994, Baker-Gill-Solovay 1975, Aaronson-Wigderson 2008) apply to large classes of proof techniques. The framework's relationship to each:
+
+- **Relativization (Baker-Gill-Solovay).** The obstruction is about term-rewriting on syntactic term algebras. Relativization is about oracle access. The two domains do not obviously interact: the obstruction is a statement about syntactic encoding regardless of the underlying theory's oracle access. Whether this constitutes non-relativizing content is open; the formalization does not settle it.
+
+- **Natural proofs (Razborov-Rudich).** The obstruction property (form change + semantic preservation) is not plausibly a "largeness" property of Boolean functions in the Razborov-Rudich sense — it is a structural property of rewrite systems, not a statistical property of the function being computed. Issue #39 and `NaturalProofsEvasion.lean` formalize this claim behind a single axiom (`obstruction_property_not_large`); discharging that axiom gives the theorem "the obstruction property is not large, hence not subject to the natural proofs barrier." This is the most concrete barrier-evasion claim and the one most ripe for formalization.
+
+- **Algebrization (Aaronson-Wigderson).** Algebrization generalizes relativization to algebraic extensions. The obstruction's relationship to algebraic extensions is unanalyzed. We make no claim about algebrization.
+
+**What we do claim.** The speculative structural argument is *explicitly a research direction, not a result*. The formalization provides the scaffolding to examine whether the obstruction evades the known barriers (partially, via issue #39) and whether it can be sharpened into a complexity-class separation (not known). The paper's contribution to this question is to state it clearly, not to answer it.
+
+**What a reviewer should read into §12.3.** The paper's structural claim stops at "incompleteness, halting, cut elimination, and Haken's resolution bound share the same obstruction pattern." Extensions of this claim to P vs NP are speculative and separated from the paper's substantive content. We prefer a paper whose quantitative claims are defensible and whose speculative claims are openly labeled over a paper whose speculation is hidden.
+
+### 12.4 Other domains
+
+Three further directions are natural given the formalization:
+
+**Binding theory (substitution).** Substitution in any language with variable binding is a form-changing rewrite (§8.1's lift/subst). A deeper formalization of why substitution changes form — not merely that it does in concrete cases — would sharpen the universality claim. Currently substitution appears as one instance among several; a binding-theoretic account would connect it to the structure of contexts and capture-avoiding reduction more abstractly.
+
+**Sequent calculus.** §8's Curry-Howard route identifies beta reduction with cut elimination on natural deduction proofs. Sequent calculus is the classical alternative formulation, with cut elimination as its own primitive operation. Formalizing a sequent calculus and instantiating `NormalizationProofSystem` would provide a second proof-system instance and make the §8.6 claim concrete beyond lambda calculus.
+
+**Type theory and dependent types.** The obstruction on beta reduction carries to polymorphic and dependently typed systems. System F and the Calculus of Constructions admit non-terminating terms (via polymorphism) that are closer analogs of Ω (§8.3). A dependently typed proof system inherits the obstruction through the same Curry-Howard route. This is low-lift follow-on work.
+
+### 12.5 What future work does not address
+
+The paper deliberately does not pursue:
+
+- **P vs NP independence.** The formalization's structural argument is a research direction, not a deliverable. No formalization claim is made about independence of P vs NP from PA or ZFC.
+- **New explanations of incompleteness.** Gödel 1931 remains the source text. Our work formalizes a structural perspective that is implicit in Lawvere 1969 and makes it machine-checkable; it does not claim new mathematical content about incompleteness.
+- **Replacing or reframing Haken's / Statman's / Orevkov's work.** We recover these results modulo their combinatorial inputs. The classical theorems stand; the framework provides an alternative organizing principle for viewing them.
 
 ---
 
