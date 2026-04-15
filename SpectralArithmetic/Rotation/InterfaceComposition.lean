@@ -309,16 +309,58 @@ private lemma resolveOn_lift_subset
       resolveOn (c1 ++ extra) (c2 ++ extra) v := by
   sorry
 
+/-- A clause with no occurrence of variable `v` is fixed by
+    `filter (fun (v', _) => v' != v)`. Used to keep `extra` whole
+    inside the lifted resolveOn (since the pivot is private). -/
+private lemma filter_self_of_var_notMem
+    (extra : SATClause) (v : Nat) (hPiv : v ∉ extra.map (·.1)) :
+    extra.filter (fun (v', _) => v' != v) = extra := by
+  apply List.filter_eq_self.mpr
+  intro lit hLit
+  simp only [bne_iff_ne, ne_eq]
+  intro hEq
+  apply hPiv
+  rw [List.mem_map]
+  exact ⟨lit, hLit, hEq⟩
+
+/-- `(extra ++ extra).eraseDups = extra` when `extra.Nodup`.
+    The proof reduces to: eraseDups keeps first occurrence; the first
+    occurrence of every `extra`-element in `extra ++ extra` is in the
+    left half; for Nodup `extra`, eraseDups is the identity.
+    Stated as a named obligation; the body is List algebra around
+    `List.eraseDups` which depends on Mathlib lemmas not yet wired
+    up here. -/
+private lemma eraseDups_double_of_nodup
+    (extra : SATClause) (_hNodup : extra.Nodup) :
+    (extra ++ extra).eraseDups = extra := by
+  sorry
+
 /-- For a step that already produces the empty clause, lifting yields
     a step that produces exactly `extra`. Requires `extra.Nodup` so
     that `(extra ++ extra).eraseDups = extra`. -/
 private lemma resolveOn_lift_eq_extra_of_empty
     (c1 c2 extra : SATClause) (v : Nat)
-    (_hPiv : v ∉ extra.map (·.1))
-    (_hNodup : extra.Nodup)
-    (_hEmpty : resolveOn c1 c2 v = []) :
+    (hPiv : v ∉ extra.map (·.1))
+    (hNodup : extra.Nodup)
+    (hEmpty : resolveOn c1 c2 v = []) :
     resolveOn (c1 ++ extra) (c2 ++ extra) v = extra := by
-  sorry
+  unfold resolveOn at hEmpty ⊢
+  -- Decompose hEmpty: `(c1.filter (≠v) ++ c2.filter (≠v)).eraseDups = []`,
+  -- and eraseDups gives [] iff input is [].
+  have hMergedNil :
+      c1.filter (fun (v', _) => v' != v) ++
+        c2.filter (fun (v', _) => v' != v) = [] := by
+    -- If the merged list were nonempty, `eraseDups` would keep some
+    -- element, contradicting hEmpty. Deferred as a 1-line sub-obligation
+    -- (Mathlib name lookup for eraseDups-preserves-membership).
+    sorry
+  obtain ⟨hC1Empty, hC2Empty⟩ := List.append_eq_nil_iff.mp hMergedNil
+  -- Now lifted resolveOn: (c1 ++ extra).filter (≠v) = c1.filter ++ extra
+  --                     = [] ++ extra = extra.
+  rw [List.filter_append, List.filter_append, hC1Empty, hC2Empty]
+  rw [filter_self_of_var_notMem extra v hPiv]
+  simp only [List.nil_append]
+  exact eraseDups_double_of_nodup extra hNodup
 
 /-! ### The lifting lemma -/
 
