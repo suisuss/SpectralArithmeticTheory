@@ -132,11 +132,137 @@ def stepResultCorrect (d : Derivation) (i : Nat) : Prop :=
   | none => True
   | some step => step.result = resolveOn step.clause1 step.clause2 step.pivot
 
+/-- `d.conclusion` is actually derived: either it is an original clause
+    of `F` or it is the result of some step. Required on top of
+    "conclusion = []" so an empty Derivation cannot refute arbitrary `F`. -/
+def conclusionDerived (d : Derivation) (F : SATFormula) : Prop :=
+  d.conclusion ∈ F ∨ d.conclusion ∈ d.steps.map (·.result)
+
 /-- `d` is a resolution refutation of `F`. -/
 def RefutesFrom (d : Derivation) (F : SATFormula) : Prop :=
   d.conclusion = [] ∧
+  conclusionDerived d F ∧
   (∀ i, i < d.steps.length →
     stepPremisesValid d F i ∧ stepResultCorrect d i)
+
+/-! ## Lifting a restricted refutation back to the original formula
+
+    Central construction for the composition theorem. Given a refutation
+    of `F|α` and the falsified literals `L_α` of `α`, every clause
+    appearing in the derivation is extended by appending `L_α`. Pivot
+    variables are untouched because they are private to `F₁` or `F₂`
+    and do not appear in `α`. The lifted derivation produces the clause
+    `L_α` (instead of the empty clause).
+
+    Two obligations for full correctness (deferred to named lemmas):
+    - each lifted step remains a valid resolution step (pivot preserved,
+      result unchanged modulo the appended literals),
+    - each lifted original clause is present in `F` (weakening-closure
+      requires the lifted clause to subsume some clause of `F`).
+-/
+
+/-- The list of falsified literals of an assignment α. Each `(v, b) ∈ α`
+    contributes the literal `(v, !b)` (which α makes false). -/
+def falsifiedLiterals (α : PartialAssignment) : SATClause :=
+  α.map fun (v, b) => (v, !b)
+
+/-- Lift a resolution step by appending extra literals to both premises
+    and the result. Pivot and structure unchanged. -/
+def liftStep (extra : SATClause) (s : ResolutionStep) : ResolutionStep :=
+  { clause1 := s.clause1 ++ extra
+    clause2 := s.clause2 ++ extra
+    pivot   := s.pivot
+    result  := s.result  ++ extra }
+
+/-- Lift an entire derivation, producing (by construction) a derivation
+    whose conclusion is the original conclusion ++ extra. -/
+def liftDerivation (extra : SATClause) (d : Derivation) : Derivation :=
+  { steps      := d.steps.map (liftStep extra)
+    conclusion := d.conclusion ++ extra }
+
+@[simp] lemma liftStep_pivot (extra : SATClause) (s : ResolutionStep) :
+    (liftStep extra s).pivot = s.pivot := rfl
+
+@[simp] lemma liftDerivation_length (extra : SATClause) (d : Derivation) :
+    (liftDerivation extra d).steps.length = d.steps.length := by
+  simp [liftDerivation]
+
+@[simp] lemma liftDerivation_conclusion_empty
+    (extra : SATClause) (d : Derivation) (h : d.conclusion = []) :
+    (liftDerivation extra d).conclusion = extra := by
+  simp [liftDerivation, h]
+
+/-- The lifted conclusion for a refutation (`d.conclusion = []`) is
+    exactly the `extra` literals — this is what lets us later resolve
+    different interface branches against each other. -/
+lemma liftDerivation_refutation_conclusion
+    (α : PartialAssignment) (d : Derivation) (h : d.conclusion = []) :
+    (liftDerivation (falsifiedLiterals α) d).conclusion =
+      falsifiedLiterals α := by
+  simp [liftDerivation, h]
+
+/-- Generalised derivation predicate: `d` derives the clause `c` from
+    `F`. `RefutesFrom d F` is the special case `c = []`. -/
+def DerivesFromTo (d : Derivation) (F : SATFormula) (c : SATClause) : Prop :=
+  d.conclusion = c ∧
+  conclusionDerived d F ∧
+  (∀ i, i < d.steps.length →
+    stepPremisesValid d F i ∧ stepResultCorrect d i)
+
+/-- Bridge between `RefutesFrom` and `DerivesFromTo`: refutation is
+    derivation of the empty clause. -/
+lemma refutesFrom_iff_derivesFromTo_empty
+    (d : Derivation) (F : SATFormula) :
+    RefutesFrom d F ↔ DerivesFromTo d F [] := by
+  simp [RefutesFrom, DerivesFromTo]
+
+/-- **Lifting lemma (key Phase B obligation).**
+
+    If `d` refutes `F|α` in ≤ L steps and each pivot in `d` is a private
+    variable (disjoint from `α`'s interface), then `F` derives
+    `falsifiedLiterals α` in ≤ L steps.
+
+    **Proof idea.** Take `d' = liftDerivation (falsifiedLiterals α) d`.
+    Its conclusion is `[] ++ falsifiedLiterals α` (by
+    `liftDerivation_refutation_conclusion`). The resolution steps
+    commute with appending literals on a pivot-disjoint set. The only
+    subtlety: original-clause premises that did NOT mention any `α`
+    variable become weakenings of `F`-clauses, which is not directly
+    a step in `F`. This weakening is eliminable via a standard
+    subsumption / projection argument — tracked as a separate
+    auxiliary obligation below.
+
+    This is the central open obligation of Phase B. -/
+lemma lift_refutation_to_derivation
+    (F : SATFormula) (α : PartialAssignment) (d : Derivation)
+    (_hRef : RefutesFrom d (restrictFormula F α))
+    (_hPivotsPrivate :
+      ∀ i (h : i < d.steps.length),
+        (d.steps[i]'h).pivot ∉ α.map (·.1)) :
+    ∃ d' : Derivation,
+      DerivesFromTo d' F (falsifiedLiterals α) ∧
+      d'.steps.length ≤ d.steps.length := by
+  sorry
+
+/-! ## Combining two derivations via a final resolution step -/
+
+/-- Concatenate `d1 ++ d2` and append one resolution step whose premises
+    are the two conclusions. The combined derivation concludes with the
+    resolvent. Length = d1.length + d2.length + 1. -/
+def concatResolve (d1 d2 : Derivation) (pivot : Nat) : Derivation :=
+  let finalStep : ResolutionStep :=
+    { clause1 := d1.conclusion
+      clause2 := d2.conclusion
+      pivot   := pivot
+      result  := resolveOn d1.conclusion d2.conclusion pivot }
+  { steps      := d1.steps ++ d2.steps ++ [finalStep]
+    conclusion := finalStep.result }
+
+@[simp] lemma concatResolve_length
+    (d1 d2 : Derivation) (pivot : Nat) :
+    (concatResolve d1 d2 pivot).steps.length =
+      d1.steps.length + d2.steps.length + 1 := by
+  simp [concatResolve, Nat.add_assoc]
 
 /-! ## The composition theorem (statement only — Phase A) -/
 
@@ -182,10 +308,10 @@ theorem interfaceComposition_length
 theorem interfaceComposition_singleBridge
     (F : SATFormula)
     (D : InterfaceDecomposition)
-    (_hValid : D.IsValid F)
-    (_hSingleBridge : D.interface.length = 1)
+    (hValid : D.IsValid F)
+    (hSingleBridge : D.interface.length = 1)
     (L : Nat)
-    (_hSides :
+    (hSides :
       ∀ α ∈ allInterfaceAssignments D.interface,
         (∃ d1 : Derivation,
            RefutesFrom d1 (restrictFormula D.formula1 α) ∧
@@ -196,6 +322,39 @@ theorem interfaceComposition_singleBridge
     : ∃ d : Derivation,
         RefutesFrom d F ∧
         d.length ≤ 4 * L + 2 := by
+  -- Extract the single bridge variable b.
+  have ⟨b, hb⟩ : ∃ b, D.interface = [b] := by
+    match h : D.interface with
+    | [] => simp [h] at hSingleBridge
+    | [b] => exact ⟨b, rfl⟩
+    | _ :: _ :: _ => simp [h] at hSingleBridge
+  -- The two assignments over interface=[b].
+  let αF : PartialAssignment := [(b, false)]
+  let αT : PartialAssignment := [(b, true)]
+  have hαF_mem : αF ∈ allInterfaceAssignments D.interface := by
+    rw [hb]; simp [allInterfaceAssignments, αF]
+  have hαT_mem : αT ∈ allInterfaceAssignments D.interface := by
+    rw [hb]; simp [allInterfaceAssignments, αT]
+  -- From hSides we get refutations for each side under each α.
+  have ⟨d1F_ex, _⟩ := hSides αF hαF_mem
+  have ⟨_, d2T_ex⟩ := hSides αT hαT_mem
+  -- Open the existentials.
+  obtain ⟨d1F, hd1F_ref, hd1F_len⟩ := d1F_ex
+  obtain ⟨d2T, hd2T_ref, hd2T_len⟩ := d2T_ex
+  -- Lift them to derivations of {b} (from αF, literals falsified is (b,T))
+  -- and {¬b} (from αT, literals falsified is (b,F)) on their respective
+  -- private sides.
+  -- NOTE: lift_refutation_to_derivation needs a pivot-disjointness hyp;
+  -- in valid decompositions, F_i's clauses only mention privateVars_i ∪
+  -- interface, and resolution pivots within F_i must be variables that
+  -- appear in its clauses with opposite polarity — a pivot equal to
+  -- interface var `b` is only possible if `b` is mentioned in clauses
+  -- of F_i. Since α fixes b, any such clause is either satisfied or has
+  -- its (b, _) literal dropped under restriction, so after restriction
+  -- `b` never appears as a pivot. This is the hPivotsPrivate condition,
+  -- which follows from hd1F_ref / hd2T_ref + hValid but is also left
+  -- as an obligation (pushed to the lift lemma) in this Phase B step.
+  -- For now we just thread the hypothesis through.
   sorry
 
 /-! ## Smoke test: definitions compute on small inputs -/
