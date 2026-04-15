@@ -897,9 +897,114 @@ Together with §8.6's `NormalizationProofSystem`, this gives two complementary s
 
 ---
 
-## 10. The PA GodelSystem Instance
+## 10. The PA GödelSystem Instance
 
-> TODO — ~2 pages. `PAGodelSystem.lean`. Lean on the scaffolded axiom tracking (#50-#52) to frame as honest future work.
+§6 axiomatized the `GodelSystem` structure and proved incompleteness from its axioms. This section takes the remaining step toward a fully grounded formalization: instantiating `GodelSystem` for Peano arithmetic. The scope is deliberately narrow. We describe what is discharged (Phase 1, now complete), what is scaffolded (Phases 2-4, with seven named axioms), and what the scaffolding costs the paper's claims.
+
+### 10.1 What a PA instance requires
+
+A `GodelSystem PATerm` instance must supply twelve fields: `provable`, `neg`, `Formula`, `subst`, `scode`, `fcode`, `decode`, `decode_fcode`, `diagN`, `diagN_spec`, `compose_diag`, `compose_diag_prov`, `compose_diag_neg`. The intellectual content of a PA instance is spread unevenly across these:
+
+- **Trivial for PA**: `provable` and `neg` are Peano's provability predicate and syntactic negation; these are standard objects in any formalization of PA.
+- **Discharged combinatorially**: `scode`, `fcode`, `decode`, `decode_fcode`, `diagN`, `diagN_spec`, `subst` are Gödel's 1931 encoding machinery. Doable by unique prime factorization and explicit manipulation; tedious but mechanical.
+- **The representability theorem**: `compose_diag`, `compose_diag_prov`, `compose_diag_neg` are the essential technical content of Gödel's 1931 paper. They state that the diagonal function is represented by a PA formula. Formalizing this in Lean is a substantial independent project (Flypitch-scale).
+
+`PAGodelSystem.lean` sets up the combinatorial half and scaffolds the representability half with named axioms.
+
+### 10.2 Phase 1: the Gödel encoding (discharged)
+
+The Gödel encoding via prime factorization:
+
+```lean
+def encodeTerm : PATerm → ℕ
+  | .zero        => 1
+  | .succ t      => 2 ^ (1 + encodeTerm t)
+  | .plus  a b   => 3 ^ (1 + encodeTerm a) * 5  ^ (1 + encodeTerm b)
+  | .times a b   => 7 ^ (1 + encodeTerm a) * 11 ^ (1 + encodeTerm b)
+```
+
+The central lemma is injectivity:
+
+```lean
+theorem encodeTerm_injective : Function.Injective encodeTerm
+```
+
+The proof reduces to seven small arithmetic facts: `3 ∤ 2^k`, `7 ∤ 2^k`, `7 ∤ 3^x · 5^y`, `3 ∤ 7^x · 11^y`, `pow_two_injective`, `plus_pairing_injective`, `times_pairing_injective`. These were originally axiomatized in the paper's scaffolding. PR #49 discharged all seven as theorems using Mathlib's `Nat.Prime.dvd_of_dvd_pow` (for the non-divisibility facts) and `Nat.factorization` (for the pairing injectivities via a shared `pair_factorization_eq` helper). The encoding-level of `PAGodelSystem.lean` is now axiom-free.
+
+### 10.3 Phases 2-4: seven named axioms
+
+The remaining scaffolding stores seven axioms:
+
+```lean
+axiom phase2_decode_inverse : ∀ (φ : PAFormula), decodeFormula φ.code = φ
+axiom compose_diag : PAFormula → PAFormula
+axiom compose_diag_apply : ∀ (β : PAFormula) (n : ℕ),
+    (compose_diag β).apply n = β.apply (diagN n)
+axiom paProvable : PATerm → Prop
+axiom paNeg : PATerm → PATerm
+axiom phase3_compose_diag_provable : ∀ (β : PAFormula) (n : ℕ),
+    paProvable ((compose_diag β).apply n) ↔ paProvable (β.apply (diagN n))
+axiom phase3_compose_diag_neg_provable : ∀ (β : PAFormula) (n : ℕ), ...
+```
+
+Each axiom is a precise mathematical claim corresponding to a standard result in Gödel's 1931 paper or in the classical theory of PA. The three classes match the three sub-issues tracking the work:
+
+| Axioms | Content | Issue |
+|---|---|---|
+| `phase2_decode_inverse` | The `PAFormula` stub must be replaced with a proper syntactic formula type, and `decode` made a left inverse of `fcode` | #50 |
+| `compose_diag`, `compose_diag_apply`, `phase3_compose_diag_provable`, `phase3_compose_diag_neg_provable` | The diagonal function is representable in PA (Gödel's 1931 representability theorem) | #51 |
+| `paProvable`, `paNeg` | PA's deductive system: axioms, inference rules, derivability | #52 |
+
+Given these axioms, the `GodelSystem PATerm` instance is constructive:
+
+```lean
+noncomputable def paGodelSystem : Diagonal.GodelSystem PATerm where
+  provable     := paProvable
+  neg          := paNeg
+  Formula      := PAFormula
+  subst        := fun φ n => φ.apply n
+  scode        := encodeTerm
+  fcode        := PAFormula.code
+  decode       := decodeFormula
+  decode_fcode := phase2_decode_inverse
+  diagN        := diagN
+  diagN_spec   := fun _ => rfl
+  compose_diag := compose_diag
+  compose_diag_prov := by intro β n; rw [compose_diag_apply]
+  compose_diag_neg  := by intro β n; rw [compose_diag_apply]
+```
+
+Composing `paGodelSystem` with the machinery of §6 gives: PA is an incomplete theory, modulo the seven axioms. The axioms are the only remaining obligation.
+
+### 10.4 What the scaffolding costs
+
+A reviewer entitled to press on this point will ask: is "PA is incomplete modulo seven axioms" actually a contribution, given that each axiom restates a classical result of Gödel or a fact about PA?
+
+The honest answer in two parts:
+
+First, the paper's central contribution does not depend on discharging these axioms. §§4-9 hold independently: the universal obstruction theorem is proved in `Universal.lean`, the `EvalRewriteWitness` abstraction in `EvalRewrite.lean` and `RootConstructorChange.lean`, the incompleteness proofs in `Diagonal.lean` and `Incompleteness.lean`, and the proof-complexity results in §9 do not rely on the PA instance at all. The PA instance is the extension-of-claim from "any `GodelSystem` is incomplete" to "PA is incomplete, fully machine-checked from primitives." §§4-9 make the former claim; §10 describes what the latter would require.
+
+Second, the axioms are precise. Each is stated at the level of a specific mathematical theorem whose discharge is known to be possible — Flypitch discharged the representability theorem in Lean 3 over thousands of lines. The honest framing: the paper formalizes a framework and names the specific obligations it leaves open. These are future work (issues #50, #51, #52), not mathematical gaps. A reader can inspect the axioms, verify that each is a standard result, and take the scaffolding as a bookkeeping device rather than a substantive claim about PA.
+
+### 10.5 The structural connection between PA and the obstruction
+
+One non-trivial observation from the PA scaffolding is worth preserving in the paper's framing. The representability axioms (`compose_diag_prov`, `compose_diag_neg`) are the *reason* the diagonal lemma holds in PA: they express that PA's formulas can internally represent the `diagN` function, which is the abstract `subst (decode n) n` operation. That abstract operation is the `EvalRewriteWitness` for substitution — a form-changing, meaning-preserving rewrite. The content of the representability theorem is: PA can internalize its own substitution operation, which is already an obstruction witness at the term level (`EvalRewrite.lean`'s `paMulWitness`, `paAddWitness`).
+
+Reading these together: the obstruction's presence in PA's evaluation rules (§4.6 + §5's `EvalRewriteWitness`) and the representability of its internalized form (Phase 3 axioms) are two sides of the same object. The first says PA's multiplication rule changes form; the second says PA can recognize, inside its own language, that this happens. The diagonal sentence exploits both: the structural mismatch between code and meaning is the reason the fixed point exists, and representability is what lets PA express the statement. Neither alone yields incompleteness; their simultaneous presence does.
+
+This observation is not new — it is implicit in Gödel's original construction and explicit in Lawvere 1969. What the formalization contributes is the factoring into two independent structural ingredients, one at the term-rewriting level and one at the theory-internalization level, each axiomatized separately and each with a clear roadmap for discharge.
+
+### 10.6 Where this leaves the paper
+
+After §10, the paper's standing is:
+
+- **Proved, sorry-free**: the universal obstruction (§4), the `EvalRewriteWitness` abstraction (§5), incompleteness from `GodelSystem` / `DiagonalTheory` axioms (§6), the halting problem (§7), beta reduction and cut elimination as obstruction instances (§8), proof-length lower bounds from `SizeBounded` rewrites (§9), `haken_lower_bound` from Haken's combinatorial state-count axiom (§9.5), and the `CookReckhowSystem` structural argument for universal proof-system obstruction (§9.6).
+
+- **Axiomatized at precise boundary points**: seven axioms in `PAGodelSystem.lean` corresponding to Phase 2-4 of the PA instantiation (Gödel's 1931 representability theorem plus the PA deductive system), one axiom in `Resolution.lean` corresponding to Haken's combinatorial state-count bound, three axioms in `HakenBottleneck.lean` corresponding to Haken's bottleneck counting argument, and one axiom in `NaturalProofsEvasion.lean` corresponding to the Razborov-Rudich largeness condition. Twelve named axioms in total.
+
+- **Informal, defended by the collection of instances**: the claim that the encoding obstruction is the *structural reason* each of the six impossibility results holds. The formalization records cohabitation (`obstruction_and_incompleteness` in §6.6, the table in §7.3, the duplicator mechanism in §8.3 and §9.3) without claiming entailment from the obstruction alone.
+
+This is the honest statement of what we have. §11 situates it against related work; §12 lays out the discharge plans for the named axioms and research directions beyond.
 
 ---
 
