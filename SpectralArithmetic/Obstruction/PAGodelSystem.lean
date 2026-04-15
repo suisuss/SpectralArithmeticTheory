@@ -104,20 +104,16 @@ theorem encodeTerm_pos (t : PATerm) : encodeTerm t ≥ 1 := by
     simp [encodeTerm]
     exact Nat.one_le_iff_ne_zero.mpr (by positivity)
 
-/-! ## Part 3: Injectivity — Cross-Constructor Cases Proved
+/-! ## Part 3: Injectivity
 
     The Godel encoding is injective: different terms get different codes.
     The proof splits into:
     (a) Cross-constructor: distinguish different constructor types by
-        divisibility. PROVED here.
-    (b) Same-constructor: if both terms have the same top-level
-        constructor, recurse into sub-terms. Requires injectivity of
-        the pairing function (3^_ * 5^_ for plus, etc.). Axiomatized
-        as helper lemmas; straightforward but tedious to discharge.
-
-    This partial discharge reduces the axiomatic surface: instead of
-    one big axiom, we have three small ones about specific prime
-    factorization facts, each a known classical result. -/
+        divisibility (`three_not_dvd_pow_two`, `seven_not_dvd_pow_two`,
+        `seven_not_dvd_3pow_5pow`, `three_not_dvd_7pow_11pow`).
+    (b) Same-constructor: recurse into sub-terms via injectivity of
+        `2^·` and the pairing functions `(a,b) ↦ 3^(1+a)·5^(1+b)` and
+        `(a,b) ↦ 7^(1+a)·11^(1+b)` (derived from `Nat.factorization`). -/
 
 /-- `encodeTerm .zero = 1`. -/
 theorem encodeTerm_zero : encodeTerm .zero = 1 := rfl
@@ -192,22 +188,39 @@ theorem encodeTerm_zero_ne_times (a b : PATerm) :
     `.plus a b` encodes to `3^_ * 5^_` (so 3 ∣ it, 7 ∤ it).
     `.times a b` encodes to `7^_ * 11^_` (so 7 ∣ it, 3 ∤ it).
 
-    We axiomatize the specific coprimality facts (standard results about
-    powers of small primes) as helper lemmas. Each is a known classical
-    result that would take a few lines in Mathlib. -/
+    Each coprimality fact follows from `Nat.Prime.dvd_of_dvd_pow`. -/
 
-/-- `2^k` is never divisible by 3 (coprimality). Axiomatized because
-    the Mathlib formulation depends on specific coprimality lemmas. -/
-axiom three_not_dvd_pow_two (k : ℕ) : ¬ (3 ∣ 2 ^ k)
+/-- `2^k` is never divisible by 3. -/
+theorem three_not_dvd_pow_two (k : ℕ) : ¬ (3 ∣ 2 ^ k) := by
+  intro h
+  have : (3 : ℕ) ∣ 2 := Nat.prime_three.dvd_of_dvd_pow h
+  omega
 
 /-- `2^k` is never divisible by 7. -/
-axiom seven_not_dvd_pow_two (k : ℕ) : ¬ (7 ∣ 2 ^ k)
+theorem seven_not_dvd_pow_two (k : ℕ) : ¬ (7 ∣ 2 ^ k) := by
+  intro h
+  have hp : Nat.Prime 7 := by norm_num
+  have : (7 : ℕ) ∣ 2 := hp.dvd_of_dvd_pow h
+  omega
 
 /-- `3^x * 5^y` is never divisible by 7. -/
-axiom seven_not_dvd_3pow_5pow (x y : ℕ) : ¬ (7 ∣ 3 ^ x * 5 ^ y)
+theorem seven_not_dvd_3pow_5pow (x y : ℕ) : ¬ (7 ∣ 3 ^ x * 5 ^ y) := by
+  intro h
+  have hp : Nat.Prime 7 := by norm_num
+  rcases hp.dvd_mul.mp h with h1 | h2
+  · have : (7 : ℕ) ∣ 3 := hp.dvd_of_dvd_pow h1
+    omega
+  · have : (7 : ℕ) ∣ 5 := hp.dvd_of_dvd_pow h2
+    omega
 
 /-- `7^x * 11^y` is never divisible by 3. -/
-axiom three_not_dvd_7pow_11pow (x y : ℕ) : ¬ (3 ∣ 7 ^ x * 11 ^ y)
+theorem three_not_dvd_7pow_11pow (x y : ℕ) : ¬ (3 ∣ 7 ^ x * 11 ^ y) := by
+  intro h
+  rcases Nat.prime_three.dvd_mul.mp h with h1 | h2
+  · have : (3 : ℕ) ∣ 7 := Nat.prime_three.dvd_of_dvd_pow h1
+    omega
+  · have : (3 : ℕ) ∣ 11 := Nat.prime_three.dvd_of_dvd_pow h2
+    omega
 
 /-- 3 divides any `.plus` encoding. -/
 theorem three_dvd_encodeTerm_plus (a b : PATerm) :
@@ -249,32 +262,82 @@ theorem encodeTerm_plus_ne_times (a b c d : PATerm) :
 /-! ### Same-constructor injectivity
 
     For terms with the same top-level constructor, we recurse into
-    sub-terms. This requires injectivity of the exponentiation and
-    of the pairing function.
-
-    We axiomatize these specific facts (standard but tedious). -/
+    sub-terms. This uses injectivity of `2^·` and of the pairing
+    functions `(a,b) ↦ 3^(1+a)·5^(1+b)` and `(a,b) ↦ 7^(1+a)·11^(1+b)`,
+    extracted via `Nat.factorization` at the relevant primes. -/
 
 /-- `2^k` is injective in `k`. -/
-axiom pow_two_injective : Function.Injective (fun k => 2 ^ k)
+theorem pow_two_injective : Function.Injective (fun k => 2 ^ k) :=
+  Nat.pow_right_injective (by omega)
+
+private lemma pair_factorization_eq
+    {p q : ℕ} (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q) (a b : ℕ) :
+    (p ^ (1 + a) * q ^ (1 + b)).factorization p = 1 + a ∧
+    (p ^ (1 + a) * q ^ (1 + b)).factorization q = 1 + b := by
+  have hpne : p ^ (1 + a) ≠ 0 := pow_ne_zero _ hp.ne_zero
+  have hqne : q ^ (1 + b) ≠ 0 := pow_ne_zero _ hq.ne_zero
+  refine ⟨?_, ?_⟩
+  · rw [Nat.factorization_mul hpne hqne, Finsupp.add_apply,
+        hp.factorization_pow, hq.factorization_pow,
+        Finsupp.single_apply, Finsupp.single_apply,
+        if_pos rfl, if_neg hpq.symm, Nat.add_zero]
+  · rw [Nat.factorization_mul hpne hqne, Finsupp.add_apply,
+        hp.factorization_pow, hq.factorization_pow,
+        Finsupp.single_apply, Finsupp.single_apply,
+        if_neg hpq, if_pos rfl, Nat.zero_add]
 
 /-- The pairing `3^(x+1) * 5^(y+1)` is injective. -/
-axiom plus_pairing_injective :
-    Function.Injective (fun (p : ℕ × ℕ) => 3 ^ (1 + p.1) * 5 ^ (1 + p.2))
+theorem plus_pairing_injective :
+    Function.Injective (fun (p : ℕ × ℕ) => 3 ^ (1 + p.1) * 5 ^ (1 + p.2)) := by
+  intro ⟨a₁, b₁⟩ ⟨a₂, b₂⟩ h
+  dsimp only at h
+  have hp3 : Nat.Prime 3 := Nat.prime_three
+  have hp5 : Nat.Prime 5 := by norm_num
+  have hne : (3 : ℕ) ≠ 5 := by decide
+  have e1 := pair_factorization_eq hp3 hp5 hne a₁ b₁
+  have e2 := pair_factorization_eq hp3 hp5 hne a₂ b₂
+  have ea : 1 + a₁ = 1 + a₂ := by
+    have := congrArg (fun n => Nat.factorization n 3) h
+    simp only at this
+    rw [e1.1, e2.1] at this
+    exact this
+  have eb : 1 + b₁ = 1 + b₂ := by
+    have := congrArg (fun n => Nat.factorization n 5) h
+    simp only at this
+    rw [e1.2, e2.2] at this
+    exact this
+  have : a₁ = a₂ := by omega
+  have : b₁ = b₂ := by omega
+  subst ‹a₁ = a₂›; subst ‹b₁ = b₂›; rfl
 
 /-- The pairing `7^(x+1) * 11^(y+1)` is injective. -/
-axiom times_pairing_injective :
-    Function.Injective (fun (p : ℕ × ℕ) => 7 ^ (1 + p.1) * 11 ^ (1 + p.2))
+theorem times_pairing_injective :
+    Function.Injective (fun (p : ℕ × ℕ) => 7 ^ (1 + p.1) * 11 ^ (1 + p.2)) := by
+  intro ⟨a₁, b₁⟩ ⟨a₂, b₂⟩ h
+  dsimp only at h
+  have hp7 : Nat.Prime 7 := by norm_num
+  have hp11 : Nat.Prime 11 := by norm_num
+  have hne : (7 : ℕ) ≠ 11 := by decide
+  have e1 := pair_factorization_eq hp7 hp11 hne a₁ b₁
+  have e2 := pair_factorization_eq hp7 hp11 hne a₂ b₂
+  have ea : 1 + a₁ = 1 + a₂ := by
+    have := congrArg (fun n => Nat.factorization n 7) h
+    simp only at this
+    rw [e1.1, e2.1] at this
+    exact this
+  have eb : 1 + b₁ = 1 + b₂ := by
+    have := congrArg (fun n => Nat.factorization n 11) h
+    simp only at this
+    rw [e1.2, e2.2] at this
+    exact this
+  have : a₁ = a₂ := by omega
+  have : b₁ = b₂ := by omega
+  subst ‹a₁ = a₂›; subst ‹b₁ = b₂›; rfl
 
-/-- **GODEL ENCODING INJECTIVITY (proved modulo axiomatized helpers):**
-    Different PA terms get different Godel codes.
-
-    The proof combines:
-    - Cross-constructor distinguishing (PROVED above)
-    - Same-constructor recursion via injective pairings (axiomatized)
-    - Structural induction on terms
-
-    The axioms are standard prime arithmetic facts; their discharge
-    is incremental and straightforward using Mathlib's prime theory. -/
+/-- **Godel encoding injectivity:** distinct PA terms get distinct Godel
+    codes. Proof combines cross-constructor distinguishing (via prime
+    divisibility) with same-constructor recursion (via injectivity of
+    `2^·` and the prime pairings) and structural induction on terms. -/
 theorem encodeTerm_injective : Function.Injective encodeTerm := by
   intro t1 t2 h
   induction t1 generalizing t2 with
@@ -494,6 +557,11 @@ noncomputable def paGodelSystem : Diagonal.GodelSystem PATerm where
     |------|---------|
     | encodeTerm | Godel encoding of PA terms via prime factorization |
     | encodeTerm_pos | Encoding is positive |
+    | three_not_dvd_pow_two, seven_not_dvd_pow_two | Prime non-divisibility |
+    | seven_not_dvd_3pow_5pow, three_not_dvd_7pow_11pow | Cross-prime non-divisibility |
+    | pow_two_injective | 2^· is injective |
+    | plus_pairing_injective, times_pairing_injective | Pairing injectivity via Nat.factorization |
+    | encodeTerm_injective | Distinct terms get distinct codes |
     | decodeFormula | Decoding stub (returns formula with given code) |
     | decodeFormula_code | Decoding preserves the code |
     | diagN | Diagonal function definition |
@@ -503,29 +571,17 @@ noncomputable def paGodelSystem : Diagonal.GodelSystem PATerm where
 
     | Axiom | What it asserts | Phase |
     |-------|-----------------|-------|
-    | encodeTerm_injective | Distinct terms get distinct codes | Phase 1 (tedious) |
     | compose_diag | Diagonal function representable as formula | Phase 3 (deep) |
     | compose_diag_apply | The representation works | Phase 3 (deep) |
     | paProvable | Provability predicate for PA | Phase 4 |
     | paNeg | Negation in PA | Phase 4 |
-
-    SORRY (3 instances, each a specific identifiable gap):
-
-    | Field | What's missing |
-    |-------|---------------|
-    | decode_fcode | Decode needs to recover the formula's apply, not just code |
-    | compose_diag_prov | Requires full provability predicate |
-    | compose_diag_neg | Same |
-
-    These sorries are NOT mathematical gaps — they are FORMALIZATION
-    gaps. Each corresponds to a known classical result (Godel's
-    representability theorem, PA's deductive system) that is well-understood
-    but takes substantial Lean infrastructure to formalize.
+    | phase2_decode_inverse | decode is a left inverse of fcode | Phase 2 |
+    | phase3_compose_diag_provable | PA proves the diagonal equivalence | Phase 3 |
+    | phase3_compose_diag_neg_provable | Same, under negation | Phase 3 |
 
     INCREMENTAL ROADMAP:
 
-    Phase 1 (~1 week): Discharge encodeTerm_injective by formalizing
-    prime factorization arguments.
+    Phase 1 (DONE): Godel encoding + injectivity from prime factorization.
 
     Phase 2 (~2 weeks): Define primitive recursive functions in Lean,
     show diagN is PR.
@@ -536,7 +592,7 @@ noncomputable def paGodelSystem : Diagonal.GodelSystem PATerm where
     Phase 4 (~2 weeks): Formalize PA's deductive system (axioms,
     rules of inference, derivability).
 
-    Total: ~2-3 months of formalization work to fully discharge.
+    Total: ~2-3 months of formalization work remaining (Phases 2-4).
 
     The current file establishes the SCAFFOLDING — the structure is
     fixed, the axioms are precise, and the work is now incremental
