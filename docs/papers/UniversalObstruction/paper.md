@@ -10,13 +10,52 @@
 
 ## 1. Abstract
 
-> TODO — draft last, once §§2, 4-10 have enough content to know what the abstract is abstracting. Target 200 words per outline.
+Several classical impossibility results — Gödel's first and second incompleteness theorems, Turing's halting problem, Statman's non-elementary cut elimination blowup, and Haken's exponential pigeonhole resolution bound — share a structural mechanism: a rewrite that changes syntactic form while preserving semantic content, combined with an injective encoding that must somehow commute with it. We formalize this mechanism in Lean 4 as an abstraction called `EvalRewriteWitness`, prove that it yields an encoding obstruction in one line by the definition of injectivity, and prove formally that the more naive alternative — non-trivial semantics alone — is insufficient. We instantiate the abstraction six times: the Leibniz rewrite on parameterized term algebras, PA's evaluation rules, substitution in theories with Gödel encoding, program execution, beta reduction (Curry-Howard-equivalent to cut elimination), and resolution. Combined with a size-bounded per-step hypothesis, the framework recovers Haken's PHP lower bound given his combinatorial state-count as an axiom, and organizes Statman's cut elimination blowup mechanism. The formalization is ~4,200 lines across 12 core modules, sorry-free, with twelve named axioms at boundary points corresponding to known classical results. We position this against Lawvere 1969, Yanofsky 2003, and Flypitch, and identify specific research directions the framework organizes, including one speculative line toward P vs NP via the natural proofs barrier.
 
 ---
 
 ## 2. Introduction
 
-> TODO — draft after §4 and §6 so motivating examples land concretely. ~3 pages per outline.
+Several classical impossibility results share a structural feature that is rarely stated explicitly. Gödel's first incompleteness theorem relies on the Gödel sentence `G`, constructed by self-substitution: the code of `G` appears inside `G` as an argument to the provability predicate, and the resulting sentence is undecidable. Turing's halting problem relies on the diagonal program `D`, which consults a hypothetical halting decider on `D(code D)` and does the opposite. Statman's non-elementary cut elimination blowup relies on lambda terms whose normal form is exponentially larger than the original, obtained by iterated application of a duplicating combinator. Haken's pigeonhole resolution lower bound relies on showing that any refutation must pass through a state set of exponential size.
+
+These four results have been understood as "diagonal arguments" since Lawvere 1969 identified their common categorical core. What they share at a more concrete level — the level at which a proof assistant can record them — is a combination of two ingredients: a rewrite that changes syntactic form while preserving semantic content, and an encoding that must remain injective. Whenever a rewrite changes a term's identity as an inductive value, no injective encoding can commute with it. This is a trivial consequence of injectivity once the hypothesis is stated; what is non-trivial is recognizing that the hypothesis holds in each of these four cases and that it supplies the structural load-bearing content of the classical arguments.
+
+### The paper's contribution
+
+We formalize this observation in Lean 4 as an abstraction called `EvalRewriteWitness`: a rewrite that is form-changing and meaning-preserving, paired with a term on which both conditions are witnessed. The obstruction — that no injective encoding can commute with a form-changing rewrite — follows from the definition of injectivity in one line. The work of the formalization is to show that six independent term algebras admit `EvalRewriteWitness` instances and that the resulting obstruction suffices to recover the classical impossibility results, with explicit attribution of which parts of each classical argument are supplied by the framework and which remain domain-specific.
+
+The paper claims, in summary:
+
+1. A Lean 4 abstraction (`EvalRewriteWitness`) capturing the structural pattern shared by diagonal arguments, with a formal proof that the more naive alternative — non-trivial semantics alone — is insufficient.
+
+2. A universal encoding obstruction theorem proved over parameterized term algebras in `Universal.lean`.
+
+3. Six machine-checked instances: the Leibniz rewrite on term algebras (§4), PA's multiplication and addition evaluation rules (§5-6), substitution in theories with Gödel encoding (§6), program execution (§7), beta reduction / cut elimination via Curry-Howard (§8), and resolution (§9).
+
+4. A proof-length lower bound framework (`SizeBounded` + obstruction) that recovers Haken 1985's PHP lower bound, given his combinatorial bottleneck lemma as an explicit axiom, and organizes Statman's non-elementary cut elimination bound within the same framework.
+
+5. A PA `GodelSystem` instance (§10) with Phase 1 discharged to theorems and Phases 2-4 scaffolded as seven precise axioms corresponding to Gödel's 1931 representability theorem and PA's deductive system.
+
+The formalization comprises approximately 4,200 lines of sorry-free Lean 4 across 12 core modules. Twelve named axioms sit at boundary points, each corresponding to a known classical result (Gödel's representability theorem, Haken's combinatorial state-count, the Razborov-Rudich largeness condition, PA's deductive system). Their discharge is tracked as independent follow-up work under specific GitHub issues and is explicitly not required for the paper's central claims.
+
+### What the paper is and is not
+
+Claims we make carefully:
+
+- **Unification via formalization.** The six classical results share a common structural mechanism, and the sharing is made visible by a single Lean abstraction instantiated six times.
+- **Honest recovery of classical bounds.** Haken's PHP bound and Statman's cut elimination blowup are recovered modulo their combinatorial inputs; the framework provides the structural composition, not the inputs.
+- **A roadmap for full discharge.** The PA instance makes explicit what would be required to derive incompleteness from PA primitives through the framework; the required work is factored and tracked.
+
+Claims we do not make:
+
+- **New mathematical content.** The universal obstruction, at the abstract level, is logically almost trivial; its novelty is in the formalization and in the observation that a specific structural hypothesis (form-changing rewrite) is load-bearing across the instances.
+- **New proof complexity results.** We recover Haken modulo his inputs and situate Statman; we do not prove new lower bounds.
+- **P vs NP or its independence.** §12.3 records the structural argument as a research direction, openly labeled, not as a result.
+- **Flypitch-scale incompleteness.** Our PA instance axiomatizes the representability theorem; Flypitch 2020 formalizes it from primitives. On the narrow axis of "machine-checked incompleteness for PA," Flypitch is deeper; our contribution is orthogonal (universal obstruction with incompleteness as an instance).
+
+### Organization
+
+§3 reviews the encoding obstruction informally and positions it relative to the categorical and formalization literature. §4 presents the central theorem — the universal encoding obstruction on parameterized term algebras — and §5 extracts the `EvalRewriteWitness` abstraction, including the formal argument that non-trivial semantics alone is insufficient. §6 instantiates the abstraction for incompleteness, §7 for halting, §8 for beta reduction and cut elimination. §9 combines the abstraction with size-bounded rewrites to recover proof-length lower bounds, including Haken's PHP bound. §10 describes the PA `GodelSystem` instance and the scaffolded axioms. §11 situates the paper against Lawvere, Yanofsky, Flypitch, Statman, Orevkov, Haken, and Cook-Reckhow. §12 outlines future directions, with explicit separation between axiom-discharge work, research questions the framework organizes, and speculation about P vs NP. §13 concludes.
 
 ---
 
@@ -1180,4 +1219,14 @@ The paper deliberately does not pursue:
 
 ## 13. Conclusion
 
-> TODO — ~1 page. Draft after everything else.
+We identified a structural mechanism — a form-changing, meaning-preserving rewrite — that underlies a range of classical impossibility results and formalized it in Lean 4 as `EvalRewriteWitness`. The obstruction that follows, that no injective encoding can commute with such a rewrite, is logically almost trivial at the abstract level; its value lies in the fact that the same structure instantiates six times across term algebras (§4), PA arithmetic (§§4-6), self-reference (§6), program execution (§7), beta reduction and cut elimination via Curry-Howard (§8), and resolution (§9). In each case, the form-change condition takes the specific shape of a root-constructor change at the term's top level, which is a local, model-independent property dischargeable by `simp` in one line per instance. The diversity of the instances, and the uniformity of the discharge, is the paper's central claim.
+
+The quantitative half of the framework, combining the obstruction with `SizeBounded` per-step size bounds, recovers Haken 1985's PHP lower bound for resolution given his combinatorial bottleneck lemma as an axiom (§9.5). The same framework organizes Statman's non-elementary cut elimination blowup as trajectory divergence applied to beta reduction under Curry-Howard (§8.5). Neither result is re-proved from scratch; the framework supplies the structural composition (length-from-states) and the classical results supply the inputs (state-counts for Haken, specific term families for Statman).
+
+The PA `GodelSystem` instance (§10) is the paper's most candid area. Phase 1 — the Gödel encoding and its injectivity — was discharged during this work and is now axiom-free. Phases 2-4 — the representability theorem, the decoding inverse over a syntactic formula type, and PA's deductive system — are scaffolded behind seven named axioms corresponding to known classical results, tracked as GitHub issues #50-#52. The paper's central claims do not depend on discharging these axioms; the PA instance describes what a full grounding would require. Flypitch 2020 remains deeper than our work on the specific axis of machine-checked incompleteness from PA primitives; our contribution is orthogonal, organizing incompleteness as one instance of a broader structural pattern.
+
+The paper is explicit about where its claims end. We do not prove new mathematical content about incompleteness or halting. We do not derive new proof complexity bounds. We do not make P vs NP a deliverable — §12.3 records the structural argument that an NP-complete verifier inherits the obstruction as a research direction, explicitly separated from the paper's substantive content and accompanied by a survey of how the framework sits relative to the three classical barriers (relativization, natural proofs, algebrization). The natural proofs barrier is the one the framework addresses most directly, via issue #39 and `NaturalProofsEvasion.lean`, and discharging the single axiom in that file is the most concrete near-term item for strengthening the paper's speculative claims.
+
+The formalization is ~4,200 lines of sorry-free Lean 4 across 12 core modules, built on Mathlib v4.28.0. Twelve named axioms sit at boundary points; each is a precise mathematical claim corresponding to a known classical result. The formalization is the primary object of the paper; the prose is an interpretive account of what it establishes and what it does not. A reader who wants to verify any specific claim of the paper is invited to inspect the corresponding Lean file — §§4-10's theorem statements are quoted directly, and the list of modules and their axioms is in the audit table in §10.6.
+
+We close with an observation rather than a claim. Classical impossibility results in logic, computation, and proof theory often read as separate theorems with separate proofs. The formalization records, with machine-checkable uniformity, that they share a structural mechanism — form changes, meaning persists, and no injective encoding bridges the gap. This observation is implicit in Lawvere 1969 and partial in Yanofsky 2003; what the present work contributes is a Lean artifact that makes the shared structure instance-by-instance verifiable. Whether the mechanism can be sharpened into a complexity-theoretic separation, or whether it remains structurally suggestive without further quantitative force, is the open question we leave to future work.
