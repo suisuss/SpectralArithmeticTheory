@@ -300,6 +300,17 @@ locating exactly where the bisimulation fails (or proving a partial
 positive) would make the framework load-bearing. This is the highest
 expected-value theory work in the project.
 
+*Proximity check (2026-06-10, third pass):* the full-abstraction /
+coalgebra check was performed. Verdict: the boundary theorem's
+MATHEMATICS is standard (Tier 1 instantiates Rutten's
+graph-of-a-homomorphism lemma; the invariant-observation genre is
+van Benthem's, with coalgebraic generalizations; full abstraction is
+a genuinely different question). The APPLICATION — Gödel codings as
+observables, the eval-quote square up to bisimulation, the strict
+three-level hierarchy, the quotation-cost companion — returned no
+hits in any searched combination, so this item's novelty claim now
+rests, explicitly and only, on the application and its consequences.
+
 *Status update (2026-06-10, later the same day):* Tiers 1-2 are now
 formalized in `SpectralArithmetic/Obstruction/Bisimulation.lean`
 (sorry-free, zero axioms, `propext` only). Tier 1 (positive): the
