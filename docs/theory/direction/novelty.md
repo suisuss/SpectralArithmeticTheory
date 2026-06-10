@@ -327,8 +327,13 @@ non-compositional primitive recursive injection can compress a
 sparse trajectory (j-th iterate ↦ j); the compositionality
 hypothesis its Step 1 implicitly used is genuinely necessary; and
 (b) with that hypothesis the separation is a theorem, not a
-conjecture. What remains open is only the non-compositional case,
-which the sketched argument cannot reach. The publishable-result
+conjecture. The non-compositional case is now
+CLOSED in its quantitative reading (same file, Part 7): an injective
+coding exists whose codes along the canonical trajectory are linear
+in the stage — logarithmic in the semantic value — refuting the
+any-injective-coding generalization outright
+(`compression_exists`, `compositionality_necessary`). Quotation
+overhead is a property of how codes are built, not of coding per se. The publishable-result
 ranking below should be read with items answered at this level.
 
 **2. Part 1, eigenvalue arithmetic.** The interpretation — naturals as
