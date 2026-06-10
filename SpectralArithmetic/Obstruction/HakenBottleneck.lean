@@ -128,26 +128,54 @@ def clauseSat (α : PartialAssignment) (c : Clause) : Prop :=
 def isBottleneck (n : ℕ) (c : Clause) : Prop :=
   clauseWidth c ≥ n / 3
 
-/-- **Haken's Lemma (AXIOMATIZED — Phase B):**
-    Any resolution proof of PHP(n+1, n) must contain a clause of
-    width at least n/3 at some point in the trajectory.
+/-- A proof is VALID from a state if every step resolves two clauses
+    that are actually present in the current state, on a pivot that
+    occurs positively in one parent and negatively in the other.
 
-    This is the core combinatorial insight. Discharging it is
-    substantive work (Haken 1985's main theorem). -/
+    Without this condition a "proof" could conjure the empty clause
+    in one step from phantom parents, and no width statement about
+    refutations would be true. -/
+def ValidFrom (state : ProofState) : ResolutionProof → Prop
+  | [] => True
+  | (c1, c2, v) :: rest =>
+      c1 ∈ state ∧ c2 ∈ state ∧ (v, true) ∈ c1 ∧ (v, false) ∈ c2 ∧
+      ValidFrom (resolutionStep state c1 c2 v) rest
+
+/-- The clauses derived by a proof (the resolvents, newest first).
+    `applyProof` conses each resolvent onto the state, so the first
+    `proof.length` entries of the final state are exactly the
+    derived clauses. -/
+def derivedClauses (initial : ProofState) (proof : ResolutionProof) : ProofState :=
+  (applyProof initial proof).take proof.length
+
+/-- **Haken's Lemma (AXIOMATIZED — Phase B):**
+    Any valid resolution refutation of PHP(n+1, n) — a proof whose
+    final state contains the empty clause — must DERIVE a clause of
+    width at least n/3.
+
+    This is a weakening of the classical statement (Haken 1985;
+    Beame-Pitassi give a "complex clause" of size Omega(n^2)), stated
+    over derived clauses so that the initial width-n pigeon clauses
+    cannot satisfy it vacuously. The hypotheses matter: validity
+    rules out phantom resolutions, and `3 ≤ n` rules out the
+    degenerate PHP instances whose initial state already contains
+    narrow or empty clauses. Discharging it is the substantive work
+    of issue #37. -/
 axiom haken_bottleneck_exists (n : ℕ) (proof : ResolutionProof)
-    (h_derives_empty :
-      applyProof (phpClauses n) proof =
-      applyProof (phpClauses n) proof) -- placeholder
-    : ∃ step_state ∈ (List.range proof.length).map (stateAtStep (phpClauses n) proof),
-      stateMaxWidth step_state ≥ n / 3
+    (hn : 3 ≤ n)
+    (h_valid : ValidFrom (phpClauses n) proof)
+    (h_refutes : [] ∈ applyProof (phpClauses n) proof) :
+    ∃ c ∈ derivedClauses (phpClauses n) proof, n / 3 ≤ clauseWidth c
 
 /-- **Haken's Counting Lemma (AXIOMATIZED — Phase D):**
     There are exponentially many (>= 2^(n/20)) distinct wide clauses
     (width >= n/3) that any PHP proof must pass through.
 
-    This is the counting argument that converts the bottleneck
-    lemma into an exponential proof length lower bound. -/
-axiom haken_wide_clause_count (n : ℕ) : ℕ
+    The count itself is opaque data (its intended meaning — the number
+    of distinct bottleneck clauses any valid refutation must visit —
+    is what Phase D must pin down); only the lower-bound spec is
+    assumed. -/
+opaque haken_wide_clause_count : ℕ → ℕ
 axiom haken_wide_clause_count_spec (n : ℕ) :
     haken_wide_clause_count n ≥ 2 ^ (n / 20)
 
@@ -156,8 +184,8 @@ axiom haken_wide_clause_count_spec (n : ℕ) :
     Given the two axiomatized Haken lemmas above, we can derive the
     PHP_state_lower_bound axiom from Resolution.lean:
 
-    1. From haken_bottleneck_exists: any PHP proof has at least one
-       wide-clause state.
+    1. From haken_bottleneck_exists: any valid PHP refutation
+       derives at least one wide clause.
     2. From haken_wide_clause_count_spec: there are >= 2^(n/20) distinct
        wide clauses.
     3. Each resolution step adds one clause, so visiting 2^(n/20)
@@ -183,10 +211,14 @@ theorem phpStateLowerBound_from_haken (n : ℕ) :
     - PHP clause formalization (pigeonClause, holeClause, phpClauses)
     - Clause and state width measures
     - PHP initial width characterization
+    - ValidFrom (real resolution steps: parents in state, pivot
+      polarities correct) and derivedClauses
 
-    SCAFFOLDED (axiomatized, each a known classical result):
-    - haken_bottleneck_exists (Haken 1985 main insight)
-    - haken_wide_clause_count + spec (the counting argument)
+    SCAFFOLDED (axiomatized, each implied by a known classical result):
+    - haken_bottleneck_exists (weakened form of Haken 1985 /
+      Beame-Pitassi: every valid refutation derives a wide clause)
+    - haken_wide_clause_count_spec (the counting argument; the count
+      itself is opaque data)
 
     PATH FORWARD:
     Discharging the two Haken axioms (estimated 3-6 months of

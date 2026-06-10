@@ -17,15 +17,15 @@ Everything else — eigenvalue arithmetic, number tower through ℂ, ZF verifica
 - **103 Lean files on main** (Core 6, Verification 4, Lambda 6, Obstruction 26, Rotation 59).
 - **`Obstruction/*` is sorry-free** (0 sorries across 26 files).
 - **Rotation/* has 6 residual sorries** in 4 files (InterRepresentation, GeneratorFixedPoint, FormalProofs, CSPEquivalence) — not paper-critical.
-- **20 named axioms**, all concentrated in five Obstruction files. This is the entire outstanding technical debt of the thesis:
+- **6 named axioms** (2026-06-10 census), concentrated in four Obstruction files. This is the entire outstanding propositional debt of the thesis; unspecified data (decode, provability, negation, counts) is `opaque`, not axiomatized:
 
   | File | Axioms | Character |
   |---|---|---|
-  | `PAGodelSystem.lean` | 14 | 7 small arithmetic (Phase 1) + 7 representability (Phases 2–4) |
-  | `HakenBottleneck.lean` | 3 | Haken's combinatorial core |
+  | `PAGodelSystem.lean` | 2 | `decodeFormula_code` (Phase 2), `compose_diag_apply` (Phase 3). Phase 1 arithmetic discharged as theorems (#35); the formerly inconsistent `phase2_decode_inverse` replaced by a theorem on `CodedFormula` (2026-06-10) |
+  | `HakenBottleneck.lean` | 2 | Haken's combinatorial core, restated over valid refutations (2026-06-10) |
   | `Resolution.lean` | 1 | Shared w/ Haken |
-  | `NaturalProofsEvasion.lean` | 1 | `obstruction_property_not_large` |
-  | `Complexity.lean` | 1 | — |
+  | `NaturalProofsEvasion.lean` | 1 | `obstruction_property_not_large`, now over a real largeness definition (2026-06-10) |
+  | `Complexity.lean` | 0 | — |
 
 - **46 GitHub issues**, 32 open / 14 closed. Closed cluster is the old SAT-solver / tree-arrangement work.
 

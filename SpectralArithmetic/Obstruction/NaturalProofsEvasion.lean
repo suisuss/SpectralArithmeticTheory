@@ -49,21 +49,27 @@ def BoolFn (n : ℕ) : Type := (Fin n → Bool) → Bool
 /-- A "combinatorial property" of functions. -/
 def Property (n : ℕ) : Type := BoolFn n → Prop
 
+instance (n : ℕ) : Inhabited (Property n) := ⟨fun _ => True⟩
+
 /-- A property P is CONSTRUCTIVE if there's an algorithm running
     in 2^(poly(n)) time that, given a truth table of size 2^n,
-    decides whether the function satisfies P. -/
-def IsConstructive (_P : ∀ n, Property n) : Prop :=
-  ∃ (_poly : ℕ → ℕ), ∀ (_n : ℕ) (_f : BoolFn _n),
-    -- There exists a decider running in 2^(poly n) steps
-    -- (we axiomatize the complexity-theoretic content)
-    True  -- placeholder; full definition requires time-bounded TM model
+    decides whether the function satisfies P.
+
+    Left opaque: a faithful definition requires a time-bounded machine
+    model, which this development does not formalize. No axiom in this
+    file constrains it, so it cannot introduce inconsistency. -/
+opaque IsConstructive : (∀ n, Property n) → Prop
 
 /-- A property P is LARGE if a random function satisfies P with
-    non-negligible probability. Formally: |{f : P f}| / 2^(2^n) >= 1 / poly(n). -/
-def IsLarge (_P : ∀ n, Property n) : Prop :=
-  ∃ (_poly : ℕ → ℕ), ∀ (_n : ℕ),
-    -- The fraction of functions satisfying P n is >= 1/poly n
-    True  -- placeholder
+    non-negligible probability (Razborov-Rudich): the fraction of
+    n-input Boolean functions satisfying `P n` is at least 2^(-c*n)
+    for some constant c. "At least N distinct functions" is expressed
+    by an injection from `Fin N`: there are at least
+    2^(2^n) / 2^(c*n) functions satisfying `P n`. -/
+def IsLarge (P : ∀ n, Property n) : Prop :=
+  ∃ c : ℕ, ∀ n : ℕ, 1 ≤ n →
+    ∃ inj : Fin (2 ^ (2 ^ n) / 2 ^ (c * n)) → {f : BoolFn n // P n f},
+      Function.Injective inj
 
 /-- A property is NATURAL if it's both constructive and large. -/
 def IsNatural (P : ∀ n, Property n) : Prop :=
@@ -87,9 +93,12 @@ def IsNatural (P : ∀ n, Property n) : Prop :=
     if EVERY circuit computing it exhibits the form-changing rewrite
     behavior characterized by the obstruction framework.
 
-    This is informal — making it precise is the substantive work. -/
-def encodingObstructionProperty (_n : ℕ) : Property _n :=
-  fun _ => True  -- placeholder
+    Left opaque: making this precise is the substantive work of
+    issue #39. Keeping it opaque (rather than a placeholder definition)
+    is what keeps the axiom below consistent: the axiom asserts a
+    property of an UNSPECIFIED predicate, and is satisfiable (e.g. by
+    the everywhere-false property, which trivially fails largeness). -/
+opaque encodingObstructionProperty : ∀ n, Property n
 
 /-! ## Part 3: The Evasion Argument (Sketch)
 
@@ -118,7 +127,14 @@ def encodingObstructionProperty (_n : ℕ) : Property _n :=
     not a natural proof.
 
     This is the key claim that would establish the obstruction
-    framework evades the natural proofs barrier. -/
+    framework evades the natural proofs barrier.
+
+    Consistency: `encodingObstructionProperty` is opaque and `IsLarge`
+    is a genuine counting definition, so this axiom is satisfiable —
+    interpret the property as everywhere-false and `IsLarge` fails
+    (the witness subtype is empty while `Fin N` is nonempty for
+    large n). Discharging it requires first making the property
+    precise; see Part 4. -/
 axiom obstruction_property_not_large :
     ¬ IsLarge encodingObstructionProperty
 
@@ -176,8 +192,9 @@ theorem obstruction_evades_natural_proofs :
 /-! ## Part 6: Summary
 
     PROVIDED (structural scaffolding):
-    - Formal definitions of IsConstructive, IsLarge, IsNatural
-    - Placeholder for encodingObstructionProperty
+    - A genuine counting definition of IsLarge (Razborov-Rudich largeness)
+    - Opaque IsConstructive (needs a machine model) and
+      encodingObstructionProperty (needs issue #39's precise definition)
     - The evasion argument structure
     - The path to discharging the conjectured evasion
 

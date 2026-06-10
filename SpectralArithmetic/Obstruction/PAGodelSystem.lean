@@ -381,28 +381,49 @@ theorem encodeTerm_injective : Function.Injective encodeTerm := by
       have hb : encodeTerm b = encodeTerm d := (Prod.mk.inj heq).2
       rw [iha ha, ihb hb]
 
-/-! ## Part 4: Decoding (Phase 1 Result)
+/-! ## Part 4: Decoding (Phase 2 Hook)
 
-    Given a code, recover the term. For the GodelSystem structure,
+    Given a code, recover the formula. For the GodelSystem structure,
     we need a left-inverse `decode : ℕ -> Formula` such that
     `decode (code phi) = phi`.
 
-    For our minimal Formula structure, this is: given a code n,
-    produce some formula whose code is n (or a default if no such
-    formula exists).
+    That property cannot hold on ALL of PAFormula: `code` is a free
+    field, so two formulas can share a code while differing in
+    `apply`, and no function inverts a non-injective one. (An earlier
+    version asserted exactly that of a stub decode, which made the
+    axiom set inconsistent.)
 
-    We construct decode as a function that produces a SPECIFIC formula
-    for each natural number. This formula's `apply` computes a sentence
-    based on the code's structure. -/
+    The consistent formulation: keep decode opaque, constrained only
+    by code preservation, and take the GodelSystem's Formula type to
+    be the subtype of decode-canonical formulas — those fixed by the
+    decode-of-code round trip. On that subtype, `code` is injective
+    and `decode_fcode` is a theorem. Phase 2's job is to provide a
+    decode rich enough that the subtype contains one canonical
+    formula per syntactic PA formula. -/
 
-/-- A decoding function: given a code, produce a formula. -/
-noncomputable def decodeFormula (n : ℕ) : PAFormula where
-  apply := fun _ => .zero  -- placeholder — full decoding requires
-                            -- inverting prime factorization
-  code := n
+instance : Inhabited PAFormula := ⟨⟨fun _ => .zero, 0⟩⟩
 
-/-- For a formula constructed via decodeFormula, the code is preserved. -/
-theorem decodeFormula_code (n : ℕ) : (decodeFormula n).code = n := rfl
+/-- A decoding function: given a code, produce a formula.
+    Opaque — Phase 2 supplies the real construction (inverting a
+    syntactic coding). -/
+opaque decodeFormula : ℕ → PAFormula
+
+/-- **DECODE PRESERVES THE CODE (axiomatized — Phase 2):**
+    The decoded formula carries the code it was decoded from.
+    Satisfiable: any function returning a formula with the given
+    code field witnesses it. -/
+axiom decodeFormula_code (n : ℕ) : (decodeFormula n).code = n
+
+/-- The canonical (coded) formulas: those fixed by the
+    decode-of-code round trip. The GodelSystem instance lives here. -/
+def CodedFormula : Type := {φ : PAFormula // decodeFormula φ.code = φ}
+
+/-- Decoding lands in CodedFormula, because decode is idempotent
+    through `code` (by `decodeFormula_code`). -/
+noncomputable def decodeCoded (n : ℕ) : CodedFormula :=
+  ⟨decodeFormula n, by rw [decodeFormula_code]⟩
+
+noncomputable instance : Inhabited CodedFormula := ⟨decodeCoded 0⟩
 
 /-! ## Part 5: The Diagonal Function
 
@@ -443,11 +464,14 @@ theorem diagN_spec (n : ℕ) :
     the representation of diagN. Then PA proves
       subst(delta, n) <-> subst(beta, diagN(n))
     for every numeral n. -/
-axiom compose_diag (β : PAFormula) : PAFormula
+opaque compose_diag : CodedFormula → CodedFormula
 
-/-- The composed formula's apply implements composition with diagN. -/
-axiom compose_diag_apply (β : PAFormula) (n : ℕ) :
-    (compose_diag β).apply n = β.apply (diagN n)
+/-- The composed formula's apply implements composition with diagN
+    (axiomatized — Phase 3). Satisfiable: with the all-zero decode
+    interpretation, every CodedFormula has constant-zero apply and
+    the identity witnesses compose_diag. -/
+axiom compose_diag_apply (β : CodedFormula) (n : ℕ) :
+    (compose_diag β).val.apply n = β.val.apply (diagN n)
 
 /-! ## Part 7: PA's Provability (Phase 4 — Stub)
 
@@ -460,16 +484,19 @@ axiom compose_diag_apply (β : PAFormula) (n : ℕ) :
 
     For this scaffolding, we use a placeholder. -/
 
-/-- **PA PROVABILITY (axiomatized — Phase 4):**
-    The provability predicate for PA. In a full formalization, this
-    would be defined as derivability from PA's axioms. -/
-axiom paProvable : PATerm → Prop
+instance : Inhabited PATerm := ⟨.zero⟩
 
-/-- **PA NEGATION (axiomatized — Phase 4):**
+/-- **PA PROVABILITY (opaque — Phase 4):**
+    The provability predicate for PA. In a full formalization, this
+    would be defined as derivability from PA's axioms. Opaque data,
+    not an axiom: nothing is assumed about it here. -/
+opaque paProvable : PATerm → Prop
+
+/-- **PA NEGATION (opaque — Phase 4):**
     Syntactic negation in PA. For the minimal PATerm language,
     we extend with a negation operator (or encode negation as
     "equals zero"). -/
-axiom paNeg : PATerm → PATerm
+opaque paNeg : PATerm → PATerm
 
 /-! ## Part 8: Toward the GodelSystem Instance — Required Lemmas
 
@@ -478,76 +505,77 @@ axiom paNeg : PATerm → PATerm
 
     | Field | Status | What's needed |
     |-------|--------|---------------|
-    | provable | Axiomatized (paProvable) | Phase 4: PA deductive system |
-    | neg | Axiomatized (paNeg) | Phase 4: extend PATerm with negation |
-    | Formula | Provided (PAFormula) | Could be enriched in Phase 2 |
-    | subst | Provided (PAFormula.apply) | Enriched in Phase 2 |
+    | provable | Opaque (paProvable) | Phase 4: PA deductive system |
+    | neg | Opaque (paNeg) | Phase 4: extend PATerm with negation |
+    | Formula | Provided (CodedFormula) | Phase 2: make the subtype rich |
+    | subst | Provided (.val.apply) | Enriched in Phase 2 |
     | scode | PROVED (encodeTerm) | Phase 1 ✓ |
-    | fcode | Provided (PAFormula.code) | Phase 2: derive from syntax |
-    | decode | Provided (decodeFormula stub) | Phase 2: full inverse |
-    | decode_fcode | NEEDS Phase 2: decode preserves formulas, not just codes |
+    | fcode | Provided (.val.code) | Phase 2: derive from syntax |
+    | decode | Opaque (decodeFormula) + decodeFormula_code axiom | Phase 2: full inverse |
+    | decode_fcode | PROVED on CodedFormula (decodeCoded_code_val) | — |
     | diagN | PROVED (uses encodeTerm) | Phase 1 ✓ |
     | diagN_spec | PROVED (by definition) | Phase 1 ✓ |
-    | compose_diag | Axiomatized | Phase 3: representability |
-    | compose_diag_prov | NEEDS Phase 3-4: PA provability + representability |
-    | compose_diag_neg | NEEDS Phase 3-4: same |
+    | compose_diag | Opaque + compose_diag_apply axiom | Phase 3: representability |
+    | compose_diag_prov | PROVED (from compose_diag_apply) | — |
+    | compose_diag_neg | PROVED (from compose_diag_apply) | — |
 
     Rather than constructing a paGodelSystem with sorries (which would
     be dishonest), we provide:
     - Phase 1 results as theorems (sorry-free)
-    - Phase 2-4 axioms as scaffolding hooks
+    - Phase 2-3 hooks as opaque data plus two satisfiable axioms
+      (decodeFormula_code, compose_diag_apply)
     - A precise statement of what FULL DISCHARGE requires
 
     This is honest about the state: Phase 1 is done, Phases 2-4 are
-    the substantial work that remains. -/
+    the substantial work that remains. The opaque/axiom split keeps
+    the assumptions auditable: data that is merely unspecified is
+    opaque; only genuine propositions are axioms, and each is
+    satisfiable (the all-zero stub decode interprets them all). -/
 
-/-- **WHAT REMAINS TO DISCHARGE PHASE 2:**
-    decode must be a TRUE left-inverse of fcode on PAFormula:
-    decode (fcode φ) = φ
-    Currently decodeFormula is a stub that only preserves code.
-    Phase 2 requires a richer Formula representation where decode
-    can actually recover the formula's structure from the code. -/
-axiom phase2_decode_inverse : ∀ (φ : PAFormula),
-  decodeFormula φ.code = φ
+/-- decode is a left inverse of fcode on CodedFormula — a THEOREM,
+    by definition of the subtype. (The earlier phase2_decode_inverse
+    axiom asserted this for all PAFormulas, where `code` is not
+    injective; that statement was refutable. Restricting Formula to
+    CodedFormula is what makes it true.) -/
+theorem decodeCoded_code_val (φ : CodedFormula) :
+    decodeCoded φ.val.code = φ :=
+  Subtype.ext φ.property
 
-/-- **WHAT REMAINS TO DISCHARGE PHASE 3:**
-    PA proves the diagonal composition equivalence:
-    For any formula β and natural number n, PA proves
-      subst(compose_diag(β), n) <-> subst(β, diagN(n))
-    This is representability of the diagonal function. -/
-axiom phase3_compose_diag_provable : ∀ (β : PAFormula) (n : ℕ),
-  paProvable ((compose_diag β).apply n) ↔ paProvable (β.apply (diagN n))
+/-- The Phase 3 provability equivalence, now a theorem: it follows
+    from compose_diag_apply. (Previously a separate axiom, which was
+    redundant.) The substantive Phase 3 work is constructing
+    compose_diag syntactically and proving compose_diag_apply for it. -/
+theorem compose_diag_provable (β : CodedFormula) (n : ℕ) :
+    paProvable ((compose_diag β).val.apply n) ↔
+    paProvable (β.val.apply (diagN n)) := by
+  rw [compose_diag_apply]
 
-/-- **WHAT REMAINS TO DISCHARGE PHASE 3 (negation):**
-    Same equivalence under negation. -/
-axiom phase3_compose_diag_neg_provable : ∀ (β : PAFormula) (n : ℕ),
-  paProvable (paNeg ((compose_diag β).apply n)) ↔
-  paProvable (paNeg (β.apply (diagN n)))
+/-- Same equivalence under negation; same status. -/
+theorem compose_diag_neg_provable (β : CodedFormula) (n : ℕ) :
+    paProvable (paNeg ((compose_diag β).val.apply n)) ↔
+    paProvable (paNeg (β.val.apply (diagN n))) := by
+  rw [compose_diag_apply]
 
-/-- **THE FULL INSTANCE (given all Phase 2-4 axioms):**
-    With all axioms in place, the GodelSystem instance for PA is
-    constructive — no sorries needed.
+/-- **THE INSTANCE (given the Phase 2-4 axioms and opaque data):**
+    The GodelSystem instance for PA over the canonical formulas —
+    no sorries needed.
 
-    This shows the framework is COMPLETE modulo the axiomatized phases.
-    Discharging the axioms (Phases 2-4) is the remaining work. -/
+    This shows the framework is COMPLETE modulo the axiomatized
+    phases. Discharging them (Phases 2-4) is the remaining work. -/
 noncomputable def paGodelSystem : Diagonal.GodelSystem PATerm where
   provable := paProvable
   neg := paNeg
-  Formula := PAFormula
-  subst := fun φ n => φ.apply n
+  Formula := CodedFormula
+  subst := fun φ n => φ.val.apply n
   scode := encodeTerm
-  fcode := PAFormula.code
-  decode := decodeFormula
-  decode_fcode := phase2_decode_inverse
+  fcode := fun φ => φ.val.code
+  decode := decodeCoded
+  decode_fcode := decodeCoded_code_val
   diagN := diagN
   diagN_spec := fun _ => rfl
   compose_diag := compose_diag
-  compose_diag_prov := by
-    intro β n
-    rw [compose_diag_apply]
-  compose_diag_neg := by
-    intro β n
-    rw [compose_diag_apply]
+  compose_diag_prov := compose_diag_provable
+  compose_diag_neg := compose_diag_neg_provable
 
 /-! ## Part 9: Status and What Remains
 
@@ -562,22 +590,27 @@ noncomputable def paGodelSystem : Diagonal.GodelSystem PATerm where
     | pow_two_injective | 2^· is injective |
     | plus_pairing_injective, times_pairing_injective | Pairing injectivity via Nat.factorization |
     | encodeTerm_injective | Distinct terms get distinct codes |
-    | decodeFormula | Decoding stub (returns formula with given code) |
-    | decodeFormula_code | Decoding preserves the code |
     | diagN | Diagonal function definition |
     | diagN_spec | diagN computes self-substitution code |
+    | decodeCoded_code_val | decode inverts fcode on CodedFormula |
+    | compose_diag_provable, compose_diag_neg_provable | Diagonal equivalences from compose_diag_apply |
 
-    AXIOMATIZED (Phases 2-4 — incremental work to discharge):
+    OPAQUE DATA (unspecified, nothing assumed beyond the axioms below):
+
+    | Constant | What it is | Phase |
+    |----------|------------|-------|
+    | decodeFormula | Decoding function | Phase 2 |
+    | compose_diag | Composition with the diagonal | Phase 3 |
+    | paProvable | Provability predicate for PA | Phase 4 |
+    | paNeg | Negation in PA | Phase 4 |
+
+    AXIOMATIZED (Phases 2-3 — incremental work to discharge; each is
+    satisfiable, jointly witnessed by the all-zero stub decode):
 
     | Axiom | What it asserts | Phase |
     |-------|-----------------|-------|
-    | compose_diag | Diagonal function representable as formula | Phase 3 (deep) |
-    | compose_diag_apply | The representation works | Phase 3 (deep) |
-    | paProvable | Provability predicate for PA | Phase 4 |
-    | paNeg | Negation in PA | Phase 4 |
-    | phase2_decode_inverse | decode is a left inverse of fcode | Phase 2 |
-    | phase3_compose_diag_provable | PA proves the diagonal equivalence | Phase 3 |
-    | phase3_compose_diag_neg_provable | Same, under negation | Phase 3 |
+    | decodeFormula_code | Decoding preserves the code | Phase 2 |
+    | compose_diag_apply | The diagonal representation works | Phase 3 (deep) |
 
     INCREMENTAL ROADMAP:
 
