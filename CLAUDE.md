@@ -81,6 +81,8 @@ Build cache: worktrees should symlink `.lake` to the main directory's `.lake` so
 ln -s /home/suisuss/.programming/sandbox/SpectralArithmeticTheory/.lake .worktrees/<name>/.lake
 ```
 
+**NEVER run `lake update` in a worktree that shares `.lake`.** It mutates the shared package store (upgrading transitive deps incoherently against the pinned mathlib) and breaks every checkout that uses it — this happened 2026-06-10 and required restoring eight packages by hand. Dependency changes belong in a dedicated worktree with its own isolated `.lake` directory (no symlink), accepting the one-time full rebuild.
+
 ## When writing Lean
 
 - `Obstruction/*` is sorry-free. Do not introduce `sorry` into it. If you need a temporary hole, use a named `axiom` with a precise claim; this is the convention in `PAGodelSystem.lean`, `HakenBottleneck.lean`, and `NaturalProofsEvasion.lean`. Axioms are counted and tracked; sorries are not allowed in `Obstruction/`.
