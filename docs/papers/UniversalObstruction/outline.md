@@ -129,7 +129,7 @@ structure EvalRewriteWitness (T S : Type*) where
 
 **Reframing the obstruction.** `no_coalgebra_morphism` is the statement that faithful codes sit at the intensional extreme of the boundary. The impossibility instances of Sections 6-9 are readings of the intensional side.
 
-**Tier 3 (open).** Growth-rate non-bisimilarity for primitive recursive codings on a common carrier — stated as the open conjecture, with the proof sketch from the theory docs; future work.
+**Tier 3 (the quantitative separation — QuotationCost.lean).** Along the canonical observation trajectory: exact closed form t_{2m} = dup^m(f₂); every compositional coding (pairing dominates the product — all standard Godel codings) is doubly exponential, `encode(t_{2m}) ≥ 2^(2^(m+1))`, while the semantic content is exactly 2^j (`eval_trajectory`); hence no polynomial in the semantic value bounds the code (`quotation_overhead_superpolynomial`). Quotation is behaviorally free (Tier 1) but quantitatively ruinous. Includes an honest correction: the theory docs' conjecture over ALL primitive recursive injections is unreachable by the sketched argument — injectivity does not force code growth along a sparse trajectory; compositionality is the necessary hypothesis. The non-compositional case is stated as open.
 
 ### 6. Self-Reference and Incompleteness (~3 pages)
 

@@ -310,6 +310,20 @@ In both cases: substitution is open-ended, naming is always one step behind unfo
 
 ## Part 5: Proof Strategy for the Impossibility Theorem
 
+> **Status update (2026-06-10).** The compositional version of this
+> conjecture is now a machine-checked theorem
+> (`SpectralArithmetic/Obstruction/QuotationCost.lean`,
+> `quotation_overhead_superpolynomial`), with the qualitative
+> bisimulation boundary in `Obstruction/Bisimulation.lean`. One
+> correction: Step 3 below has a gap as stated — injectivity alone
+> does NOT force code growth along a fixed computable trajectory,
+> since a non-compositional primitive recursive injection can
+> compress a sparse trajectory (j-th iterate to j, everything else
+> high). The compositionality that Step 1's pairing lower bound
+> implicitly assumes is a necessary hypothesis. With it, the
+> separation is proved; without it, the conjecture below is open and
+> unreachable by this argument.
+
 ### Formal statement
 
 **Theorem (Encoding Obstruction, conjectured).** Let (State, compose, obs, ⊕) be a commutative semiring with derivation satisfying axioms A1-B5 (the eigenvalue arithmetic axioms). Let ε: Terms → ℕ be any primitive recursive injection with primitive recursive inverse. Define obs_ε(n) = ε(obs(decode(n))). Then the coalgebras (State, obs_semantic) and (State, obs_ε) are not bisimilar.

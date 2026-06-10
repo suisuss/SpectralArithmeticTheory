@@ -311,10 +311,25 @@ bisimulation relating each term to its evaluation iff it factors
 through eval; strictness witnesses give
 extensional ⊊ rewrite-invariant ⊊ all observables, and
 `injective_no_bisim` shows injective codes are maximally intensional.
-What remains open is Tier 3: the growth-rate non-bisimilarity for
-primitive recursive codings on a common carrier
-(`encoding-obstruction.md` Part 5). The publishable-result ranking
-below should be read with item 1's partial answer in hand.
+*Tier 3 update (same day):* the growth-rate separation is now also
+formalized, in `SpectralArithmetic/Obstruction/QuotationCost.lean`
+(sorry-free, zero project axioms), for the COMPOSITIONAL coding
+class: along the canonical observation trajectory the even iterates
+have the exact closed form t_{2m} = dup^m(f₂), every compositional
+code is ≥ 2^(2^(m+1)) (doubly exponential), while the semantic
+content is exactly 2^j (singly exponential) — so no polynomial in
+the semantic value bounds the code
+(`quotation_overhead_superpolynomial`). Two corrections to the
+original conjecture (`encoding-obstruction.md` Part 5) came out of
+this: (a) its Step 3 has a gap — injectivity alone does NOT force
+code growth along a fixed computable trajectory, because a
+non-compositional primitive recursive injection can compress a
+sparse trajectory (j-th iterate ↦ j); the compositionality
+hypothesis its Step 1 implicitly used is genuinely necessary; and
+(b) with that hypothesis the separation is a theorem, not a
+conjecture. What remains open is only the non-compositional case,
+which the sketched argument cannot reach. The publishable-result
+ranking below should be read with items answered at this level.
 
 **2. Part 1, eigenvalue arithmetic.** The interpretation — naturals as
 derivation eigenvalues, Peano axioms as theorems, the number tower as
