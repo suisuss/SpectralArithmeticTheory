@@ -2,31 +2,26 @@
 
 **Status:** draft in progress. Follow the ordering in `outline.md`. Each section has a `> TODO` marker if not yet drafted.
 
-> **REVISION REQUIRED (2026-06-10).** This draft was written 2026-04-15
-> and predates three developments that change its claims:
-> 1. The axiom repairs: three of the twelve named axioms it cites were
->    inconsistent as stated and were replaced; the census is now SIX
->    satisfiable axioms over opaque data. Every "twelve named axioms"
->    figure and the per-file counts are stale.
-> 2. The bisimulation boundary theorem (`Obstruction/Bisimulation.lean`,
->    issue #55): the thesis is now the characterization — an observable
->    supports a bisimulation iff it is extensional — with the encoding
->    obstruction as the intensional extreme. The outline's revised
->    thesis sentence and new section 5b are not yet reflected here.
-> 3. The quotation cost separation (`Obstruction/QuotationCost.lean`):
->    Tier 3 for compositional codings, plus a correction to the
->    encoding-obstruction conjecture's scope.
-> Verify every number against the greps in CLAUDE.md while revising.
+> **REVISION STATUS (2026-06-10, second pass).** Abstract, contributions,
+> sections 5b/5c (new), 6.5, 6.6, 10.7, and 12.3 now reflect the June
+> results (axiom repairs, bisimulation boundary, quotation cost pair,
+> real-PA instance via Foundation, DiagonalTheory degeneracy).
+> REMAINING for a final pass: (a) sweep sections 3, 4, 7-9, 11 for
+> residual "twelve axioms"/"4,200 lines" figures and re-measure line
+> counts; (b) section 11 related work needs Foundation as a primary
+> comparison alongside Flypitch; (c) section 13 conclusion not yet
+> updated to the boundary thesis; (d) verify all numbers against the
+> greps in CLAUDE.md before submission.
 
 **Target venue:** CPP 2027 or ITP 2027.
 
-**Working paper scope:** the 12 core `Obstruction/` modules (~4,200 lines, 12 named axioms at boundary points, zero sorries). Scaffolding and extensions are cited but not headline.
+**Working paper scope:** the core `Obstruction/` modules — the original 12 plus `Bisimulation`, `UniversalBisimulation`, `QuotationCost`, and the Foundation bridge — zero sorries, six named axioms at boundary points (each satisfiable, interpretation documented). Re-measure line counts before submission; scaffolding and extensions are cited but not headline.
 
 ---
 
 ## 1. Abstract
 
-Several classical impossibility results — Gödel's first and second incompleteness theorems, Turing's halting problem, Statman's non-elementary cut elimination blowup, and Haken's exponential pigeonhole resolution bound — share a structural mechanism: a rewrite that changes syntactic form while preserving semantic content, combined with an injective encoding that must somehow commute with it. We formalize this mechanism in Lean 4 as an abstraction called `EvalRewriteWitness`, prove that it yields an encoding obstruction in one line by the definition of injectivity, and prove formally that the more naive alternative — non-trivial semantics alone — is insufficient. We instantiate the abstraction six times: the Leibniz rewrite on parameterized term algebras, PA's evaluation rules, substitution in theories with Gödel encoding, program execution, beta reduction (Curry-Howard-equivalent to cut elimination), and resolution. Combined with a size-bounded per-step hypothesis, the framework recovers Haken's PHP lower bound given his combinatorial state-count as an axiom, and organizes Statman's cut elimination blowup mechanism. The formalization is ~4,200 lines across 12 core modules, sorry-free, with twelve named axioms at boundary points corresponding to known classical results. We position this against Lawvere 1969, Yanofsky 2003, and Flypitch, and identify specific research directions the framework organizes, including one speculative line toward P vs NP via the natural proofs barrier.
+Several classical impossibility results — Gödel's incompleteness theorems, Turing's halting problem, Statman's cut elimination blowup, Haken's pigeonhole resolution bound — share a structural mechanism: a rewrite that changes syntactic form while preserving semantic content, confronted with an encoding that must remain injective. We formalize this mechanism in Lean 4 and prove the theorem that makes it load-bearing: an observable of a self-encoding term algebra supports a bisimulation between syntax and semantics if and only if it is extensional (factors through evaluation). The classical encoding obstruction is the intensional extreme of this boundary — injective codings are maximally intensional — and the impossibility results instantiate its intensional side, machine-checked six times across term algebras, PA arithmetic, self-reference, program execution, beta reduction, and resolution. A quantitative companion fixes the boundary's cost: every compositional Gödel coding pays super-polynomial quotation overhead along observation trajectories, while an exactly matching counterexample shows arbitrary injective codings need not — compositionality, not injectivity, is what forces codes to pay for form. The abstract `GodelSystem` interface from which we prove the diagonal lemma and both incompleteness theorems is instantiated by genuine Peano Arithmetic via the FormalizedFormalLogic Foundation library, with the instantiated diagonal lemma depending on the standard Lean axioms alone. The development is sorry-free; six named axioms remain at boundary points, each satisfiable with its satisfying interpretation documented. We position the work against Lawvere, Yanofsky, Flypitch, and Foundation, and frame the complexity-theoretic horizon as limitation theorems about formalized calculi — the genre of the classical barriers — rather than as an approach to separations.
 
 ---
 
@@ -42,17 +37,17 @@ We formalize this observation in Lean 4 as an abstraction called `EvalRewriteWit
 
 The paper claims, in summary:
 
-1. A Lean 4 abstraction (`EvalRewriteWitness`) capturing the structural pattern shared by diagonal arguments, with a formal proof that the more naive alternative — non-trivial semantics alone — is insufficient.
+1. **The bisimulation boundary theorem** (§5b): an observable of a self-encoding term algebra supports a bisimulation between the syntactic and semantic dynamics if and only if it is extensional; the observable hierarchy extensional ⊊ rewrite-invariant ⊊ all is strict with machine-checked witnesses, and injectivity is maximal intensionality. Proved both for the concrete spectral algebra and universally over all signatures and Leibniz algebras.
 
-2. A universal encoding obstruction theorem proved over parameterized term algebras in `Universal.lean`.
+2. **The quotation cost pair** (§5c): every compositional coding — the class containing all standard Gödel codings — pays super-polynomial quotation overhead along the canonical observation trajectory (doubly exponential codes against singly exponential semantic content), and an explicit injective counterexample shows the compositionality hypothesis is exactly necessary.
 
-3. Six machine-checked instances: the Leibniz rewrite on term algebras (§4), PA's multiplication and addition evaluation rules (§5-6), substitution in theories with Gödel encoding (§6), program execution (§7), beta reduction / cut elimination via Curry-Howard (§8), and resolution (§9).
+3. A Lean 4 abstraction (`EvalRewriteWitness`) capturing the structural pattern shared by diagonal arguments — now positioned as the intensional side of the boundary — with a formal proof that non-trivial semantics alone is insufficient, and six machine-checked instances (§§4-9).
 
 4. A proof-length lower bound framework (`SizeBounded` + obstruction) that recovers Haken 1985's PHP lower bound, given his combinatorial bottleneck lemma as an explicit axiom, and organizes Statman's non-elementary cut elimination bound within the same framework.
 
-5. A PA `GodelSystem` instance (§10) with Phase 1 discharged to theorems and Phases 2-4 scaffolded as seven precise axioms corresponding to Gödel's 1931 representability theorem and PA's deductive system.
+5. **A `GodelSystem` instance for genuine Peano Arithmetic** (§10.7), built on the FormalizedFormalLogic Foundation library: decoding is a true `Encodable` decode, representability is discharged by the arithmetic fixed-point theorem, and the instantiated diagonal lemma depends on the standard Lean axioms alone. The toy PA instance with its scaffolding axioms is retained as the worked example but is no longer load-bearing.
 
-The formalization comprises approximately 4,200 lines of sorry-free Lean 4 across 12 core modules. Twelve named axioms sit at boundary points, each corresponding to a known classical result (Gödel's representability theorem, Haken's combinatorial state-count, the Razborov-Rudich largeness condition, PA's deductive system). Their discharge is tracked as independent follow-up work under specific GitHub issues and is explicitly not required for the paper's central claims.
+The development is sorry-free. Six named axioms sit at boundary points (Haken's combinatorial state-count and width lemma, the Razborov-Rudich largeness conjecture, and the toy PA instance's two coding hooks); each is a satisfiable proposition over opaque data, with a satisfying interpretation documented at the declaration — a convention adopted after an audit found three earlier placeholder-based axioms refutable (§10.4). Their discharge is tracked as follow-up work and is not required for the paper's central claims.
 
 ### What the paper is and is not
 
@@ -357,6 +352,36 @@ The sections that follow instantiate this pattern six times. The burden on each 
 
 ---
 
+## 5b. The Bisimulation Boundary
+
+*(Added 2026-06-10; Lean source: `Bisimulation.lean`, `UniversalBisimulation.lean`.)*
+
+§§4-5 prove that no injective encoding commutes with a form-changing rewrite — a one-line consequence of injectivity. The natural objection is that the theorem is about strict equality of codes, where injectivity decides everything. This section answers the objection by moving to the equivalence under which the question has content: bisimulation.
+
+**Observation systems.** An observation system is a carrier with a step function and an output map; a bisimulation between two systems over a shared output type is a relation that matches outputs and is closed under stepping — the standard coalgebraic notion for the functor X ↦ O × X. The syntactic system steps a term by applying `obs` and unfolding it through the Leibniz rewrite (`synStep`); the semantic system steps a state by `obs` itself. The syntactic step implements the semantic one through evaluation: `eval (synStep t) = obs (eval t)`.
+
+**Tier 1 (positive).** The graph of `eval` is a bisimulation between the syntactic system observed through `eval` and the semantic system observed directly (`evalGraphBisim`), and for any code/decode retraction the Gödel-code dynamics are bisimilar to the semantics (`codeBisim`). The eval-quote square commutes up to bisimulation — quotation is behaviorally free — when observation is extensional.
+
+**Tier 2 (the boundary).** That qualifier is exact. An observable `o` of syntax supports a bisimulation relating every term to its evaluation if and only if `o` is extensional, i.e. factors through `eval` (`supportsBisim_iff_extensional`). Strictness is machine-checked at both inclusions of the hierarchy extensional ⊊ rewrite-invariant ⊊ all observables: the root constructor is not even rewrite-invariant (the form-change phenomenon of §4, relocated to the observable side); syntactic equality with `f₀` is rewrite-invariant but separates terms every model identifies; and any injective coding fails extensionality outright (`injective_no_bisim`). Injectivity is precisely maximal intensionality. The same characterization holds at the generality of §4 — over every constant signature and every Leibniz algebra (`supportsBisimF_iff_extensionalF`) — where the witness pair is free: a term and its Leibniz rewrite are distinct yet evaluation-equal in every algebra.
+
+**What this changes.** The encoding obstruction of §§4-5 is no longer a fact about codes failing to be clever: it is the extreme point of a characterized boundary. The impossibility results of §§6-9 instantiate the intensional side of that boundary. This is the theorem that makes the abstraction load-bearing rather than descriptive.
+
+## 5c. Quotation Cost: the Quantitative Boundary
+
+*(Added 2026-06-10; Lean source: `QuotationCost.lean`.)*
+
+The boundary of §5b is qualitative. Its quantitative companion fixes what crossing the eval-quote square costs.
+
+**The trajectory.** The canonical observation trajectory iterates `synStep` from `f₂ = compose(f₁, f₁)`. Its even stages have an exact closed form: `trajectory (2m) = dup^m(f₂)` where `dup a = oplus(obs a, obs a)` — duplication towers, with f₁-leaf count exactly `2^(m+1)`. Semantically, `eval (trajectory j) = 2^j · f₂`: the meaning at stage j is the number 2^j, j+1 bits of content.
+
+**The separation.** A compositional coding — computed bottom-up with pairings dominating the product, the floor satisfied by every standard Gödel coding — must pay for every f₁ leaf: `encode (trajectory (2m)) ≥ 2^(2^(m+1))`, doubly exponential. Hence no polynomial in the semantic value bounds the code (`quotation_overhead_superpolynomial`). Quotation is behaviorally free (§5b) and quantitatively ruinous: the code tracks form, form grows doubly exponentially, meaning grows singly.
+
+**The sharpness witness.** The hypothesis is exactly necessary. An explicit injective coding (`compressedCode`) enumerates the trajectory on the even numbers — codes at most 2j at stage j, logarithmic in the semantic value — refuting the generalization of the separation to arbitrary injective codings (`compositionality_necessary`). Trajectory membership is decidable by bounded search (`trajectory_index_le`), so the counterexample is computable in principle, making it a fair refutation of the conjecture this section descends from, which had quantified over all primitive recursive injections. Compositionality, not injectivity, is what forces a code to pay for syntactic structure.
+
+**Genre.** A limitation theorem about a formalized class of techniques, together with the exact sharpness witness for its class boundary, is the structure of the classical complexity barriers; §12.3 develops this positioning.
+
+---
+
 ## 6. Self-Reference and Incompleteness
 
 The first instance where the abstraction of §§4-5 buys something non-trivial is Gödel's first and second incompleteness theorems. The formalization follows two parallel paths, both machine-checked and sorry-free: one in `Diagonal.lean` that axiomatizes the low-level Gödel-encoding primitives and proves the diagonal lemma as a theorem, and one in `Incompleteness.lean` that axiomatizes the diagonal property directly and gets to incompleteness faster. We describe both, then relate them back to §§4-5.
@@ -476,13 +501,9 @@ structure DiagonalTheory (Sentence : Type*) extends FormalTheory Sentence where
   diag_neg_mpr : ∀ P, provable (neg (P (diag P))) → provable (neg (diag P))
 ```
 
-`DiagonalTheory` trades precision for brevity. Its axioms are what a theory with Gödel encoding *does*, not how it does it. The incompleteness proofs (`godel_not_provable`, `godel_not_refutable`, `first_incompleteness`, `second_incompleteness`) go through with the same structure as §6.3-§6.4 but shorter, because the diagonal property is given rather than derived.
+`DiagonalTheory` trades precision for brevity — and the trade fails, instructively. Its `diag` field quantifies over *arbitrary* sentence transformers `P : Sentence → Sentence`, not formula-definable ones, and that is too strong for any real theory: `FoundationBridge.diagonalTheory_trivial` proves, machine-checked, that every `DiagonalTheory` instance is trivial — either everything is provable or nothing is. (Take `P s := if provable s then f else t` for a provable `t` and unprovable `f`; both diag directions then contradict.) Real theories satisfy the diagonal lemma only for formulas, which is exactly the discipline `GodelSystem`'s `compose_diag : Formula → Formula` enforces.
 
-The two paths are complementary:
-- `Diagonal.lean` answers "what must be true for the diagonal lemma to hold?"
-- `Incompleteness.lean` answers "what follows from the diagonal property?"
-
-A concrete theory such as PA satisfies the lower-level `GodelSystem` axioms, which gives the diagonal lemma, which gives the `DiagonalTheory` structure. Both paths terminate in the same incompleteness theorems; the choice is about where to place the axiomatic burden.
+We retain `DiagonalTheory` and its incompleteness proofs as a cautionary exhibit: the proofs are valid conditional theorems, but their hypothesis is unsatisfiable for every nontrivial theory, so this path to incompleteness is vacuous. The defect was found the same way three earlier refutable axioms were found (§10.4) — by testing the abstraction against a real instantiation. `Diagonal.lean`'s `GodelSystem` is the abstraction real theories satisfy, as §10.7 demonstrates for genuine PA.
 
 ### 6.6 Why the obstruction explains diagonalization
 
@@ -498,7 +519,7 @@ theorem obstruction_and_incompleteness
     T.toFormalTheory.undecidable (DiagonalTheory.godelSentence T prov)
 ```
 
-This gives, from a single set of hypotheses: (a) an `EvalRewriteWitness` exhibits the eval-quote failure on the sentence type, and (b) the theory is incomplete. These are not presented as independent facts. The theorem's role is to record, in the proof-carrying record, that the two are available together.
+This gives, from a single set of hypotheses: (a) an `EvalRewriteWitness` exhibits the eval-quote failure on the sentence type, and (b) the theory is incomplete. We state plainly what the proof term is: a pair of two independently proved facts. The theorem records cohabitation, not derivation — no implication from the obstruction to incompleteness is formalized here. The load-bearing connection lives elsewhere, in §5b's boundary theorem: the encoding obstruction is the intensional extreme of a characterized boundary, and the diagonal construction operates on that intensional side.
 
 The informal claim we draw from this is stronger than the theorem: the obstruction (a) is the *structural reason* the diagonal property (and therefore incompleteness) exists. Substitution in a theory with a non-trivial syntax is a form-changing, meaning-preserving rewrite — precisely the pattern of §5. The fact that the formal substitution is a rewrite is what gives `diagN_spec` its force: `diagN` is not the identity, it computes the code of a genuinely different object, and it is precisely this gap that the diagonal construction exploits. We do not prove this informal claim, and cannot within the present scaffolding: `DiagonalTheory` is agnostic about whether `diag` comes from substitution or from an arbitrary fixed-point operator. What we do prove is that when both structures are present, they cohabit; the deeper claim that the obstruction is *the* source of the diagonal property is a hypothesis the paper defends through its collection of instances, not a theorem within any single instance.
 
@@ -954,7 +975,7 @@ Together with §8.6's `NormalizationProofSystem`, this gives two complementary s
 
 ## 10. The PA GödelSystem Instance
 
-§6 axiomatized the `GodelSystem` structure and proved incompleteness from its axioms. This section takes the remaining step toward a fully grounded formalization: instantiating `GodelSystem` for Peano arithmetic. The scope is deliberately narrow. We describe what is discharged (Phase 1, now complete), what is scaffolded (Phases 2-4, with seven named axioms), and what the scaffolding costs the paper's claims.
+§6 axiomatized the `GodelSystem` structure and proved incompleteness from its axioms. This section grounds it twice over. §§10.1-10.6 describe the self-contained toy instance over a four-constructor term language: Phase 1 (the Gödel encoding and its injectivity) is discharged, the deeper phases are scaffolded as satisfiable named axioms, and §10.4 records what an audit of that scaffolding taught about stating axioms at all. §10.7 — added 2026-06-10 — supersedes the scaffolding for the thesis: `GodelSystem` is instantiated by genuine Peano Arithmetic via the FormalizedFormalLogic Foundation library, with the instantiated diagonal lemma depending on the standard Lean axioms alone. The toy instance remains as the worked example whose missteps motivated the conventions; its axioms are no longer load-bearing.
 
 ### 10.1 What a PA instance requires
 
@@ -1063,6 +1084,23 @@ This is the honest statement of what we have. §11 situates it against related w
 
 ---
 
+
+### 10.7 The real instance: GodelSystem for genuine PA via Foundation
+
+*(Added 2026-06-10; Lean source: `FoundationBridge.lean`.)*
+
+The FormalizedFormalLogic Foundation library provides first-order arithmetic with genuine Gödel coding, the arithmetic fixed-point theorem, and Gödel-Rosser incompleteness. Pinning it as a dependency, `paGodelSystemF : GodelSystem (Sentence ℒₒᵣ)` instantiates our abstraction with real PA:
+
+- `scode`/`fcode` are Foundation's Gödel quote, which over the standard model is `Encodable.encode`;
+- `decode` is the genuine `Encodable` decode — `decode_fcode`, the field whose toy counterpart was once a refutable axiom (§10.4), is a theorem about real coding;
+- `compose_diag` is Foundation's `diag`, and the representability field is discharged by the fixed-point theorem of arithmetic.
+
+One adjustment to the abstraction was required, and it is a finding: `compose_diag_prov` originally demanded the diagonal equivalence at every natural number, which no real theory satisfies — at numbers coding no formula, a concrete decode bears no relation to the theory's internal substitution. The diagonal lemma only ever uses the self-application instance, the fields were weakened to exactly that, and the fixed-point theorem delivers exactly that. This is the recurring lesson of the project stated once more: abstractions calibrated against real instances, not intuition.
+
+The instantiated diagonal lemma, `pa_diagonal_lemma`, runs our §6 construction on Foundation's PA. Its `#print axioms` output is `propext`, `Classical.choice`, `Quot.sound` — the standard Lean axioms; not even Foundation's own pending Δ₁-definability axioms enter the closure, because the fixed-point theorem's proof is semantic. Separately, our `FormalTheory` abstraction is instantiated with PA (`paTheory`), its consistency proved by soundness over ℕ (standard axioms only), and an undecidable sentence obtained from Foundation's Gödel-Rosser theorem (`paTheory_incomplete`, which carries exactly one upstream axiom, `PA_delta1Definable`, reported per our transparency convention).
+
+Engineering note for replicators: Foundation's compiled modules and the full `Mathlib.Tactic` closure carry duplicate auto-generated equation lemmas and cannot be loaded into one environment; the bridge is therefore an import-leaf library, with the interface structures extracted to an import-free module. On the narrow axis of machine-checked incompleteness for PA, Foundation (like Flypitch before it) is deeper than our toy scaffolding ever aimed to be; the contribution here is the converse direction — an independent library's PA instantiates *our* abstraction, confirming the abstraction is the one real theories satisfy.
+
 ## 11. Related Work, In Detail
 
 > DRAFTING BLOCKED on careful reading. This section requires substantive engagement with Lawvere 1969, Yanofsky 2003, Flypitch (Han, van Doorn), Statman 1979, and Haken 1985. The skeleton below sets the structural positions the paper must take and flags the specific reading obligations before each subsection can be written. Do not merge §11 into a submission draft until the flagged readings are complete.
@@ -1167,9 +1205,9 @@ Until these are read, §11's substantive claims remain speculative. The skeleton
 
 We organize this section by tractability rather than by ambition. Three tiers: concrete axiom-discharge work with known techniques (tractable); new bounds that the framework organizes but does not yet derive (medium-term); and genuinely speculative directions toward P vs NP and its known barriers (speculative — explicitly *not* a deliverable). The GitHub issue numbers are the project's live tracking of these items; we include them so the reader can check the current status.
 
-### 12.1 Discharging the twelve named axioms
+### 12.1 Discharging the named axioms
 
-The formalization contains twelve named axioms at `Obstruction/` boundary points. Each corresponds to a known classical result; none are known to be wrong. Discharging any of them strengthens the paper's claims; none are required for §§4-9.
+*(Updated 2026-06-10.)* The formalization contains six named axioms at `Obstruction/` boundary points: Haken's combinatorial state-count and width lemma (`Resolution.lean`, `HakenBottleneck.lean`), the Razborov-Rudich largeness conjecture (`NaturalProofsEvasion.lean`, re-scoped under §12.3), and the toy PA instance's two coding hooks (`PAGodelSystem.lean`, no longer load-bearing after §10.7). Each is a satisfiable proposition over opaque data with its satisfying interpretation documented — a convention adopted after an audit found three earlier placeholder-based axioms refutable. Discharging any of them strengthens the paper's claims; none are required for §§4-9 or for the §10.7 instance.
 
 **PA GödelSystem Phases 2-4** (seven axioms, issues #50-#52). Sub-projects of issue #40, tracked as independent follow-ups. Phase 2 (syntactic formulas + decoding) is estimated at ~2 weeks; Phase 3 (representability of PR functions in PA) is the hard one at 1-2 months and is the Flypitch-scale piece; Phase 4 (PA deductive system) is ~2 weeks. Discharging all three yields a machine-checked derivation of Gödel's first and second incompleteness theorems from PA primitives, through the obstruction framework.
 
@@ -1239,6 +1277,6 @@ The PA `GodelSystem` instance (§10) is the paper's most candid area. Phase 1 �
 
 The paper is explicit about where its claims end. We do not prove new mathematical content about incompleteness or halting. We do not derive new proof complexity bounds. We do not make P vs NP a deliverable — §12.3 records the structural argument that an NP-complete verifier inherits the obstruction as a research direction, explicitly separated from the paper's substantive content and accompanied by a survey of how the framework sits relative to the three classical barriers (relativization, natural proofs, algebrization). The natural proofs barrier is the one the framework addresses most directly, via issue #39 and `NaturalProofsEvasion.lean`, and discharging the single axiom in that file is the most concrete near-term item for strengthening the paper's speculative claims.
 
-The formalization is ~4,200 lines of sorry-free Lean 4 across 12 core modules, built on Mathlib v4.28.0. Twelve named axioms sit at boundary points; each is a precise mathematical claim corresponding to a known classical result. The formalization is the primary object of the paper; the prose is an interpretive account of what it establishes and what it does not. A reader who wants to verify any specific claim of the paper is invited to inspect the corresponding Lean file — §§4-10's theorem statements are quoted directly, and the list of modules and their axioms is in the audit table in §10.6.
+The formalization is sorry-free Lean 4 (re-measure line counts before submission), built on Mathlib and, for the real-PA instance, the FormalizedFormalLogic Foundation library. Six named axioms sit at boundary points; each is a satisfiable proposition over opaque data with its satisfying interpretation documented at the declaration. The formalization is the primary object of the paper; the prose is an interpretive account of what it establishes and what it does not. A reader who wants to verify any specific claim of the paper is invited to inspect the corresponding Lean file — §§4-10's theorem statements are quoted directly, and the list of modules and their axioms is in the audit table in §10.6.
 
 We close with an observation rather than a claim. Classical impossibility results in logic, computation, and proof theory often read as separate theorems with separate proofs. The formalization records, with machine-checkable uniformity, that they share a structural mechanism — form changes, meaning persists, and no injective encoding bridges the gap. This observation is implicit in Lawvere 1969 and partial in Yanofsky 2003; what the present work contributes is a Lean artifact that makes the shared structure instance-by-instance verifiable. Whether the mechanism can be sharpened into a complexity-theoretic separation, or whether it remains structurally suggestive without further quantitative force, is the open question we leave to future work.
