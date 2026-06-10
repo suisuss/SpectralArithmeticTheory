@@ -5,14 +5,14 @@
 > **REVISION STATUS (2026-06-10, final pass complete).** All sections
 > now reflect the June results; figures measured at the repository
 > head (17 core modules, 5,721 lines, six axioms, zero sorries).
-> REMAINING BEFORE SUBMISSION — author obligations the tooling cannot
-> discharge: (a) the flagged readings in section 11 (Lawvere,
-> Yanofsky, Flypitch, Foundation, Statman, Haken, Aaronson, Krajicek)
-> and the drafting of its prose from the stated positions; (b) an
-> author voice pass over the whole; (c) venue formatting and the
-> artifact-evaluation package; (d) re-run the CLAUDE.md greps at
-> submission time and update the three measured figures if the tree
-> has moved.
+> REMAINING BEFORE SUBMISSION — author obligations: (a) §11 is now
+> DRAFTED from verified sources (2026-06-10), with its own remaining
+> list: page-level reading of Lawvere/Yanofsky/Popescu-Traytel,
+> Orevkov bibliographic data, and the §11.9 full-abstraction
+> proximity check; (b) §3 informal review still TODO; (c) an author
+> voice pass over the whole; (d) venue formatting and the
+> artifact-evaluation package; (e) re-run the CLAUDE.md greps at
+> submission time and refresh the measured figures.
 
 **Target venue:** CPP 2027 or ITP 2027.
 
@@ -22,7 +22,7 @@
 
 ## 1. Abstract
 
-Several classical impossibility results — Gödel's incompleteness theorems, Turing's halting problem, Statman's cut elimination blowup, Haken's pigeonhole resolution bound — share a structural mechanism: a rewrite that changes syntactic form while preserving semantic content, confronted with an encoding that must remain injective. We formalize this mechanism in Lean 4 and prove the theorem that makes it load-bearing: an observable of a self-encoding term algebra supports a bisimulation between syntax and semantics if and only if it is extensional (factors through evaluation). The classical encoding obstruction is the intensional extreme of this boundary — injective codings are maximally intensional — and the impossibility results instantiate its intensional side, machine-checked six times across term algebras, PA arithmetic, self-reference, program execution, beta reduction, and resolution. A quantitative companion fixes the boundary's cost: every compositional Gödel coding pays super-polynomial quotation overhead along observation trajectories, while an exactly matching counterexample shows arbitrary injective codings need not — compositionality, not injectivity, is what forces codes to pay for form. The abstract `GodelSystem` interface from which we prove the diagonal lemma and both incompleteness theorems is instantiated by genuine Peano Arithmetic via the FormalizedFormalLogic Foundation library, with the instantiated diagonal lemma depending on the standard Lean axioms alone. The development is sorry-free; six named axioms remain at boundary points, each satisfiable with its satisfying interpretation documented. We position the work against Lawvere, Yanofsky, Flypitch, and Foundation, and frame the complexity-theoretic horizon as limitation theorems about formalized calculi — the genre of the classical barriers — rather than as an approach to separations.
+Several classical impossibility results — Gödel's incompleteness theorems, Turing's halting problem, Statman's cut elimination blowup, Haken's pigeonhole resolution bound — share a structural mechanism: a rewrite that changes syntactic form while preserving semantic content, confronted with an encoding that must remain injective. We formalize this mechanism in Lean 4 and prove the theorem that makes it load-bearing: an observable of a self-encoding term algebra supports a bisimulation between syntax and semantics if and only if it is extensional (factors through evaluation). The classical encoding obstruction is the intensional extreme of this boundary — injective codings are maximally intensional — and the impossibility results instantiate its intensional side, machine-checked six times across term algebras, PA arithmetic, self-reference, program execution, beta reduction, and resolution. A quantitative companion fixes the boundary's cost: every compositional Gödel coding pays super-polynomial quotation overhead along observation trajectories, while an exactly matching counterexample shows arbitrary injective codings need not — compositionality, not injectivity, is what forces codes to pay for form. The abstract `GodelSystem` interface from which we prove the diagonal lemma and both incompleteness theorems is instantiated by genuine Peano Arithmetic via the FormalizedFormalLogic Foundation library, with the instantiated diagonal lemma depending on the standard Lean axioms alone. The development is sorry-free; six named axioms remain at boundary points, each satisfiable with its satisfying interpretation documented. We position the work against Lawvere, Yanofsky, Popescu-Traytel's abstract incompleteness, and the Foundation library, and frame the complexity-theoretic horizon as limitation theorems about formalized calculi — the genre of the classical barriers — rather than as an approach to separations.
 
 ---
 
@@ -63,17 +63,17 @@ Claims we do not make:
 - **New mathematical content.** The universal obstruction, at the abstract level, is logically almost trivial; its novelty is in the formalization and in the observation that a specific structural hypothesis (form-changing rewrite) is load-bearing across the instances.
 - **New proof complexity results.** We recover Haken modulo his inputs and situate Statman; we do not prove new lower bounds.
 - **P vs NP or its independence.** §12.3 records the structural argument as a research direction, openly labeled, not as a result.
-- **Re-proving incompleteness from primitives.** Flypitch (Lean 3) and the FormalizedFormalLogic Foundation library (Lean 4) formalize incompleteness for arithmetic from representability up; we do not redo that work. Our real-PA instance (§10.7) *imports* Foundation's fixed-point theorem rather than re-deriving it; the contribution is the converse direction — an independent library's PA instantiates our abstraction, evidence that the abstraction is the one real theories satisfy.
+- **Re-proving incompleteness from primitives.** The concrete mechanized lineage — Shankar, O'Connor, Harrison, Paulson — and, in Lean 4, the FormalizedFormalLogic Foundation library formalize incompleteness from representability up; we do not redo that work. Our real-PA instance (§10.7) *imports* Foundation's fixed-point theorem rather than re-deriving it; the contribution is the converse direction — an independent library's PA instantiates our abstraction, evidence that the abstraction is the one real theories satisfy.
 
 ### Organization
 
-§3 reviews the encoding obstruction informally and positions it relative to the categorical and formalization literature. §4 presents the universal encoding obstruction on parameterized term algebras, and §5 extracts the `EvalRewriteWitness` abstraction, including the formal argument that non-trivial semantics alone is insufficient. §5b proves the paper's central theorem — the bisimulation boundary — and §5c its quantitative companion, the quotation cost pair. §6 instantiates the intensional side for incompleteness (including the degeneracy of the over-abstracted alternative), §7 for halting, §8 for beta reduction and cut elimination. §9 combines the abstraction with size-bounded rewrites to recover proof-length lower bounds, including Haken's PHP bound. §10 grounds `GodelSystem` twice: the toy instance whose audited missteps fixed the project's axiom conventions, and the real instance over Foundation's PA (§10.7). §11 situates the paper against Lawvere, Yanofsky, Flypitch, Foundation, Statman, Orevkov, Haken, and Cook-Reckhow. §12 outlines future directions under the limitation-theorems framing. §13 concludes.
+§3 reviews the encoding obstruction informally and positions it relative to the categorical and formalization literature. §4 presents the universal encoding obstruction on parameterized term algebras, and §5 extracts the `EvalRewriteWitness` abstraction, including the formal argument that non-trivial semantics alone is insufficient. §5b proves the paper's central theorem — the bisimulation boundary — and §5c its quantitative companion, the quotation cost pair. §6 instantiates the intensional side for incompleteness (including the degeneracy of the over-abstracted alternative), §7 for halting, §8 for beta reduction and cut elimination. §9 combines the abstraction with size-bounded rewrites to recover proof-length lower bounds, including Haken's PHP bound. §10 grounds `GodelSystem` twice: the toy instance whose audited missteps fixed the project's axiom conventions, and the real instance over Foundation's PA (§10.7). §11 situates the paper against Lawvere, Yanofsky, the mechanized-incompleteness lineage, Popescu-Traytel's abstract account, Foundation, Statman, Orevkov, Haken, and Cook-Reckhow. §12 outlines future directions under the limitation-theorems framing. §13 concludes.
 
 ---
 
 ## 3. Background and Related Work
 
-> TODO — needs careful reading of Lawvere 1969, Yanofsky 2003, and a pass over Flypitch before drafting. ~2 pages per outline.
+> TODO — informal review section; draft after §11's positions, from which it can now borrow. ~2 pages per outline.
 
 ---
 
@@ -984,7 +984,7 @@ A `GodelSystem PATerm` instance must supply thirteen fields: `provable`, `neg`, 
 
 - **Trivial for PA**: `provable` and `neg` are Peano's provability predicate and syntactic negation; these are standard objects in any formalization of PA.
 - **Discharged combinatorially**: `scode`, `fcode`, `decode`, `decode_fcode`, `diagN`, `diagN_spec`, `subst` are Gödel's 1931 encoding machinery. Doable by unique prime factorization and explicit manipulation; tedious but mechanical.
-- **The representability theorem**: `compose_diag`, `compose_diag_prov`, `compose_diag_neg` are the essential technical content of Gödel's 1931 paper. They state that the diagonal function is represented by a PA formula. Formalizing this in Lean is a substantial independent project (Flypitch-scale).
+- **The representability theorem**: `compose_diag`, `compose_diag_prov`, `compose_diag_neg` are the essential technical content of Gödel's 1931 paper. They state that the diagonal function is represented by a PA formula. Formalizing this in Lean is a substantial independent project (compare Paulson 2014 in Isabelle, O'Connor 2005 in Coq, and Foundation's Lean 4 development).
 
 `PAGodelSystem.lean` sets up the combinatorial half and scaffolds the representability half with named axioms.
 
@@ -1072,107 +1072,59 @@ One adjustment to the abstraction was required, and it is a finding: `compose_di
 
 The instantiated diagonal lemma, `pa_diagonal_lemma`, runs our §6 construction on Foundation's PA. Its `#print axioms` output is `propext`, `Classical.choice`, `Quot.sound` — the standard Lean axioms; not even Foundation's own pending Δ₁-definability axioms enter the closure, because the fixed-point theorem's proof is semantic. Separately, our `FormalTheory` abstraction is instantiated with PA (`paTheory`), its consistency proved by soundness over ℕ (standard axioms only), and an undecidable sentence obtained from Foundation's Gödel-Rosser theorem (`paTheory_incomplete`, which carries exactly one upstream axiom, `PA_delta1Definable`, reported per our transparency convention).
 
-Engineering note for replicators: Foundation's compiled modules and the full `Mathlib.Tactic` closure carry duplicate auto-generated equation lemmas and cannot be loaded into one environment; the bridge is therefore an import-leaf library, with the interface structures extracted to an import-free module. On the narrow axis of machine-checked incompleteness for PA, Foundation (like Flypitch before it) is deeper than our toy scaffolding ever aimed to be; the contribution here is the converse direction — an independent library's PA instantiates *our* abstraction, confirming the abstraction is the one real theories satisfy.
+Engineering note for replicators: Foundation's compiled modules and the full `Mathlib.Tactic` closure carry duplicate auto-generated equation lemmas and cannot be loaded into one environment; the bridge is therefore an import-leaf library, with the interface structures extracted to an import-free module. On the narrow axis of machine-checked incompleteness, Foundation (like the Isabelle and Coq developments before it) is deeper than our toy scaffolding ever aimed to be; the contribution here is the converse direction — an independent library's PA instantiates *our* abstraction, confirming the abstraction is the one real theories satisfy.
 
 ## 11. Related Work, In Detail
 
-> DRAFTING BLOCKED on careful reading. This section requires substantive engagement with Lawvere 1969, Yanofsky 2003, Flypitch (Han, van Doorn), the FormalizedFormalLogic Foundation library, Statman 1979, and Haken 1985 — plus, for §12.3's genre positioning, Aaronson's formal-independence survey and Krajicek's proof-complexity-generators program. The skeleton below sets the structural positions (updated 2026-06-10 to the boundary thesis); the flagged readings remain author obligations before submission.
+> STATUS (2026-06-10): drafted from verified sources. Citations checked
+> against publisher/arXiv/AFP records; the Flypitch miscitation in
+> earlier drafts (it is the CH-independence project, not an
+> incompleteness formalization) is corrected throughout. REMAINING
+> AUTHOR OBLIGATIONS: page-level reading of Lawvere's TAC reprint,
+> Yanofsky's full text, and Popescu-Traytel's JAR paper (AFP entry
+> consulted; journal version paywalled); exact bibliographic data for
+> Orevkov's cut-elimination bounds; and the §11.9 proximity check
+> against full-abstraction results.
 
-### 11.1 Lawvere 1969: categorical fixed-point theorem
+### 11.1 Lawvere 1969: the categorical fixed-point theorem
 
-> READ BEFORE DRAFTING: F. W. Lawvere, "Diagonal arguments and cartesian closed categories," *Reports of the Midwest Category Seminar IV*, Lecture Notes in Mathematics 92, Springer 1969.
+Lawvere, "Diagonal arguments and cartesian closed categories" (Lecture Notes in Mathematics 92, 1969, 134-145; reprinted with author commentary in TAC Reprints). The theorem: in a cartesian closed category, if `f : A → B^A` is weakly point-surjective, every endomorphism `g : B → B` has a fixed point — with Cantor, Gödel, and Tarski as contrapositive instances. This is the conceptual ancestor of everything in this paper, and the division of labor is clean: Lawvere's theorem explains why fixed points *exist* once self-application is available; it is silent about the syntactic mechanism that makes self-application costly. Our contribution lives in that silence. At the level of CCC arrows, the form-change content of evaluation is invisible — uncurrying does not record that the Leibniz step replaces an `obs` root with an `add` root. Working in term algebras makes form change a constructor-level fact, dischargeable by `simp`, and the boundary theorem (§5b) then asks a question Lawvere's setting cannot pose: *which observations* of the syntax-semantics pair are mutually coherent. The answer — exactly the extensional ones — is a complement to the fixed-point theorem, not a refinement of it.
 
-**The position the paper must take:** Lawvere's theorem abstracts Cantor, Gödel, and Tarski into a categorical fixed-point argument in cartesian closed categories. The encoding obstruction refines this in one specific way: by working in a term-rewriting setting rather than at the level of arrows in a CCC, the form-change mechanism becomes an explicit constructor-level fact rather than an existential claim about diagonal arrows. This refinement is the basis for machine-checkability in Lean.
+### 11.2 Yanofsky 2003: the scheme without the category theory
 
-**What to write:** a careful comparison of Lawvere's diagonal construction with `diagN_at_compose` in §6.2. What does Lawvere's theorem *not* say that §6 does say? The honest answer is probably: not much at the level of logical content, but the term-rewriting formulation makes the form-change mechanism explicit and amenable to formalization in a type-theoretic proof assistant. Lawvere's abstraction is more general (any CCC, not just term algebras); ours is more concrete (specific syntactic constructors).
+Yanofsky, "A universal approach to self-referential paradoxes, incompleteness and fixed points" (Bulletin of Symbolic Logic 9(3), 2003, 362-386; arXiv:math/0305282), broadens Lawvere's scheme across the semantic paradoxes, computability, complexity, and formal language theory, in deliberately elementary dress. Yanofsky demonstrates breadth by exhibition; nothing is machine-checked, and the instances share a scheme rather than satisfying a characterized condition. Our six instances upgrade exhibition to verification, and the unification from a shared scheme to a boundary with a strictness hierarchy and a price (§5c). Where Yanofsky's survey gestures at complexity theory, §12.3 takes the disciplined version of that gesture: limitation theorems about formalized technique-classes.
 
-**What NOT to claim:** that this work supersedes or improves on Lawvere. The paper's position is that Lawvere identified the categorical core; we formalize a concrete term-rewriting instance of it in Lean, which is a complementary contribution.
+### 11.3 Mechanized incompleteness: the concrete lineage
 
-### 11.2 Yanofsky 2003: universal self-reference paradoxes
+Machine-checked incompleteness has a four-decade history: Shankar (1986, Nqthm), O'Connor (2005, Coq — Gödel-Rosser essential incompleteness), Harrison (2009, HOL Light), and Paulson (2014, Isabelle — both theorems, over hereditarily finite sets following Świerczkowski; the first mechanization of the second theorem). In Lean 4, the FormalizedFormalLogic Foundation library (§11.5) is the deepest arithmetic development. We record a correction: earlier drafts of this paper cited the Flypitch project (Han and van Doorn) as a Lean incompleteness formalization; Flypitch is the formalization of the independence of the continuum hypothesis — first-order logic infrastructure, completeness, and forcing — and makes no incompleteness claim. We do not compete with the concrete lineage on depth: our incompleteness content is interface-level (§6), and the concrete arithmetic work in §10.7 is imported, not re-proved.
 
-> READ BEFORE DRAFTING: N. S. Yanofsky, "A universal approach to self-referential paradoxes, incompleteness and fixed points," *Bulletin of Symbolic Logic* 9(3), 2003.
+### 11.4 Popescu and Traytel: abstract incompleteness, formally verified
 
-**The position:** Yanofsky extends Lawvere to a broader class of self-referential paradoxes — Russell, Epimenides, Gödel, Tarski, Löb, Rice, halting, Berry — using the same CCC fixed-point machinery. Our `EvalRewriteWitness` is a syntactic counterpart organized around rewrites and encodings rather than diagonal arrows.
+The closest formal neighbor to our `GodelSystem` is Popescu and Traytel's abstract account of the incompleteness theorems (IJCAR 2019; journal version "Distilling the Requirements of Gödel's Incompleteness Theorems with a Proof Assistant", J. Automated Reasoning 2021; AFP entries from 2020). They formalize, in Isabelle, sufficient conditions for both incompleteness theorems over a partially specified logic — distilling provability, representability, and derivability-condition assumptions — including Rosser's variant of the first theorem and Jeroslow's of the second, with two concrete instantiations over hereditarily finite sets. As abstract incompleteness, their account is more thorough than ours: we have no derivability conditions and no Rosser variant at the interface level. The differences that remain ours: the interface sits under a characterized boundary (§5b) that positions incompleteness as one instance of the intensional side; the instantiation in §10.7 is by an *independent* library's arithmetic, which tests the abstraction rather than the instantiator; and we document the failure modes of over-abstraction as results — the `DiagonalTheory` degeneracy (§6.5) is precisely a non-sufficiency theorem of the kind a distillation program needs, found by instantiation pressure. We regard their work and ours as the same genre approached from opposite ends: they distill downward from the classical proofs; we built upward from a rewriting obstruction and report where the tower had to be corrected.
 
-**What to write:** a table-based comparison showing which of Yanofsky's instances correspond to which of ours (§6 incompleteness ↔ Yanofsky's Gödel; §7 halting ↔ Yanofsky's Turing/halting; etc.) and which do not (Yanofsky's Russell paradox has no direct `EvalRewriteWitness` analog in our formalization). The paper's position is that Yanofsky's machinery is broader but less formalization-friendly; our machinery is narrower but Lean-formalized.
+### 11.5 The FormalizedFormalLogic Foundation library
 
-**What NOT to claim:** that this work is a Lean port of Yanofsky. It is not; our starting point (the Leibniz rewrite in eigenvalue arithmetic) is different, and the unifying abstraction emerged from a different direction. Yanofsky is a convergent prior result, not a source.
+Foundation is this paper's most important formal dependency: §10.7's instance is built on it, pinned at a specific revision, with the axiom closure of every imported result reported. Three points, precisely. First, the dependency direction: their PA instantiates our abstraction; the evidence produced is about the abstraction's fitness, not about their theorems, which we import. Second, the engineering boundary, recorded for replicators: Foundation's compiled modules and the full Mathlib tactic closure carry duplicate auto-generated equation lemmas and cannot share an environment; bridges must be import-leaf libraries with interface structures extracted to minimal-import modules. Third, the transparency ledger: `pa_diagonal_lemma` closes over the standard Lean axioms alone, while `paTheory_incomplete` additionally carries Foundation's one pending Δ₁-definability axiom — both facts reported rather than averaged.
 
-### 11.3 Flypitch (Han and van Doorn): Lean 3 incompleteness from PA
+### 11.6 Statman and Orevkov: the cost of normalization
 
-> READ BEFORE DRAFTING: J. Han and F. van Doorn, "A formal proof of the independence of the continuum hypothesis" team's incompleteness development; the Flypitch project repository and its incompleteness paper.
+Statman, "The typed λ-calculus is not elementary recursive" (Theoretical Computer Science 9(1), 1979, 73-81): deciding β-convertibility of typed terms is not elementary, the canonical source of non-elementary normalization growth; Orevkov's lower bounds on proof lengthening after cut elimination (Zapiski LOMI, 1979; English translation in J. Soviet Mathematics — exact bibliographic data to be verified) are the sequent-calculus counterpart. Our §8 organizes this material rather than extending it: beta reduction is an `EvalRewriteWitness`, the duplicator's growth is trajectory divergence, and Curry-Howard transports both to cut elimination. The non-elementary inputs are theirs; the uniform structural frame is the contribution.
 
-**The position the paper must take (updated 2026-06-10):** Flypitch formalized incompleteness from PA primitives in Lean 3, including the representability theorem. We do not compete on that axis and no longer need to: §10.7 imports the Foundation library's Lean 4 representability machinery rather than re-deriving it. The comparison to draw is organizational — Flypitch proves the theorem; we characterize the boundary (extensionality) that explains the theorem's mechanism and exhibit the theorem as the intensional side's flagship instance.
+### 11.7 Haken: the resolution lower bound
 
-### 11.3b The FormalizedFormalLogic Foundation library
+Haken, "The intractability of resolution" (Theoretical Computer Science 39, 1985, 297-308): pigeonhole refutations require exponential size. §9 recovers the bound with the combinatorial core axiomatized over valid refutations, and the attribution explicit: the framework supplies length-from-states; Haken supplies the states. The planned discharge route (issue #37) is the Ben-Sasson-Wigderson width method rather than the original bottleneck counting, chosen for its formalization-friendly induction.
 
-> READ BEFORE DRAFTING: the Foundation repository (FormalizedFormalLogic), in particular `FirstOrder/Bootstrapping` (internal syntax, fixed-point theorem) and `FirstOrder/Incompleteness` (Gödel-Rosser, standard provability with D1-D3).
+### 11.8 Cook and Reckhow: the frame we presuppose
 
-**The position the paper must take:** Foundation is the deepest Lean 4 arithmetic-incompleteness development and this paper's most important formal dependency: §10.7's instance is built on it, pinned at a specific revision, with the axiom closure of every imported result reported. Three points to make precisely: (i) the dependency direction — their PA instantiates our abstraction, which is evidence about the abstraction, not a re-proof of their theorems; (ii) the engineering boundary — their compiled modules and the full Mathlib tactic closure cannot share an environment (duplicate generated equation lemmas), which constrains how such bridges must be built and is worth a paragraph for replicators; (iii) the transparency ledger — `pa_diagonal_lemma` closes over standard Lean axioms only, while `paTheory_incomplete` carries Foundation's one pending Δ₁-definability axiom, and the paper reports both facts rather than averaging them.
+Cook and Reckhow, "The relative efficiency of propositional proof systems" (Journal of Symbolic Logic 44(1), 1979, 36-50), defines the proof-system abstraction and the simulation order under which proof complexity is organized. Our length-lower-bound framework operates below that abstraction — on the rewrite dynamics of a single system's proof states — and makes no simulation claims. The Cook-Reckhow frame becomes load-bearing only in §12.3's program, where limitation theorems over reasoning calculi are the stated horizon.
 
-### 11.4 Statman 1979 and Orevkov 1979: cut elimination blowup
+### 11.9 Coalgebraic logic and the full-abstraction proximity check
 
-> READ BEFORE DRAFTING: R. Statman, "Lower bounds on Herbrand's theorem," *Proc. AMS* 75(1), 1979. V. P. Orevkov, "Lower bounds for increasing complexity of derivations after cut elimination" (Russian), *Zapiski Nauchnykh Seminarov LOMI* 88, 1979.
+Rutten's universal coalgebra (Theoretical Computer Science 249(1), 2000, 3-80) supplies the bisimulation vocabulary of §5b; Turi and Plotkin's bialgebraic semantics (LICS 1997) is the classical synthesis of syntax-as-algebra with semantics-as-coalgebra; Abramsky and Shah's comonadic semantics relates structure to power along a different axis. The boundary theorem's shape — observations compatible with semantics are exactly those that factor through evaluation — has a family resemblance to full-abstraction results in programming language semantics, where definable observations characterize observational equivalence. We flag this as the section's open verification obligation: before submission, the claim of novelty for §5b must be checked against the full-abstraction literature in detail. Our present understanding of the difference: full abstraction characterizes when a *model* matches a fixed notion of observation; the boundary theorem characterizes which *observations* of a fixed syntax-semantics pair admit a bisimulation at all, with the Gödel coding as one such observation — but family resemblances of this kind are exactly where novelty claims die, and this one gets verified, not assumed.
 
-**The position:** Statman and Orevkov independently proved that cut elimination can produce proofs of non-elementary size. The combinatorial content is a specific construction of formula families whose cut-free normal forms are towers of exponentials. §8.5 recovers the *mechanism* of this blowup (size growth under iterated duplication) but not the specific formula families.
+### 11.10 Differential algebra
 
-**What to write:** a clear statement of what Statman/Orevkov's theorems are, a clear statement of what §8.5 contributes (the structural mechanism via `beta_grows_for_large` composed with iteration), and an explicit separation — we do not formalize Statman's combinatorial construction, we formalize the size-growth mechanism his construction exploits.
-
-**What NOT to claim:** that our framework *derives* non-elementary cut elimination blowup. It does not; Statman's construction provides the specific terms that realize the bound.
-
-### 11.5 Haken 1985: PHP resolution lower bound
-
-> READ BEFORE DRAFTING: A. Haken, "The intractability of resolution," *Theoretical Computer Science* 39, 1985.
-
-**The position:** Haken proved any resolution refutation of PHP(n+1, n) requires at least 2^(n/20) clauses. The proof has a combinatorial core (the bottleneck lemma: any refutation must pass through "wide" clauses whose count is exponential). §9.5 recovers Haken's bound given this combinatorial lemma as input; the lemma itself is `PHP_state_lower_bound_spec`, axiomatized.
-
-**What to write:** (a) a precise statement of Haken's theorem and proof structure; (b) a precise statement of our separation between the length-from-states composition (proved) and the state-count bound (axiomatized); (c) a reference to issue #37 as the tracking item for discharging the state-count axiom from Haken's primitives.
-
-**What NOT to claim:** that the obstruction framework *derives* Haken's PHP bound from scratch. It does not. We recover it modulo Haken's combinatorial input.
-
-### 11.6 Cook-Reckhow 1979: proof complexity foundations
-
-> READ BEFORE DRAFTING: S. A. Cook and R. A. Reckhow, "The relative efficiency of propositional proof systems," *Journal of Symbolic Logic* 44(1), 1979.
-
-**The position:** Cook-Reckhow define proof systems as polynomial-time verifiers. §9.6's `CookReckhowSystem` structure is a direct formalization of their definition plus the assumption that verification factors through a form-changing internal step. This assumption is not part of Cook-Reckhow's original definition; it is a structural hypothesis under which the obstruction fires.
-
-**What to write:** how our structural hypothesis relates to Cook-Reckhow's original definition (namely, it is a refinement, not a requirement), and how §9.6's claim compares to the classical expectation that super-polynomial proof lengths imply P ≠ NP.
-
-### 11.7 Coalgebraic logic
-
-> READ BEFORE DRAFTING: J. J. M. M. Rutten, "Universal coalgebra: a theory of systems," *Theoretical Computer Science* 249, 2000; B. Jacobs, *Introduction to Coalgebra: Towards Mathematics of States and Observation*, Cambridge 2017.
-
-**The position:** Coalgebra studies bisimulation between syntactic and semantic structures. The encoding obstruction's "no injective encoding commutes with evaluation" statement is structurally related but distinct: coalgebraic bisimulation is about behavioral equivalence, while the obstruction is about failure of commutation under an additional encoding step.
-
-**What to write:** a brief comparison noting the adjacent but distinct subject matter. We do not claim a coalgebraic formulation; we note the neighborhood.
-
-**What NOT to claim:** a coalgebraic generalization of our framework. Not formalized; not obviously meaningful without additional structure.
-
-### 11.8 Differential algebra: Ritt and Kolchin
-
-> READ BEFORE DRAFTING: E. R. Kolchin, *Differential Algebra and Algebraic Groups*, Academic Press 1973. J. F. Ritt, *Differential Algebra*, AMS Colloquium Publications 1950.
-
-**The position:** The Leibniz rule (§4.2's `leibnizRewrite`) comes from differential algebra. Ritt and Kolchin develop the algebraic theory of derivations. Part 1 of the `SpectralArithmeticTheory` project (not the focus of this paper) uses the Leibniz rule in a spectral / eigenvalue setting; Part 2 (the universal obstruction, this paper) uses it in a term-rewriting setting.
-
-**What to write:** a short note placing the Leibniz rule in its original algebraic context, and explaining why its term-rewriting presentation is the relevant one for this paper.
-
----
-
-**Summary of §11's obligations before submission:**
-
-| Citation | Required reading | Status |
-|---|---|---|
-| Lawvere 1969 | LNM 92 Springer, full paper | not read |
-| Yanofsky 2003 | BSL 9(3), full paper | not read |
-| Flypitch | Han-van Doorn CPP 2020 + source | partial |
-| Statman 1979 | Proc. AMS 75(1) | not read |
-| Orevkov 1979 | Zapiski LOMI 88 (Russian) | not read, translation needed |
-| Haken 1985 | TCS 39 | partial |
-| Cook-Reckhow 1979 | JSL 44(1) | partial |
-| Rutten 2000 / Jacobs 2017 | background texts | not required for tone |
-| Kolchin / Ritt | background texts | not required for tone |
-
-Until these are read, §11's substantive claims remain speculative. The skeleton records the positions the paper must take and flags reading as prerequisite work. Do not treat §11 as draft-complete without completing the reading list.
+Ritt (Differential Algebra, 1950) and Kolchin (1973) own the algebra of derivations that Part 1 of the project reads arithmetically; Buium's arithmetic differential calculus goes a different direction (p-adic, not foundational). The flagship paper touches this only through the spectral instance of §4; the arithmetic interpretation is the subject of the planned Part 1 companion note, not of this paper.
 
 ---
 
