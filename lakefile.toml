@@ -1,7 +1,7 @@
 name = "SpectralArithmetic"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["SpectralArithmetic"]
+defaultTargets = ["SpectralArithmetic", "FoundationBridge"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -12,7 +12,12 @@ maxSynthPendingDepth = 3
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.28.0"
+rev = "58d8468384df017604272605bb0ec709826199e7"
+
+[[require]]
+name = "Foundation"
+git = "https://github.com/FormalizedFormalLogic/Foundation"
+rev = "066bfa60be1235a2c3ac5ceff4bf29e8758e1a49"
 
 [[lean_lib]]
 name = "SpectralArithmetic"
@@ -21,3 +26,11 @@ name = "SpectralArithmetic"
 name = "modular-bench"
 root = "SpectralArithmetic.Bench.Modular"
 supportInterpreter = true
+
+# Import-leaf library: instantiates the theory interfaces from the
+# Foundation library. Kept OUT of the root module because Foundation's
+# oleans and the Mathlib.Tactic closure carry duplicate auto-generated
+# equation lemmas; loading both in one environment is an error.
+[[lean_lib]]
+name = "FoundationBridge"
+roots = ["SpectralArithmetic.Obstruction.FoundationBridge"]
