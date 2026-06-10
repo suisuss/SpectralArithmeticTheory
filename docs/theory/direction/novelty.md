@@ -1,6 +1,7 @@
 # Novelty Assessment
 
 **Date:** 2026-02-19
+**Reassessed:** 2026-06-10 — see "Reassessment" at the end of this document. The reassessment ranks what is actually novel against the Lean tree as it exists, identifies what is NOT novel (with reasons), and adds four literatures the original survey missed. Where the two parts disagree, the reassessment wins.
 
 ---
 
@@ -234,3 +235,146 @@ Nobody has assembled them into: "the extensional/intensional gap, instantiated a
 | The Univalent Foundations Program (2013), *Homotopy Type Theory: Univalent Foundations of Mathematics* | Identity proofs as paths; the ext./int. gap has topological structure |
 | Altenkirch, McBride, Swierstra (2007), *Observational Equality, Now!* | Observation-based equality bridging ext./int. — closest in spirit |
 | Cook (1971), *The Complexity of Theorem-Proving Procedures* | Cook-Levin theorem; NP-completeness as encoding preservation |
+
+---
+
+## Reassessment (2026-06-10)
+
+Audit basis: the full Obstruction/ Lean tree as of the axiom repair
+(branch `fix/inconsistent-axioms`), not the prose descriptions of it.
+The original survey above is sound on the literature; where it errs is
+in how much of the project's claimed contribution survives contact
+with what the Lean files actually prove.
+
+### What is NOT novel (and should not be claimed)
+
+**1. The universal encoding obstruction theorem.** As formalized,
+`universal_encoding_obstruction` is `Function.Injective` plus
+constructor disjointness: an injective map separates distinct terms,
+and the Leibniz rewrite produces a syntactically distinct term. The
+file says this honestly ("logically trivial"). It is an organizing
+observation, not a mathematical contribution, and no claim of novelty
+should rest on it.
+
+**2. The unification, as currently formalized.** The seven "instances"
+do not derive anything from the obstruction. `Diagonal.lean` and
+`Halting.lean` do not even import `EvalRewrite`; their theorems are
+proved entirely from their own hypothesis-rich structures
+(`GodelSystem`, `ProvabilityData`, the halting setup). The one place
+the connection is stated — `obstruction_and_incompleteness` in
+`Incompleteness.lean` — is a pair constructor: it conjoins two
+independently proved facts. The prose claim "the obstruction is the
+ENGINE of incompleteness" is not formalized as an implication anywhere
+in the corpus. Until a theorem exists in which an `EvalRewriteWitness`
+is a load-bearing hypothesis, the unification is suggestive labeling,
+and a referee will say so.
+
+**3. The intension/extension distinction itself.** Frege and Carnap
+own the distinction; type theory has formal versions (see the original
+survey); and the computational literatures below have THEOREMS about
+it. The framing is good positioning, not novelty.
+
+**4. The conservation-of-information reading of P vs NP.** The
+framework's preservation results (f_0 count invariant at every
+truncation depth) are facts about the framework's conservativity, not
+about SAT's hardness. Any conservative system preserves information;
+systems that solve problems must discard it. "Our algebra cannot
+compress SAT" is a statement about the algebra's weakness. The missing
+step — embedding arbitrary polynomial-time computation into a
+conservative system with polynomial overhead and a preserved measure —
+is the entire problem, and the framework provides no purchase on it.
+
+### What IS novel (ranked by defensibility)
+
+**1. The bisimulation question (the coalgebraic quine).** Still the
+strongest asset, exactly as the original survey says — and as of this
+writing it appears in no issue and no focus tier. The question (does
+the Gödel encoding induce a behavioral equivalence between the
+syntactic coalgebra and the semantic coalgebra?) is unasked in the
+literature, well-posed with existing tools, and answerable in either
+direction. Crucially, it is also the cure for weakness 2 above: the
+current obstruction is trivial because it demands strict code equality
+under an injective encoding; commutation UP TO BISIMULATION is the
+version where the answer is not forced by injectivity, and a theorem
+locating exactly where the bisimulation fails (or proving a partial
+positive) would make the framework load-bearing. This is the highest
+expected-value theory work in the project.
+
+*Status update (2026-06-10, later the same day):* Tiers 1-2 are now
+formalized in `SpectralArithmetic/Obstruction/Bisimulation.lean`
+(sorry-free, zero axioms, `propext` only). Tier 1 (positive): the
+eval graph is a bisimulation, and the eval-quote square commutes up
+to bisimulation for any code/decode retraction — the coalgebraic
+quine exists at the extensional level. Tier 2 (characterization):
+`supportsBisim_iff_extensional` — an observable supports a
+bisimulation relating each term to its evaluation iff it factors
+through eval; strictness witnesses give
+extensional ⊊ rewrite-invariant ⊊ all observables, and
+`injective_no_bisim` shows injective codes are maximally intensional.
+*Tier 3 update (same day):* the growth-rate separation is now also
+formalized, in `SpectralArithmetic/Obstruction/QuotationCost.lean`
+(sorry-free, zero project axioms), for the COMPOSITIONAL coding
+class: along the canonical observation trajectory the even iterates
+have the exact closed form t_{2m} = dup^m(f₂), every compositional
+code is ≥ 2^(2^(m+1)) (doubly exponential), while the semantic
+content is exactly 2^j (singly exponential) — so no polynomial in
+the semantic value bounds the code
+(`quotation_overhead_superpolynomial`). Two corrections to the
+original conjecture (`encoding-obstruction.md` Part 5) came out of
+this: (a) its Step 3 has a gap — injectivity alone does NOT force
+code growth along a fixed computable trajectory, because a
+non-compositional primitive recursive injection can compress a
+sparse trajectory (j-th iterate ↦ j); the compositionality
+hypothesis its Step 1 implicitly used is genuinely necessary; and
+(b) with that hypothesis the separation is a theorem, not a
+conjecture. What remains open is only the non-compositional case,
+which the sketched argument cannot reach. The publishable-result
+ranking below should be read with items answered at this level.
+
+**2. Part 1, eigenvalue arithmetic.** The interpretation — naturals as
+derivation eigenvalues, Peano axioms as theorems, the number tower as
+concentric spectra, machine-checked — is genuinely absent from the
+differential-algebra and coalgebra literatures (the original survey's
+analysis stands). Modest in impact but real, self-contained, and
+publishable as a formalization note independent of Part 2.
+
+**3. The `GodelSystem`/`DiagonalTheory` packaging.** A minimal abstract
+interface from which the diagonal lemma and both incompleteness
+theorems fall out in ~300 clean lines. Library-grade Lean engineering.
+Its novelty is bounded by the FormalizedFormalLogic Foundation library
+(below), which has the deeper PA-concrete result; the abstract
+interface layered over it is still a contribution, the standalone
+incompleteness development is not.
+
+**4. The f_0-indistinguishability experiments.** Encoding-independence
+(CTerm/NAND vs Church/SK hitting the same wall) and total
+indistinguishability under variable sharing are suggestive
+experimental mathematics. Novel observations within the framework;
+claimable only as experiments until connected to a measure that exists
+outside the framework.
+
+### Literatures the original survey missed
+
+| Work | Why it matters here |
+|---|---|
+| N. Jones, *Computability and Complexity from a Programming Perspective* (1997); Jones optimality; Futamura projections | The "compilation cost interpretation" has an existing literature with theorems: whether self-interpretation overhead can be specialized away IS Jones optimality. CONS-free programs characterize P. Any compilation/execution-asymmetry claim must be positioned against this or it will look naive. |
+| B. Jay & T. Given-Wilson, SF-calculus; Jay, pattern calculus (*Programs as Data Structures*, c. 2009-2011) | Intensional computation made formal: a calculus where term STRUCTURE is observable, with definability theorems separating intensional from extensional power. The closest formal neighbor to "obs reads syntactic form." |
+| FormalizedFormalLogic **Foundation** (Lean 4) | Sorry-free Gödel I and II including representability, in the same language and era. Changes the Phase 2-4 strategy (instantiate, don't rebuild) and must anchor the paper's related-work section. |
+| Ben-Sasson & Wigderson, *Short Proofs Are Narrow* (2001) | The width method is the formalization-friendly route to resolution lower bounds; PHP exponential bounds follow as a corollary. The right target for issue #37, in place of Haken's 1985 bottleneck counting. |
+
+### Revised bottom line
+
+The publishable-result ranking, replacing the original survey's
+closing paragraph:
+
+1. A theorem characterizing where the syntactic/semantic bisimulation
+   holds or breaks for a Gödel-encoded arithmetic system (positive,
+   negative, or partial — any outcome is a contribution).
+2. First Lean 4 formalization of the Ben-Sasson-Wigderson width bound
+   (a real, recognized proof-complexity formalization first).
+3. The unification paper, IF the witness is made load-bearing (a
+   theorem with `EvalRewriteWitness` as a working hypothesis, or a
+   converse showing systems without the witness admit complete
+   encodings); otherwise it is a formalization-experience paper and
+   should be scoped as one.
+4. Part 1 as a standalone formalization note.

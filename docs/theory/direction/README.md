@@ -29,7 +29,7 @@ Two threads, both machine-checked in Lean 4.
 
 - **103 Lean files** on main: Core 6, Verification 4, Lambda 6, Obstruction 26, Rotation 59.
 - **`Obstruction/*` is sorry-free.** Rotation/* has 6 residual sorries in 4 files — not paper-critical.
-- **20 named axioms**, clustered: PAGodelSystem 14, HakenBottleneck 3, Resolution 1, NaturalProofsEvasion 1, Complexity 1.
+- **6 named axioms** (2026-06-10 census): PAGodelSystem 2, HakenBottleneck 2, Resolution 1, NaturalProofsEvasion 1, Complexity 0. The Phase 1 arithmetic axioms were discharged as theorems (#35). Unspecified *data* (decode, provability, negation, clause counts) is `opaque` rather than axiomatized; only genuine propositions are axioms, each satisfiable. Three scaffolding axioms that were inconsistent as stated (`phase2_decode_inverse`, `obstruction_property_not_large` over a `True`-placeholder `IsLarge`, `haken_bottleneck_exists` with a placeholder hypothesis) were repaired 2026-06-10.
 - **46 GitHub issues**, 32 open / 14 closed. Closed cluster is the pre-obstruction SAT-solver / tree-arrangement exploration.
 - **Paper outline** at `docs/papers/UniversalObstruction/outline.md`.
 

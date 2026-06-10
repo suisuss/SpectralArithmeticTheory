@@ -167,11 +167,11 @@ theorem litSatisfied_implies_varAssigned (assign : List (ℕ × Bool))
   ⟨p, h⟩
 
 /-- Result of one contraction step. -/
-inductive ContractionResult where
-  | progress   : DualTerm → ℕ → ContractionResult
-  | stuck      : DualTerm → ContractionResult
-  | validated  : DualTerm → ContractionResult
-  | refuted    : DualTerm → ℕ → ContractionResult
+inductive DualContractionResult where
+  | progress   : DualTerm → ℕ → DualContractionResult
+  | stuck      : DualTerm → DualContractionResult
+  | validated  : DualTerm → DualContractionResult
+  | refuted    : DualTerm → ℕ → DualContractionResult
   deriving Repr
 
 /-! ### tryFillNode with Decidable branching
@@ -228,7 +228,7 @@ theorem tryFillNode_preserves_filled (node : DualNode) (assign : List (ℕ × Bo
 
     This is unit propagation, viewed as filling slots
     in the interleaved representation. -/
-def contractOnce (dt : DualTerm) : ContractionResult :=
+def contractOnce (dt : DualTerm) : DualContractionResult :=
   let n := dt.nodes.size
   let rec go (i : ℕ) (nodes : Array DualNode) (assign : List (ℕ × Bool))
       (filled : ℕ) (hasConflict : Bool) (conflictIdx : ℕ)

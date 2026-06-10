@@ -14,16 +14,19 @@ Backup: LMCS (Logical Methods in Computer Science) for a longer journal version.
 
 ## Thesis (One Sentence)
 
-We identify a structural invariant — a form-changing, semantics-preserving rewrite — that unifies Godel's incompleteness theorems, the halting problem, cut elimination blowup, and proof complexity lower bounds, formalized as ~3,950 lines of sorry-free Lean 4.
+*(Revised 2026-06-10, after `Bisimulation.lean`.)* We characterize exactly which observations of a self-encoding term algebra are compatible with Godel encoding — an observable supports a bisimulation between syntax and semantics if and only if it is extensional — and show that the classical impossibility results (Godel incompleteness, halting, cut elimination blowup, resolution lower bounds) are instances of the intensional side of this boundary, with injective codings as the extreme case; formalized as sorry-free Lean 4.
+
+*(Former framing, kept for reference: a form-changing, semantics-preserving rewrite unifying the impossibility results. The boundary theorem subsumes it: the rewrite-changes-form observation is the statement that `rootTag` is not even rewrite-invariant.)*
 
 ## What the Paper Claims
 
-1. **A precise abstraction (`EvalRewriteWitness`)** capturing the structural pattern shared across multiple impossibility results
-2. **The encoding obstruction proved universally** for all term algebras with this structure (`Universal.lean`)
-3. **Five concrete instances** machine-checked: Leibniz/eigenvalue, PA arithmetic, self-reference (diagonal), program execution (halting), beta reduction
-4. **Cut elimination as the sixth instance via Curry-Howard**, recovering Statman's blowup mechanism
-5. **A framework for proof complexity lower bounds** from the obstruction, demonstrated for resolution (Haken framework, modulo combinatorial axiom)
-6. **GodelSystem instance scaffolding for PA**, with Phase 1 proved and Phases 2-4 axiomatized with precise mathematical claims
+1. **The bisimulation boundary theorem** (`Bisimulation.lean`): the eval-quote square commutes up to bisimulation precisely for extensional observables (`supportsBisim_iff_extensional`); the observable hierarchy extensional ⊊ rewrite-invariant ⊊ all is strict with machine-checked witnesses; injectivity is maximal intensionality (`injective_no_bisim`). This is the theorem that makes the abstraction load-bearing.
+2. **A precise abstraction (`EvalRewriteWitness`)** capturing the structural pattern shared across multiple impossibility results
+3. **The encoding obstruction proved universally** for all term algebras with this structure (`Universal.lean`) — now positioned as the intensional extreme of the boundary
+4. **Five concrete instances** machine-checked: Leibniz/eigenvalue, PA arithmetic, self-reference (diagonal), program execution (halting), beta reduction
+5. **Cut elimination as the sixth instance via Curry-Howard**, recovering Statman's blowup mechanism
+6. **A framework for proof complexity lower bounds** from the obstruction, demonstrated for resolution (Haken framework, modulo combinatorial axiom)
+7. **GodelSystem instance scaffolding for PA**, with Phase 1 proved and Phases 2-4 as satisfiable named axioms over opaque data
 
 ## What the Paper Does NOT Claim
 
@@ -113,6 +116,20 @@ structure EvalRewriteWitness (T S : Type*) where
 ```
 
 **Multiple sufficient conditions.** Root constructor change is one (the cleanest). Commutativity, associativity, size growth — all give form change.
+
+### 5b. The Bisimulation Boundary (~3 pages) — NEW, the load-bearing section
+
+**The eval-quote question.** Does the Godel encoding induce a behavioral equivalence between the syntactic coalgebra (rewriting) and the semantic coalgebra (observation)? (Lawvere/Yanofsky ask about fixed points; this asks about the encoding itself.)
+
+**Observation systems and bisimulation.** `ObsSystem X O` (step + output), `Bisim` (output agreement + step closure) — the coalgebraic notion for X ↦ O × X.
+
+**Tier 1 (positive).** `evalGraphBisim`: the graph of eval is a bisimulation; `codeBisim`: for any code/decode retraction, code-level dynamics are bisimilar to the semantics. The square commutes up to bisimulation when observation is extensional.
+
+**Tier 2 (the boundary).** `supportsBisim_iff_extensional`: an observable supports a bisimulation iff it factors through eval. Strict hierarchy with witnesses: `rootTag` (not rewrite-invariant — the original form-change phenomenon, relocated to the observable side), `isF₀` (rewrite-invariant, not extensional), injective ε (not extensional — `injective_no_bisim`).
+
+**Reframing the obstruction.** `no_coalgebra_morphism` is the statement that faithful codes sit at the intensional extreme of the boundary. The impossibility instances of Sections 6-9 are readings of the intensional side.
+
+**Tier 3 (the quantitative separation — QuotationCost.lean).** Along the canonical observation trajectory: exact closed form t_{2m} = dup^m(f₂); every compositional coding (pairing dominates the product — all standard Godel codings) is doubly exponential, `encode(t_{2m}) ≥ 2^(2^(m+1))`, while the semantic content is exactly 2^j (`eval_trajectory`); hence no polynomial in the semantic value bounds the code (`quotation_overhead_superpolynomial`). Quotation is behaviorally free (Tier 1) but quantitatively ruinous. Includes an honest correction: the theory docs' conjecture over ALL primitive recursive injections is unreachable by the sketched argument — injectivity does not force code growth along a sparse trajectory; compositionality is the necessary hypothesis. The non-compositional case is stated as open.
 
 ### 6. Self-Reference and Incompleteness (~3 pages)
 
@@ -255,6 +272,7 @@ When writing each section, the corresponding Lean files:
 |---------|-----------|
 | §4 Universal Obstruction | Universal.lean |
 | §5 EvalRewriteWitness | EvalRewrite.lean, RootConstructorChange.lean |
+| §5b Bisimulation Boundary | Bisimulation.lean |
 | §6 Incompleteness | Diagonal.lean, Incompleteness.lean |
 | §7 Halting | Halting.lean |
 | §8 Beta + Curry-Howard | BetaReduction.lean, CurryHoward.lean |

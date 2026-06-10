@@ -27,7 +27,7 @@ deriving instance Inhabited for IterationLog
 def denseUNSAT (n : ℕ) (seed : ℕ) : SATFormula :=
   random3SAT n (n * 6) seed
 
-/-- PHP is always UNSAT — no verification needed. -/
+-- PHP is always UNSAT — no verification needed.
 
 /-! ## Scaling tests -/
 

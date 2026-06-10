@@ -15,6 +15,10 @@ import SpectralArithmetic.Obstruction.Encoding
 import SpectralArithmetic.Obstruction.Pairing
 import SpectralArithmetic.Obstruction.Oplus
 import SpectralArithmetic.Obstruction.Main
+-- Bisimulation characterization (the coalgebraic quine question)
+import SpectralArithmetic.Obstruction.Bisimulation
+-- Tier 3: quotation cost separation (compositional codings)
+import SpectralArithmetic.Obstruction.QuotationCost
 -- Convergence conjecture (open)
 import SpectralArithmetic.Obstruction.Convergence
 -- Complexity asymmetry (P vs NP structural analogy)
