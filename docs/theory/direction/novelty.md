@@ -300,6 +300,22 @@ locating exactly where the bisimulation fails (or proving a partial
 positive) would make the framework load-bearing. This is the highest
 expected-value theory work in the project.
 
+*Status update (2026-06-10, later the same day):* Tiers 1-2 are now
+formalized in `SpectralArithmetic/Obstruction/Bisimulation.lean`
+(sorry-free, zero axioms, `propext` only). Tier 1 (positive): the
+eval graph is a bisimulation, and the eval-quote square commutes up
+to bisimulation for any code/decode retraction — the coalgebraic
+quine exists at the extensional level. Tier 2 (characterization):
+`supportsBisim_iff_extensional` — an observable supports a
+bisimulation relating each term to its evaluation iff it factors
+through eval; strictness witnesses give
+extensional ⊊ rewrite-invariant ⊊ all observables, and
+`injective_no_bisim` shows injective codes are maximally intensional.
+What remains open is Tier 3: the growth-rate non-bisimilarity for
+primitive recursive codings on a common carrier
+(`encoding-obstruction.md` Part 5). The publishable-result ranking
+below should be read with item 1's partial answer in hand.
+
 **2. Part 1, eigenvalue arithmetic.** The interpretation — naturals as
 derivation eigenvalues, Peano axioms as theorems, the number tower as
 concentric spectra, machine-checked — is genuinely absent from the
