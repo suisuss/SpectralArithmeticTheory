@@ -144,6 +144,8 @@ structure EvalRewriteWitness (T S : Type*) where
 
 **Tier 3 (the quantitative separation — QuotationCost.lean).** Along the canonical observation trajectory: exact closed form t_{2m} = dup^m(f₂); every compositional coding (pairing dominates the product — all standard Godel codings) is doubly exponential, `encode(t_{2m}) ≥ 2^(2^(m+1))`, while the semantic content is exactly 2^j (`eval_trajectory`); hence no polynomial in the semantic value bounds the code (`quotation_overhead_superpolynomial`). Quotation is behaviorally free (Tier 1) but quantitatively ruinous. Includes an honest correction: the theory docs' conjecture over ALL primitive recursive injections is unreachable by the sketched argument — injectivity does not force code growth along a sparse trajectory; compositionality is the necessary hypothesis. The non-compositional case is stated as open.
 
+**Universality of the boundary (UniversalBisimulation.lean).** The Tier 1-2 results are also proved at the generality of section 4: over every constant signature C and every Leibniz algebra, `supportsBisimF_iff_extensionalF` characterizes the boundary, and `injective_no_bisimF` excludes every injective coding — witnessed by the universal pair (a term and its Leibniz rewrite: distinct by `leibniz_changes_form`, eval-equal in every algebra by `leibnizRewrite_preserves_eval`). Section 5b can therefore be stated at the same quantifier depth as the universal obstruction itself.
+
 ### 6. Self-Reference and Incompleteness (~3 pages)
 
 **The GodelSystem abstraction.** Coding, decoding, substitution, representability of the diagonal function.

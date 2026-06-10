@@ -17,6 +17,8 @@ import SpectralArithmetic.Obstruction.Oplus
 import SpectralArithmetic.Obstruction.Main
 -- Bisimulation characterization (the coalgebraic quine question)
 import SpectralArithmetic.Obstruction.Bisimulation
+-- Universal bisimulation boundary over all signatures (#55)
+import SpectralArithmetic.Obstruction.UniversalBisimulation
 -- Tier 3: quotation cost separation (compositional codings)
 import SpectralArithmetic.Obstruction.QuotationCost
 -- Convergence conjecture (open)
