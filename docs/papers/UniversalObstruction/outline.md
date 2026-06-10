@@ -39,19 +39,18 @@ The contribution is **the formalization, the unification, and the framework** �
 
 ---
 
-## Audit notes (2026-04-15)
+## Audit notes (2026-04-15, superseded 2026-06-10)
 
-After PR #49 (Phase 1 arithmetic axioms discharged), the relevant facts for the paper are:
+The 2026-04-15 audit predates the axiom repairs and the bisimulation program. Current facts (verify with the greps in CLAUDE.md before quoting):
 
-| Claim | Value | Source |
+| Claim | Value (2026-06-10) | Source |
 |---|---|---|
-| Core modules | 12 | `Universal`, `EvalRewrite`, `RootConstructorChange`, `Diagonal`, `Incompleteness`, `Halting`, `BetaReduction`, `CurryHoward`, `ProofComplexity`, `Resolution`, `VerificationArithmetic`, `PAGodelSystem` |
-| Core line count | 4,203 | `wc -l` on the 12 files |
-| Sorries in `Obstruction/` | 0 | `grep` after excluding doc-string "sorry-free" hits |
-| Named axioms in `Obstruction/` | 12 | 7 in `PAGodelSystem` (all Phase 2-4), 3 in `HakenBottleneck`, 1 in `NaturalProofsEvasion`, 1 in `Resolution` |
-| Entire `Obstruction/` tree | 26 modules, 8,878 lines | extensions + scaffolding beyond paper scope |
+| Core modules | 14 | the April 12 (`Universal`, `EvalRewrite`, `RootConstructorChange`, `Diagonal`, `Incompleteness`, `Halting`, `BetaReduction`, `CurryHoward`, `ProofComplexity`, `Resolution`, `VerificationArithmetic`, `PAGodelSystem`) plus `Bisimulation`, `QuotationCost` |
+| Sorries in `Obstruction/` | 0 | grep after excluding doc-string "sorry-free" hits |
+| Named axioms in `Obstruction/` | 6 | 2 in `PAGodelSystem`, 2 in `HakenBottleneck`, 1 in `NaturalProofsEvasion`, 1 in `Resolution`; unspecified data is `opaque`, every axiom satisfiable. Three April axioms were inconsistent as stated and were repaired 2026-06-10 |
+| Bisimulation/QuotationCost axioms | 0 | `#print axioms`: propext (+ Classical.choice/Quot.sound via nlinarith) |
 
-Outline numbers updated to reflect this. `HakenBottleneck.lean` and `NaturalProofsEvasion.lean` are not in the 12-module paper core but are referenced in §9 and §12 respectively — decide during drafting whether to include their line counts in the headline figure.
+`paper.md` was drafted against the April numbers and the pre-boundary thesis; see the revision banner at its top before quoting any figure or claim from it.
 
 ## Structure
 

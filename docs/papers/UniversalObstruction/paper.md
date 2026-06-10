@@ -2,6 +2,22 @@
 
 **Status:** draft in progress. Follow the ordering in `outline.md`. Each section has a `> TODO` marker if not yet drafted.
 
+> **REVISION REQUIRED (2026-06-10).** This draft was written 2026-04-15
+> and predates three developments that change its claims:
+> 1. The axiom repairs: three of the twelve named axioms it cites were
+>    inconsistent as stated and were replaced; the census is now SIX
+>    satisfiable axioms over opaque data. Every "twelve named axioms"
+>    figure and the per-file counts are stale.
+> 2. The bisimulation boundary theorem (`Obstruction/Bisimulation.lean`,
+>    issue #55): the thesis is now the characterization — an observable
+>    supports a bisimulation iff it is extensional — with the encoding
+>    obstruction as the intensional extreme. The outline's revised
+>    thesis sentence and new section 5b are not yet reflected here.
+> 3. The quotation cost separation (`Obstruction/QuotationCost.lean`):
+>    Tier 3 for compositional codings, plus a correction to the
+>    encoding-obstruction conjecture's scope.
+> Verify every number against the greps in CLAUDE.md while revising.
+
 **Target venue:** CPP 2027 or ITP 2027.
 
 **Working paper scope:** the 12 core `Obstruction/` modules (~4,200 lines, 12 named axioms at boundary points, zero sorries). Scaffolding and extensions are cited but not headline.
