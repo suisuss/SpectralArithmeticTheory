@@ -51,6 +51,7 @@ import SpectralArithmetic.Obstruction.Diagonal
 import Foundation.FirstOrder.Incompleteness.GödelRosser
 import Foundation.FirstOrder.Incompleteness.Examples
 
+set_option linter.style.setOption false
 set_option linter.flexible false
 
 namespace FoundationBridge
