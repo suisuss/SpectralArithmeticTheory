@@ -26,7 +26,7 @@ Backup: LMCS (Logical Methods in Computer Science) for a longer journal version.
 4. **Five concrete instances** machine-checked: Leibniz/eigenvalue, PA arithmetic, self-reference (diagonal), program execution (halting), beta reduction
 5. **Cut elimination as the sixth instance via Curry-Howard**, recovering Statman's blowup mechanism
 6. **A framework for proof complexity lower bounds** from the obstruction, demonstrated for resolution (Haken framework, modulo combinatorial axiom)
-7. **GodelSystem instance scaffolding for PA**, with Phase 1 proved and Phases 2-4 as satisfiable named axioms over opaque data
+7. **GodelSystem instance scaffolding for PA**, with Phase 1 proved (PR #49) and Phases 2-4 as satisfiable named axioms over opaque data (tracked under issues #50-#52)
 
 ## What the Paper Does NOT Claim
 
@@ -39,11 +39,25 @@ The contribution is **the formalization, the unification, and the framework** �
 
 ---
 
+## Audit notes (2026-04-15)
+
+After PR #49 (Phase 1 arithmetic axioms discharged), the relevant facts for the paper are:
+
+| Claim | Value | Source |
+|---|---|---|
+| Core modules | 12 | `Universal`, `EvalRewrite`, `RootConstructorChange`, `Diagonal`, `Incompleteness`, `Halting`, `BetaReduction`, `CurryHoward`, `ProofComplexity`, `Resolution`, `VerificationArithmetic`, `PAGodelSystem` |
+| Core line count | 4,203 | `wc -l` on the 12 files |
+| Sorries in `Obstruction/` | 0 | `grep` after excluding doc-string "sorry-free" hits |
+| Named axioms in `Obstruction/` | 12 | 7 in `PAGodelSystem` (all Phase 2-4), 3 in `HakenBottleneck`, 1 in `NaturalProofsEvasion`, 1 in `Resolution` |
+| Entire `Obstruction/` tree | 26 modules, 8,878 lines | extensions + scaffolding beyond paper scope |
+
+Outline numbers updated to reflect this. `HakenBottleneck.lean` and `NaturalProofsEvasion.lean` are not in the 12-module paper core but are referenced in §9 and §12 respectively — decide during drafting whether to include their line counts in the headline figure.
+
 ## Structure
 
 ### 1. Abstract (200 words)
 
-The encoding obstruction states that no injective encoding of a term algebra can commute with a form-changing, semantics-preserving rewrite. We formalize this as a universal theorem over parameterized term algebras in Lean 4, and demonstrate it underlies six classical impossibility results: Godel's first and second incompleteness theorems (via an axiomatized GodelSystem), the halting problem, cut elimination blowup (via Curry-Howard), and proof complexity lower bounds for resolution (via Haken's framework). The unifying abstraction `EvalRewriteWitness` makes the structural pattern explicit and provides a framework for instantiating these results in concrete settings. The formalization comprises ~3,950 lines of sorry-free Lean 4 across 12 modules. We discuss the relationship to Lawvere's categorical fixed-point theorem and identify a research direction extending the framework toward proof complexity bounds and questions about P vs NP independence.
+The encoding obstruction states that no injective encoding of a term algebra can commute with a form-changing, semantics-preserving rewrite. We formalize this as a universal theorem over parameterized term algebras in Lean 4, and demonstrate it underlies six classical impossibility results: Godel's first and second incompleteness theorems (via an axiomatized GodelSystem), the halting problem, cut elimination blowup (via Curry-Howard), and proof complexity lower bounds for resolution (via Haken's framework). The unifying abstraction `EvalRewriteWitness` makes the structural pattern explicit and provides a framework for instantiating these results in concrete settings. The formalization comprises ~4,200 lines of sorry-free Lean 4 across 12 core modules, with twelve named axioms at boundary points corresponding to classical results (Godel's representability theorem, Haken's combinatorial state-count). We discuss the relationship to Lawvere's categorical fixed-point theorem and identify a research direction extending the framework toward proof complexity bounds and questions about P vs NP independence.
 
 ### 2. Introduction (~3 pages)
 
@@ -175,13 +189,17 @@ structure EvalRewriteWitness (T S : Type*) where
 
 ### 10. The PA GodelSystem Instance (~2 pages)
 
-**Phase 1 proved.** Godel encoding via prime factorization, positivity. Sorry-free.
+**Phase 1 fully discharged** (PR #49). The Godel encoding via prime factorization, its positivity, and its injectivity are now theorems derived from Mathlib's prime and factorization machinery. No axioms remain at the encoding level.
 
-**Phases 2-4 scaffolded.** Six precise axioms corresponding to known classical results: encoding injectivity, decoding inverse, diagonal function representability, PA provability, PA negation, compose_diag specifications.
+**Phases 2-4 scaffolded.** Seven precise axioms corresponding to known classical results:
+- `phase2_decode_inverse` — decoding is a left inverse of coding (needs a richer syntactic formula representation, issue #50)
+- `compose_diag` and `compose_diag_apply` — the diagonal function is representable as a PA formula (Godel's 1931 representability theorem applied, issue #51)
+- `phase3_compose_diag_provable` and `phase3_compose_diag_neg_provable` — PA proves the diagonal equivalence (issue #51)
+- `paProvable` and `paNeg` — PA's provability predicate and syntactic negation (issue #52)
 
 **The instance is constructive given the axioms.** `paGodelSystem` is sorry-free modulo the axioms.
 
-**Roadmap to full discharge.** Estimated 2-3 months of formalization work to fully discharge the axioms (Flypitch-scale effort).
+**Roadmap to full discharge.** Estimated 2-3 months of formalization work to fully discharge the axioms (Flypitch-scale effort), tracked under umbrella issue #40 and sub-issues #50, #51, #52. This is explicitly positioned as follow-up work; the paper's contribution stands without it.
 
 ### 11. Related Work, In Detail (~2 pages)
 
