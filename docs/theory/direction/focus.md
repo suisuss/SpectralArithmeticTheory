@@ -1,6 +1,6 @@
 # Focus
 
-**Date:** 2026-04-15
+**Date:** 2026-06-10 (supersedes 2026-04-15)
 
 Decision document. What to work on next given what's been achieved. Derived from the code, git log, and GitHub issue state — not from the pre-edit copies in this folder.
 
@@ -8,9 +8,16 @@ Decision document. What to work on next given what's been achieved. Derived from
 
 ## Where the project actually is
 
-The thesis has stabilised on the **universal encoding obstruction**: a form-changing, semantics-preserving rewrite (`EvalRewriteWitness`) that unifies Gödel incompleteness, the halting problem, cut elimination blowup, and resolution lower bounds as seven machine-checked instances. Paper targets CPP 2027 (~Sep 2026) or ITP 2027 (~Feb 2027).
+The thesis is the **universal encoding obstruction**: a form-changing, semantics-preserving rewrite (`EvalRewriteWitness`) observed across Gödel incompleteness, the halting problem, cut elimination blowup, and resolution lower bounds. Paper targets CPP 2027 (~Sep 2026) or ITP 2027 (~Feb 2027).
 
-Everything else — eigenvalue arithmetic, number tower through ℂ, ZF verification, Rotation Calculus SAT solvers — is either settled (Core/, Verification/, Lambda/) or deprioritised (Rotation/ as exploratory substrate, no formal link to the main thesis).
+Two facts established by the 2026-06-10 audit reshape the priorities (see `novelty.md`, Reassessment section):
+
+1. **The unification is currently structural, not deductive.** The instance theorems (diagonal lemma, incompleteness, halting) are proved from their own structures; no theorem in the corpus uses an `EvalRewriteWitness` as a load-bearing hypothesis (`obstruction_and_incompleteness` is a pair constructor). The paper's value hinges on either fixing this or scoping the paper honestly as formalization + observed pattern.
+2. **Three scaffolding axioms were inconsistent as stated** (repaired on `fix/inconsistent-axioms`; axiom census now 6, all satisfiable, data is `opaque`). Lesson encoded in the repair: never state an axiom about a non-opaque placeholder definition.
+
+The 2026-04-15 immediate item (Phase 1 arithmetic discharge, #35) is DONE (commit 4d7c80e). The other immediate item — start the paper — was not started and is now the schedule risk: CPP 2027's deadline is ~3 months out.
+
+Everything else — eigenvalue arithmetic, number tower through ℂ, ZF verification, Rotation Calculus SAT solvers — is either settled (Core/, Verification/, Lambda/) or deprioritised (Rotation/ as exploratory substrate, no formal link to the main thesis). Note: the most recent main commit (3abb13a) is deferred-tier #45 work; actual activity drifting off the stated critical path is the failure mode to watch.
 
 ## Ground truth
 
@@ -31,15 +38,20 @@ Everything else — eigenvalue arithmetic, number tower through ℂ, ZF verifica
 
 ## Recommended focus
 
-### Immediate — weeks, paper-critical
+### Immediate — days to weeks
 
-- **`PAGodelSystem.lean` Phase 1.** Discharge the 7 small arithmetic axioms: `three_not_dvd_pow_two`, `seven_not_dvd_pow_two`, `seven_not_dvd_3pow_5pow`, `three_not_dvd_7pow_11pow`, `pow_two_injective`, `plus_pairing_injective`, `times_pairing_injective`. Pure Mathlib, estimated ~1 week. Highest leverage / clearest scope item in the project. (Issue #35)
-- **Start drafting the paper.** Use `docs/papers/UniversalObstruction/outline.md`. The 5k-line sorry-free core already supports the thesis; drafting clarifies what the remaining axioms actually cost.
+1. **Merge the axiom repair.** Build-verify `fix/inconsistent-axioms`, merge. Nothing else should land on the old, inconsistent base.
+2. **Foundation library spike (timebox: 2 weeks).** Evaluate instantiating `Diagonal.GodelSystem` from the FormalizedFormalLogic Foundation library (Lean 4; sorry-free Gödel I/II including representability). Outcome decides the Phase 2-4 strategy: if the instance can be transported, #40 collapses from "Flypitch-scale, months" to "integration, weeks," and the paper's PA story changes from scaffolding to a real instance. If it can't, we learn precisely why and the paper says so. Either outcome is paper content.
+3. **Start the paper draft NOW.** Use `docs/papers/UniversalObstruction/outline.md`, with the thesis reframed per `novelty.md` (Reassessment): the contribution is the formalization, the abstract `GodelSystem` interface, and the observed structural pattern — NOT "the obstruction explains incompleteness," unless item 4 lands first. Drop the P vs NP independence framing entirely (keep barrier discussion as future work). CPP 2027 deadline ~Sep 2026.
 
-### Medium-term — 3–6 months, pick one
+### Critical path — the theory question (weeks to months)
 
-- **#37 full Haken discharge.** Three axioms in `HakenBottleneck.lean`. Turns the framework from "recovers Haken modulo his axiom" into "derives Haken." Highest scientific upside among open issues.
-- **#39 natural proofs evasion.** Single `obstruction_property_not_large` axiom. Converts the barrier-evasion claim from speculation to theorem. Directly addresses the reviewer objection anticipated in the outline.
+4. **Make the witness load-bearing: the bisimulation theorem.** The project's most original question (per `novelty.md`, original survey AND reassessment) and currently tracked by no issue: does the Gödel encoding induce a behavioral equivalence between the syntactic coalgebra (rewriting) and the semantic coalgebra (observation)? Formalize the two coalgebras on the same carrier and prove where bisimulation holds or breaks. This replaces strict-code-equality (trivially obstructed by injectivity) with the equivalence under which the obstruction question has actual content. Any outcome — positive, negative, partial — is the strongest theorem the project can offer, and it directly answers the anticipated "is the abstraction doing work?" referee objection. Open an issue; this is the successor to the unification thesis.
+
+### Medium-term — 3–6 months, pick one, after the paper is drafted
+
+- **#37, re-targeted at Ben-Sasson–Wigderson.** Formalize the width method ("Short Proofs Are Narrow", 2001) instead of Haken's 1985 bottleneck counting: a clean width induction, far more tractable in Lean, with the PHP exponential bound as a corollary — and a recognized formalization first. Prerequisite either way: extend `Resolution.lean` so refutations (derive-the-empty-clause, `ValidFrom`) are first-class; the current model never states them.
+- **#39 natural proofs evasion.** Now consistent (real `IsLarge`, opaque property). Substantive only after `encodingObstructionProperty` is given a precise definition — which plausibly depends on item 4's outcome.
 
 ### Alongside the paper — cheap
 
@@ -64,12 +76,12 @@ Pre-obstruction tree-arrangement / constructor research. Not on the critical pat
 "New bound from the framework" directions. Interesting but non-critical; the paper's publication will re-sharpen priorities.
 
 - **#38** prove a NEW proof complexity lower bound
-- **#40** Flypitch-scale PA discharge (Phases 2–4)
+- **#40** PA discharge Phases 2–4 — HELD pending the Foundation spike (immediate item 2), which may collapse it from months to weeks or kill the from-scratch plan entirely. Do not start from-scratch work before the spike reports.
 - **#41** trajectory-structure-based bounds
 - **#42** multiplicative-to-additive transformation as complexity measure
 - **#43** obstruction ↔ Craig interpolation
 - **#44** proof system separations via fine-grained obstruction analysis
-- **#45** concrete SAT bounds via Rotation Calculus
+- **#45** concrete SAT bounds via Rotation Calculus — note: 3abb13a already spent effort here against the 2026-04-15 focus; stop until the immediate items are done
 
 ### Park
 
@@ -83,12 +95,16 @@ Rotation/SAT engineering. Genuinely interesting, orthogonal to the thesis.
 
 ## What not to optimise
 
-- Don't refactor or extend `Obstruction/*` to new domains before the 20 axioms above are addressed and the paper is drafted.
-- Don't start Phases 2–4 of `PAGodelSystem` (issue #40). Each is Flypitch-scale (months). The paper's right framing is "Phase 1 discharged, Phases 2–4 are future work" — not "we got stuck trying to do Gödel's representability result from scratch."
-- Don't pursue P vs NP independence as a deliverable. Keep it as speculation in the paper's future directions, as already framed in the outline.
+- Don't refactor or extend `Obstruction/*` to new domains before the remaining 6 axioms are addressed and the paper is drafted.
+- Don't add more `EvalRewriteWitness` instances. Seven instances of a pattern that does no deductive work add bulk, not evidence. The marginal instance is worth ~nothing next to one theorem where the witness is a working hypothesis (critical-path item 4).
+- Don't start from-scratch Phases 2–4 of `PAGodelSystem` (issue #40) before the Foundation spike reports. If the spike fails, the paper's right framing remains "Phase 1 discharged, Phases 2–4 are future work."
+- Don't pursue P vs NP independence as a deliverable, and don't include the independence argument in the paper at all — it pattern-matches to a genre that will color review of the legitimate work. Barrier discussion belongs in future work, clearly labeled speculation.
+- Don't state an axiom about a non-opaque placeholder definition. That is how all three 2026-06-10 inconsistencies arose. Unspecified data is `opaque`; axioms are reserved for satisfiable propositions.
+- Don't trust the direction docs for counts — grep (`grep -cE "^axiom " SpectralArithmetic/Obstruction/*.lean`). They drifted by 8 axioms between April and June.
 
 ## Related
 
+- [novelty.md](novelty.md) — literature positioning; the 2026-06-10 Reassessment section is the basis for this focus revision
 - [progress-report.md](progress-report.md) — 2026-04-14 report against `structural-domains.md`
-- [../../papers/UniversalObstruction/outline.md](../../papers/UniversalObstruction/outline.md) — paper outline (ITP/CPP 2027)
-- GitHub issues #33–#45 — the research program
+- [../../papers/UniversalObstruction/outline.md](../../papers/UniversalObstruction/outline.md) — paper outline (ITP/CPP 2027); thesis framing to be revised per item 3
+- GitHub issues #33–#45 — the research program; the bisimulation theorem (critical-path item 4) and the Foundation spike (immediate item 2) need new issues

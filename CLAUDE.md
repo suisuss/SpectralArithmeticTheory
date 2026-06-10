@@ -41,7 +41,7 @@ Common checks:
 
 Mirrors the bins in `docs/theory/direction/focus.md`. Apply the tier that reflects where the issue sits relative to the current thesis and paper critical path.
 
-- `critical-path` — paper-critical, weeks-scale, clear scope. Currently: `PAGodelSystem.lean` Phase 1 axioms (#35), paper drafting.
+- `critical-path` — paper-critical, weeks-scale, clear scope. Currently: paper drafting, the Foundation library spike, and the bisimulation theorem (see `docs/theory/direction/focus.md`, 2026-06-10).
 - `medium-term` — 3–6 months, substantive scientific contribution on the paper's critical path. Currently: `#37` (full Haken), `#39` (natural proofs evasion).
 - `deferred` — interesting and aligned with the thesis but not needed to ship the paper. Revisit after publication. Currently: `#38`, `#40`, `#41`–`#45`.
 - `parked` — genuinely interesting but orthogonal to the thesis. Currently: `Rotation/` engineering (`#20`, `#29`–`#32`).
@@ -84,8 +84,9 @@ ln -s /home/suisuss/.programming/sandbox/SpectralArithmeticTheory/.lake .worktre
 ## When writing Lean
 
 - `Obstruction/*` is sorry-free. Do not introduce `sorry` into it. If you need a temporary hole, use a named `axiom` with a precise claim; this is the convention in `PAGodelSystem.lean`, `HakenBottleneck.lean`, and `NaturalProofsEvasion.lean`. Axioms are counted and tracked; sorries are not allowed in `Obstruction/`.
+- Axioms are for satisfiable PROPOSITIONS only. Unspecified data (functions, predicates, constants) must be `opaque`, never a concrete placeholder definition constrained by axioms — three axioms became inconsistent that way and were repaired 2026-06-10. Before adding an axiom, exhibit (at least in a comment) an interpretation satisfying it together with the existing ones.
 - Comments in proofs: default to none. Only write a comment if the reason is non-obvious (a hidden invariant, a workaround, a subtle constraint). Never narrate the user's prompt or the current task.
-- Don't refactor or extend `Obstruction/*` to new domains before the 20 named axioms are addressed and the paper is drafted. See `docs/theory/direction/focus.md` for the rationale.
+- Don't refactor or extend `Obstruction/*` to new domains before the remaining named axioms are addressed and the paper is drafted (run the axiom grep for the current count). See `docs/theory/direction/focus.md` for the rationale.
 
 ## When writing docs
 
