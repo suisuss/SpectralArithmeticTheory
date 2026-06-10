@@ -35,57 +35,18 @@
 -/
 
 import SpectralArithmetic.Obstruction.EvalRewrite
+import SpectralArithmetic.Obstruction.TheoryInterfaces
 
 namespace Incompleteness
 
 /-! ## Part 1: Abstract Formal Theories
 
-    A formal theory: a type of sentences with a provability relation
-    and a negation operation. We keep this minimal — the incompleteness
-    theorem needs surprisingly little structure. -/
-
-/-- A formal theory over a type of sentences.
-    - `provable`: the set of theorems (sentences derivable from axioms)
-    - `neg`: syntactic negation -/
-structure FormalTheory (Sentence : Type*) where
-  provable : Sentence → Prop
-  neg : Sentence → Sentence
-
-namespace FormalTheory
-
-variable {Sentence : Type*}
-
-/-- A sentence is refutable if its negation is provable. -/
-def refutable (T : FormalTheory Sentence) (s : Sentence) : Prop :=
-  T.provable (T.neg s)
-
-/-- A theory is consistent if no sentence is both provable and refutable. -/
-def consistent (T : FormalTheory Sentence) : Prop :=
-  ∀ s, ¬(T.provable s ∧ T.provable (T.neg s))
-
-/-- A sentence is undecidable if it is neither provable nor refutable. -/
-def undecidable (T : FormalTheory Sentence) (s : Sentence) : Prop :=
-  ¬T.provable s ∧ ¬T.provable (T.neg s)
-
-/-- A theory is complete if every sentence is either provable or refutable. -/
-def complete (T : FormalTheory Sentence) : Prop :=
-  ∀ s, T.provable s ∨ T.provable (T.neg s)
-
-/-- A consistent, complete theory has no undecidable sentences. -/
-theorem complete_no_undecidable (T : FormalTheory Sentence)
-    (hcomp : T.complete) (s : Sentence) :
-    ¬T.undecidable s := by
-  intro ⟨hnp, hnr⟩
-  exact (hcomp s).elim hnp hnr
-
-/-- An undecidable sentence witnesses incompleteness. -/
-theorem undecidable_implies_incomplete (T : FormalTheory Sentence)
-    (s : Sentence) (h : T.undecidable s) :
-    ¬T.complete := by
-  intro hcomp
-  exact complete_no_undecidable T hcomp s h
-
-end FormalTheory
+    The `FormalTheory` structure and its basic notions (refutable,
+    consistent, undecidable, complete) live in TheoryInterfaces.lean —
+    an import-free file, so that FoundationBridge.lean can instantiate
+    them alongside the Foundation library without colliding olean
+    closures. Nothing else changes; the names are re-exported by the
+    import above. -/
 
 /-! ## Part 2: The Diagonal Property
 
@@ -102,25 +63,12 @@ end FormalTheory
         property holds — substitution changes form, so the fixed-point
         construction can close the self-referential loop -/
 
-/-- A formal theory with the diagonal/fixed-point property.
-    For any sentence transformer P, there exists a sentence whose
-    provability status is tied to P applied to itself. -/
-structure DiagonalTheory (Sentence : Type*) extends FormalTheory Sentence where
-  /-- The diagonal operator: given a sentence transformer P,
-      produces the fixed-point sentence. -/
-  diag : (Sentence → Sentence) → Sentence
-  /-- Forward direction: if the fixed point is provable,
-      then P applied to it is provable. -/
-  diag_mp : ∀ P, provable (diag P) → provable (P (diag P))
-  /-- Backward direction: if P applied to the fixed point is provable,
-      then the fixed point itself is provable. -/
-  diag_mpr : ∀ P, provable (P (diag P)) → provable (diag P)
-  /-- Negation forward: if the negation of the fixed point is provable,
-      then the negation of P applied to it is provable. -/
-  diag_neg_mp : ∀ P, provable (neg (diag P)) → provable (neg (P (diag P)))
-  /-- Negation backward: if the negation of P applied to the fixed point
-      is provable, then the negation of the fixed point is provable. -/
-  diag_neg_mpr : ∀ P, provable (neg (P (diag P))) → provable (neg (diag P))
+/-! The `DiagonalTheory` structure also lives in TheoryInterfaces.lean.
+    NOTE (2026-06-10): it is DEGENERATE — see the warning on its
+    definition and `FoundationBridge.diagonalTheory_trivial`. The
+    theorems below remain valid as conditional statements, but no
+    nontrivial theory instantiates their hypothesis; `Diagonal.lean`'s
+    `GodelSystem` is the abstraction real theories satisfy. -/
 
 namespace DiagonalTheory
 
