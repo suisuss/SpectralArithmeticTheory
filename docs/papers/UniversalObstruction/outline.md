@@ -79,7 +79,7 @@ The encoding obstruction states that no injective encoding of a term algebra can
 
 **Yanofsky's universal approach.** Yanofsky 2003 unified several self-referential paradoxes via cartesian closed categories. Our `EvalRewriteWitness` is a syntactic counterpart that admits direct formalization.
 
-**Existing Lean formalizations.** Flypitch (Han, van Doorn) formalized incompleteness in Lean 3 from PA primitives. Our work axiomatizes Phase 3 (representability) but provides a different organizing principle (the universal obstruction, with incompleteness as instance).
+**Existing formalizations (corrected 2026-06-10).** Mechanized incompleteness: Shankar 1986, O'Connor 2005 (Coq), Harrison 2009, Paulson 2014 (Isabelle, both theorems), Popescu-Traytel (abstract account, IJCAR 2019/JAR 2021), Foundation (Lean 4, the library section 10.7 builds on). NOTE: Flypitch is the CH-independence project, not an incompleteness formalization — earlier drafts miscited it.
 
 **Coalgebraic logic.** Rutten and others have studied bisimulation between syntactic and semantic coalgebras. Our `no_coalgebra_morphism` theorem is a related but distinct contribution.
 
@@ -200,7 +200,7 @@ structure EvalRewriteWitness (T S : Type*) where
 
 **The instance is constructive given the axioms.** `paGodelSystem` is sorry-free modulo the axioms.
 
-**Roadmap to full discharge.** Estimated 2-3 months of formalization work to fully discharge the axioms (Flypitch-scale effort), tracked under umbrella issue #40 and sub-issues #50, #51, #52. This is explicitly positioned as follow-up work; the paper's contribution stands without it.
+**Roadmap to full discharge.** Estimated 2-3 months of formalization work to fully discharge the axioms (a substantial independent project), tracked under umbrella issue #40 and sub-issues #50, #51, #52. This is explicitly positioned as follow-up work; the paper's contribution stands without it.
 
 ### 11. Related Work, In Detail (~2 pages)
 
@@ -208,7 +208,7 @@ structure EvalRewriteWitness (T S : Type*) where
 
 **Yanofsky 2003.** A universal approach to self-referential paradoxes. Uses cartesian closed categories. Our work is more syntactic and Lean-formalized.
 
-**Flypitch (Han, van Doorn).** Lean 3 formalization of incompleteness from PA primitives. Our work axiomatizes Phase 3 but provides a different organizing principle (universal obstruction with incompleteness as instance).
+**Popescu-Traytel.** The closest formal neighbor: abstract incompleteness with distilled sufficient conditions, in Isabelle (IJCAR 2019/JAR 2021, AFP 2020). Deeper as abstract incompleteness (derivability conditions, Rosser/Jeroslow variants); ours differs by the boundary theorem above the interface, instantiation by an independent arithmetic library, and documented failure modes of over-abstraction. Flypitch (CH independence) was miscited here in earlier drafts; corrected.
 
 **Carneiro's Metamath formalization.** Direct axiomatic incompleteness proof. Different style; complementary approach.
 
@@ -264,7 +264,7 @@ Realistic target: CPP 2027 or ITP 2027.
 - "The proof complexity story is incomplete" -- be upfront that we recover Haken modulo his combinatorial input, not derive it from scratch
 
 **Anticipating reviewer 2:**
-- Will compare unfavorably to Flypitch on incompleteness depth
+- Will compare unfavorably to Popescu-Traytel / Paulson / Foundation on abstract- and concrete-incompleteness depth
 - Will note that the universal claim is over parameterized signatures, not over all Godel-numbering-capable theories from primitives
 - Will press on whether the abstraction actually does work or is just suggestive labeling
 

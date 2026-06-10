@@ -343,13 +343,20 @@ differential-algebra and coalgebra literatures (the original survey's
 analysis stands). Modest in impact but real, self-contained, and
 publishable as a formalization note independent of Part 2.
 
-**3. The `GodelSystem`/`DiagonalTheory` packaging.** A minimal abstract
-interface from which the diagonal lemma and both incompleteness
-theorems fall out in ~300 clean lines. Library-grade Lean engineering.
-Its novelty is bounded by the FormalizedFormalLogic Foundation library
-(below), which has the deeper PA-concrete result; the abstract
-interface layered over it is still a contribution, the standalone
-incompleteness development is not.
+**3. The `GodelSystem` packaging.** A minimal abstract interface from
+which the diagonal lemma and both incompleteness theorems fall out in
+~300 clean lines. Library-grade Lean engineering. Its novelty is
+bounded on TWO sides (correction 2026-06-10, section-11 readings):
+the FormalizedFormalLogic Foundation library has the deeper
+PA-concrete result, and Popescu-Traytel's abstract incompleteness
+(Isabelle, IJCAR 2019/JAR 2021) is the closer abstract neighbor —
+more thorough as abstract incompleteness (derivability conditions,
+Rosser/Jeroslow variants). What remains distinctly ours: the boundary
+theorem above the interface, the instantiation-by-independent-library
+test, and the documented degeneracy results. Also corrected: Flypitch
+was previously miscited here as a Lean incompleteness formalization;
+it is the CH-independence project. (`DiagonalTheory` dropped from this
+item: proven degenerate.)
 
 **4. The f_0-indistinguishability experiments.** Encoding-independence
 (CTerm/NAND vs Church/SK hitting the same wall) and total
