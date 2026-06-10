@@ -51,7 +51,13 @@
       — the theory cannot prove its own consistency
 -/
 
-import Mathlib.Tactic
+-- Narrow import: only Type* notation is needed; all proofs use core
+-- tactics. Keeping the closure minimal lets FoundationBridge.lean
+-- import this file alongside the Foundation library (whose oleans
+-- clash with the full Mathlib.Tactic closure via duplicated
+-- auto-generated equation lemmas).
+import Mathlib.Tactic.TypeStar
+import Mathlib.Data.Nat.Notation
 
 namespace Diagonal
 
@@ -100,14 +106,21 @@ structure GodelSystem (Sentence : Type*) where
   /-- For any formula beta, the formula "beta(diagN(x))" exists.
       This is representability of composition with the diagonal function. -/
   compose_diag : Formula → Formula
-  /-- Representability (provability direction):
-      provable(subst(compose_diag(beta), n)) <-> provable(subst(beta, diagN(n))) -/
-  compose_diag_prov : ∀ β n,
-    provable (subst (compose_diag β) n) ↔ provable (subst β (diagN n))
-  /-- Representability (negation direction) -/
-  compose_diag_neg : ∀ β n,
-    provable (neg (subst (compose_diag β) n)) ↔
-    provable (neg (subst β (diagN n)))
+  /-- Representability (provability direction), at the
+      self-application point — the only instance the diagonal lemma
+      uses. Weakened from `∀ n` (2026-06-10) so that real theories can
+      instantiate it: a theory proves the diagonal equivalence at
+      genuine formula codes; demanding it at junk numbers requires a
+      decode defined on all of ℕ in a way no concrete coding supplies.
+      The fixed-point theorem of arithmetic delivers exactly this
+      instance (see FoundationBridge.paGodelSystemF). -/
+  compose_diag_prov : ∀ β,
+    provable (subst (compose_diag β) (fcode (compose_diag β))) ↔
+    provable (subst β (diagN (fcode (compose_diag β))))
+  /-- Representability (negation direction), at the same point. -/
+  compose_diag_neg : ∀ β,
+    provable (neg (subst (compose_diag β) (fcode (compose_diag β)))) ↔
+    provable (neg (subst β (diagN (fcode (compose_diag β)))))
 
 namespace GodelSystem
 
@@ -173,7 +186,7 @@ theorem diagonal_lemma_mp (β : G.Formula) :
     G.provable (godelConstruction G β) →
     G.provable (G.subst β (G.scode (godelConstruction G β))) := by
   intro h
-  have h' := (G.compose_diag_prov β (G.fcode (G.compose_diag β))).mp h
+  have h' := (G.compose_diag_prov β).mp h
   rwa [diagN_at_compose] at h'
 
 /-- **DIAGONAL LEMMA (backward):**
@@ -182,7 +195,7 @@ theorem diagonal_lemma_mpr (β : G.Formula) :
     G.provable (G.subst β (G.scode (godelConstruction G β))) →
     G.provable (godelConstruction G β) := by
   intro h
-  apply (G.compose_diag_prov β (G.fcode (G.compose_diag β))).mpr
+  apply (G.compose_diag_prov β).mpr
   rwa [diagN_at_compose]
 
 /-- **DIAGONAL LEMMA (full biconditional):** -/
@@ -196,7 +209,7 @@ theorem diagonal_lemma_neg_mp (β : G.Formula) :
     G.provable (G.neg (godelConstruction G β)) →
     G.provable (G.neg (G.subst β (G.scode (godelConstruction G β)))) := by
   intro h
-  have h' := (G.compose_diag_neg β (G.fcode (G.compose_diag β))).mp h
+  have h' := (G.compose_diag_neg β).mp h
   rwa [diagN_at_compose] at h'
 
 /-- **DIAGONAL LEMMA (negation, backward):** -/
@@ -204,7 +217,7 @@ theorem diagonal_lemma_neg_mpr (β : G.Formula) :
     G.provable (G.neg (G.subst β (G.scode (godelConstruction G β)))) →
     G.provable (G.neg (godelConstruction G β)) := by
   intro h
-  apply (G.compose_diag_neg β (G.fcode (G.compose_diag β))).mpr
+  apply (G.compose_diag_neg β).mpr
   rwa [diagN_at_compose]
 
 /-! ## Part 4: The Godel Sentence
