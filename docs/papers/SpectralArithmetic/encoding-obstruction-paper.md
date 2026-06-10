@@ -1,3 +1,16 @@
+> **RETIRED (2026-06-10).** This draft (and the frozen .tex/.pdf
+> beside it) is superseded by docs/papers/UniversalObstruction/ and
+> is partially REFUTED by the project's own later theorems: the
+> abstract's claim that the obstruction follows from injective
+> encodings requiring super-linear pairing is false as stated —
+> `QuotationCost.lean`'s `compression_exists` exhibits an injective
+> coding with linear codes along the observation trajectory;
+> compositionality, not injectivity, is the operative hypothesis
+> (`compositionality_necessary`). The barrier-evasion claims in the
+> final section are withdrawn (see the flagship paper's section 12.3
+> for the limitation-theorems reframing). Kept for the record; do not
+> cite or circulate.
+
 # The Encoding Obstruction: An Impossibility Theorem for Self-Representing Eigenvalue Systems
 
 ## Authors

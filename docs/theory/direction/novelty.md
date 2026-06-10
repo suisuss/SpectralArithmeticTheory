@@ -369,6 +369,22 @@ outside the framework.
 
 ### Revised bottom line
 
+**The research identity that emerged from this reassessment (stated
+2026-06-10, after the limitation-theorems reframing): the project
+produces machine-checked limitation theorems about formalized
+technique-classes.** This is the genre of relativization, natural
+proofs, and Razborov's bounded-arithmetic unprovability — and it is
+the identity under which the project's results are strongest: the
+bisimulation boundary characterizes a technique-class exactly; the
+quotation cost pair is a limitation theorem with its sharpness
+witness; the planned Razborov-Rudich and Ben-Sasson-Wigderson
+formalizations extend the same genre. The identity also explains the
+project's working discipline — instantiation as the test of every
+abstraction, satisfiable axioms over opaque data, breadth caveats
+where the class is narrow — since in this genre a result's force is
+proportional to the breadth of the class it covers and the honesty
+of its boundary.
+
 The publishable-result ranking, replacing the original survey's
 closing paragraph:
 

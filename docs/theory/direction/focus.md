@@ -8,7 +8,7 @@ Decision document. What to work on next given what's been achieved. Derived from
 
 ## Where the project actually is
 
-The thesis is the **universal encoding obstruction**: a form-changing, semantics-preserving rewrite (`EvalRewriteWitness`) observed across Gödel incompleteness, the halting problem, cut elimination blowup, and resolution lower bounds. Paper targets CPP 2027 (~Sep 2026) or ITP 2027 (~Feb 2027).
+**Research identity: machine-checked limitation theorems about formalized technique-classes** — the genre of the classical barriers. The flagship thesis is the **bisimulation boundary** (an observable of self-encoding syntax is semantics-compatible iff extensional), with the encoding obstruction as its intensional extreme, the quotation cost pair as its quantitative companion, and the impossibility instances (Gödel, halting, cut elimination, resolution) machine-checked on the intensional side. Paper targets CPP 2027 (~Sep 2026) or ITP 2027 (~Feb 2027). The paper pipeline under this identity: flagship → Razborov-Rudich formalization (#39) → Ben-Sasson-Wigderson width (#37), with the Part 1 standalone note decoupled.
 
 Two facts established by the 2026-06-10 audit reshape the priorities (see `novelty.md`, Reassessment section):
 
