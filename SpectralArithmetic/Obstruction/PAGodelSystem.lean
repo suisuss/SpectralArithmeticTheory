@@ -14,6 +14,18 @@
   satisfying them gets incompleteness). This file shows that PA SPECIFICALLY
   satisfies them — making the entire chain machine-checked for PA.
 
+  SUPERSEDED FOR THE REAL-PA STORY (2026-06-10): the GodelSystem
+  instance for genuine Peano Arithmetic now exists in
+  FoundationBridge.paGodelSystemF, built on the Foundation library
+  with a real Encodable decode and representability discharged by the
+  arithmetic fixed-point theorem — standard Lean axioms only, and our
+  diagonal_lemma instantiates as FoundationBridge.pa_diagonal_lemma.
+  This file's toy PATerm scaffolding is retained for the Phase 1
+  encoding-injectivity content (used by the paper) and as the
+  TermF-side worked example; its two remaining axioms are scaffolding
+  for the toy model only and are no longer load-bearing for the
+  thesis.
+
   Scope (realistic for one session):
 
   Phase 1 (PROVED here): PA terms with Godel encoding via prime factorization,
@@ -574,8 +586,8 @@ noncomputable def paGodelSystem : Diagonal.GodelSystem PATerm where
   diagN := diagN
   diagN_spec := fun _ => rfl
   compose_diag := compose_diag
-  compose_diag_prov := compose_diag_provable
-  compose_diag_neg := compose_diag_neg_provable
+  compose_diag_prov := fun β => compose_diag_provable β _
+  compose_diag_neg := fun β => compose_diag_neg_provable β _
 
 /-! ## Part 9: Status and What Remains
 

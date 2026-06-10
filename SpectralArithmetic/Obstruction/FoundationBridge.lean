@@ -47,6 +47,7 @@
 -/
 
 import SpectralArithmetic.Obstruction.TheoryInterfaces
+import SpectralArithmetic.Obstruction.Diagonal
 import Foundation.FirstOrder.Incompleteness.GödelRosser
 import Foundation.FirstOrder.Incompleteness.Examples
 
@@ -114,5 +115,71 @@ theorem paTheory_incomplete : ∃ σ, paTheory.undecidable σ := by
     incomplete' 𝗣𝗔
   obtain ⟨σ, h1, h2⟩ := h.indep
   exact ⟨σ, h1, h2⟩
+
+/-! ## Part 3: The GodelSystem Instance for Real PA
+
+    Milestone 2: `Diagonal.GodelSystem` — the abstraction from which
+    our diagonal lemma and incompleteness theorems are PROVED —
+    instantiated with Foundation's Peano Arithmetic. Coding is
+    Foundation's Godel quote (= `Encodable.encode` over ℕ, with a
+    genuine decode); `compose_diag` is Foundation's `diag`; the
+    representability field is discharged by the fixed-point theorem
+    of arithmetic (`diagonal`). With this instance, our
+    `diagonal_lemma` runs on real PA. -/
+
+open Entailment in
+set_option maxHeartbeats 800000 in
+/-- Our GodelSystem, instantiated with Foundation's PA. -/
+noncomputable def paGodelSystemF : Diagonal.GodelSystem (Sentence ℒₒᵣ) where
+  provable σ := 𝗣𝗔 ⊢ σ
+  neg σ := ∼σ
+  Formula := Semisentence ℒₒᵣ 1
+  subst φ n := φ/[(n : Semiterm ℒₒᵣ Empty 0)]
+  scode σ := ⌜σ⌝
+  fcode φ := ⌜φ⌝
+  decode n := (Encodable.decode n).getD ⊤
+  decode_fcode φ := by
+    simp [Sentence.quote_eq_encode]
+  diagN n := ⌜(((Encodable.decode n).getD ⊤ : Semisentence ℒₒᵣ 1))/[(n : Semiterm ℒₒᵣ Empty 0)]⌝
+  diagN_spec _ := rfl
+  compose_diag β := diag β
+  compose_diag_prov β := by
+    have hdec : ((Encodable.decode ((⌜diag β⌝ : ℕ))).getD ⊤ : Semisentence ℒₒᵣ 1) = diag β := by
+      simp [Sentence.quote_eq_encode]
+    have hd := diagonal (T := 𝗣𝗔) β
+    constructor
+    · intro h
+      have h' : 𝗣𝗔 ⊢ fixedpoint β := by simpa [fixedpoint] using h
+      have h2 := K!_left hd ⨀! h'
+      simpa [hdec, fixedpoint] using h2
+    · intro h
+      have h2 : 𝗣𝗔 ⊢ β/[(⌜fixedpoint β⌝ : Semiterm ℒₒᵣ Empty 0)] := by
+        simpa [hdec, fixedpoint] using h
+      have h' := K!_right hd ⨀! h2
+      simpa [fixedpoint] using h'
+  compose_diag_neg β := by
+    have hdec : ((Encodable.decode ((⌜diag β⌝ : ℕ))).getD ⊤ : Semisentence ℒₒᵣ 1) = diag β := by
+      simp [Sentence.quote_eq_encode]
+    have hd := ENN!_of_E! (diagonal (T := 𝗣𝗔) β)
+    constructor
+    · intro h
+      have h' : 𝗣𝗔 ⊢ ∼(fixedpoint β) := by simpa [fixedpoint] using h
+      have h2 := K!_left hd ⨀! h'
+      simpa [hdec, fixedpoint] using h2
+    · intro h
+      have h2 : 𝗣𝗔 ⊢ ∼(β/[(⌜fixedpoint β⌝ : Semiterm ℒₒᵣ Empty 0)]) := by
+        simpa [hdec, fixedpoint] using h
+      have h' := K!_right hd ⨀! h2
+      simpa [fixedpoint] using h'
+
+/-- **THE DIAGONAL LEMMA RUNS ON REAL PA:** for every formula β with
+    one free variable, the Godel construction over Foundation's PA is
+    a provability fixed point of β. Our abstract diagonal_lemma,
+    instantiated. -/
+theorem pa_diagonal_lemma (β : Semisentence ℒₒᵣ 1) :
+    (𝗣𝗔 ⊢ Diagonal.GodelSystem.godelConstruction paGodelSystemF β) ↔
+    (𝗣𝗔 ⊢ β/[((⌜Diagonal.GodelSystem.godelConstruction paGodelSystemF β⌝ : ℕ) :
+        Semiterm ℒₒᵣ Empty 0)]) :=
+  Diagonal.GodelSystem.diagonal_lemma paGodelSystemF β
 
 end FoundationBridge
