@@ -51,6 +51,8 @@ import SpectralArithmetic.Obstruction.Diagonal
 import Foundation.FirstOrder.Incompleteness.GödelRosser
 import Foundation.FirstOrder.Incompleteness.Examples
 
+set_option linter.flexible false
+
 namespace FoundationBridge
 
 /-! ## Part 1: DiagonalTheory Is Degenerate -/
@@ -128,7 +130,6 @@ theorem paTheory_incomplete : ∃ σ, paTheory.undecidable σ := by
     `diagonal_lemma` runs on real PA. -/
 
 open Entailment in
-set_option maxHeartbeats 800000 in
 /-- Our GodelSystem, instantiated with Foundation's PA. -/
 noncomputable def paGodelSystemF : Diagonal.GodelSystem (Sentence ℒₒᵣ) where
   provable σ := 𝗣𝗔 ⊢ σ
