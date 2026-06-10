@@ -14,7 +14,7 @@ Backup: LMCS (Logical Methods in Computer Science) for a longer journal version.
 
 ## Thesis (One Sentence)
 
-*(Revised 2026-06-10, after `Bisimulation.lean`.)* We characterize exactly which observations of a self-encoding term algebra are compatible with Godel encoding — an observable supports a bisimulation between syntax and semantics if and only if it is extensional — and show that the classical impossibility results (Godel incompleteness, halting, cut elimination blowup, resolution lower bounds) are instances of the intensional side of this boundary, with injective codings as the extreme case; formalized as sorry-free Lean 4.
+*(Revised 2026-06-10, after `Bisimulation.lean`. This paper is the first entry of the project's research program: machine-checked limitation theorems about formalized technique-classes — see section 12.3 for the genre positioning; planned successors are the Razborov-Rudich and Ben-Sasson-Wigderson formalizations.)* We characterize exactly which observations of a self-encoding term algebra are compatible with Godel encoding — an observable supports a bisimulation between syntax and semantics if and only if it is extensional — and show that the classical impossibility results (Godel incompleteness, halting, cut elimination blowup, resolution lower bounds) are instances of the intensional side of this boundary, with injective codings as the extreme case; formalized as sorry-free Lean 4.
 
 *(Former framing, kept for reference: a form-changing, semantics-preserving rewrite unifying the impossibility results. The boundary theorem subsumes it: the rewrite-changes-form observation is the statement that `rootTag` is not even rewrite-invariant.)*
 

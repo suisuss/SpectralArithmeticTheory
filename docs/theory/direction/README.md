@@ -17,11 +17,19 @@ Canonical navigation for the project: where it is, where it's going, and which d
 
 ## What the project is
 
-Two threads, both machine-checked in Lean 4.
+**Research identity (2026-06-10): machine-checked limitation theorems about formalized technique-classes.** The genre is that of the classical complexity barriers — relativization, natural proofs, bounded-arithmetic unprovability: fix a precise class of techniques as a calculus (of encoding, rewriting, observation, or reasoning), prove what that class cannot do, and witness the sharpness of the class boundary. The project's discipline follows from the genre: abstractions are calibrated against real instances (a defect-finding method that caught five soundness-grade flaws in June 2026 alone), axioms are satisfiable propositions over opaque data with documented interpretations, and every claimed limitation carries either a sharpness witness or an explicit breadth caveat.
 
-**Part 1 — Eigenvalue arithmetic.** A commutative semiring with a Leibniz derivation produces ℕ as eigenvalues. Peano axioms are theorems, not assumptions. The number tower ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂ ℂ emerges as concentric eigenvalue spectra; axioms at lower levels become theorems at higher ones. PA-equiconsistent at A1–B5; ZF-equiconsistent at A1–F5 (Infinity, Separation, Replacement, Power Set, Union). See `Core/`, `Verification/` (10 files total).
+Current limitation theorems, all machine-checked in Lean 4:
 
-**Part 2 — Universal encoding obstruction.** A form-changing, semantics-preserving rewrite (`EvalRewriteWitness`) unifies Gödel incompleteness, the halting problem, cut elimination blowup, beta reduction, and resolution proof-complexity lower bounds as seven machine-checked instances. `Obstruction/` (26 files) is sorry-free; remaining technical debt is 20 named axioms concentrated in five files. This is the current primary thesis and the target of the upcoming paper (CPP/ITP 2027).
+- **The bisimulation boundary** (`Bisimulation.lean`, `UniversalBisimulation.lean`): an observable of a self-encoding term algebra supports a bisimulation between syntax and semantics iff it is extensional; injective codings are maximally intensional. Proved over every signature and Leibniz algebra.
+- **The quotation cost pair** (`QuotationCost.lean`): every compositional Gödel coding pays super-polynomial quotation overhead along observation trajectories; an exact counterexample shows arbitrary injective codings need not. Compositionality, not injectivity, is the boundary.
+- **The framework-internal DynSemiring impossibility** (narrow class; breadth — whether recognized techniques embed — is the stated open question).
+
+Two formalization threads carry the program:
+
+**Part 1 — Eigenvalue arithmetic** (settled). A commutative semiring with a Leibniz derivation produces ℕ as eigenvalues; Peano axioms are theorems; the number tower ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂ ℂ emerges as concentric spectra. PA-equiconsistent at A1–B5; ZF-equiconsistent at A1–F5. See `Core/`, `Verification/`. Standalone formalization note planned.
+
+**Part 2 — The boundary program** (active; flagship paper for CPP/ITP 2027). The encoding obstruction and its instances (Gödel incompleteness, halting, cut elimination, resolution) positioned as the intensional side of the bisimulation boundary; `GodelSystem` instantiated by genuine PA via the Foundation library on standard Lean axioms. `Obstruction/` is sorry-free with 6 named axioms (each satisfiable, none load-bearing for the headline claims). Planned successors in the same genre: a Razborov-Rudich formalization (#39) and the Ben-Sasson-Wigderson width bound (#37).
 
 ---
 

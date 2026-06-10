@@ -1,6 +1,6 @@
 # Project agent instructions
 
-You are working on SpectralArithmeticTheory: a Lean 4 formalization plus accompanying theory docs. Two threads — eigenvalue arithmetic (Part 1) and the universal encoding obstruction (Part 2). The thesis is currently Part 2; Part 1 is settled.
+You are working on SpectralArithmeticTheory: a Lean 4 formalization plus accompanying theory docs. The research identity (2026-06-10): **machine-checked limitation theorems about formalized technique-classes** — the genre of the classical complexity barriers. Fix a precise technique-class as a calculus, prove what it cannot do, witness the sharpness of the boundary; calibrate every abstraction against a real instance, and never claim a limitation without either a sharpness witness or a breadth caveat. Two threads carry this: eigenvalue arithmetic (Part 1, settled) and the bisimulation-boundary program around the encoding obstruction (Part 2, the current thesis and flagship paper).
 
 ## Before you start work
 
