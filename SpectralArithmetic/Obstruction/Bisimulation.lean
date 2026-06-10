@@ -55,7 +55,12 @@ open Term
     each state). Bisimulation between two systems over a shared
     output type: a relation that matches outputs and is closed
     under stepping. This is the standard coalgebraic notion for
-    the functor X ↦ O × X. -/
+    the functor X ↦ O × X — Rutten's "output" systems (Universal
+    coalgebra: a theory of systems, TCS 249(1), 2000, §3.4). The
+    graph-bisimulation fact used in Part 2 is his Theorem 2.5
+    ("homomorphisms are sometimes called functional
+    bisimulations", p. 13); the contribution here is the
+    application, not the lemma. -/
 
 /-- An observation system: dynamics plus an output read at each state. -/
 structure ObsSystem (X : Type*) (O : Type*) where
