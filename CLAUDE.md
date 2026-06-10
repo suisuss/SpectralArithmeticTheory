@@ -42,7 +42,7 @@ Common checks:
 Mirrors the bins in `docs/theory/direction/focus.md`. Apply the tier that reflects where the issue sits relative to the current thesis and paper critical path.
 
 - `critical-path` — paper-critical, weeks-scale, clear scope. Currently: paper drafting, the Foundation library spike, and the bisimulation theorem (see `docs/theory/direction/focus.md`, 2026-06-10).
-- `medium-term` — 3–6 months, substantive scientific contribution on the paper's critical path. Currently: `#37` (full Haken), `#39` (natural proofs evasion).
+- `medium-term` — 3–6 months, substantive scientific contribution on the paper's critical path. Currently: `#37` (full Haken), `#39` (formalize the Razborov-Rudich barrier; re-scoped 2026-06-10).
 - `deferred` — interesting and aligned with the thesis but not needed to ship the paper. Revisit after publication. Currently: `#38`, `#40`, `#41`–`#45`.
 - `parked` — genuinely interesting but orthogonal to the thesis. Currently: `Rotation/` engineering (`#20`, `#29`–`#32`).
 - `stale` — pre-obstruction era, not actively being worked. Kept open for reference only. Currently: `#6`, `#8`, `#9`, `#10`, `#11`, `#15`, `#16`.

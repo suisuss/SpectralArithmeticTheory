@@ -51,7 +51,7 @@ Everything else — eigenvalue arithmetic, number tower through ℂ, ZF verifica
 ### Medium-term — 3–6 months, pick one, after the paper is drafted
 
 - **#37, re-targeted at Ben-Sasson–Wigderson.** Formalize the width method ("Short Proofs Are Narrow", 2001) instead of Haken's 1985 bottleneck counting: a clean width induction, far more tractable in Lean, with the PHP exponential bound as a corollary — and a recognized formalization first. Prerequisite either way: extend `Resolution.lean` so refutations (derive-the-empty-clause, `ValidFrom`) are first-class; the current model never states them.
-- **#39 natural proofs evasion.** Now consistent (real `IsLarge`, opaque property). Substantive only after `encodingObstructionProperty` is given a precise definition — which plausibly depends on item 4's outcome.
+- **#39, re-scoped (2026-06-10): formalize Razborov-Rudich itself.** The evasion framing is withdrawn — it conjectured a property of an opaque predicate and is not what the formalization supports. New target: the natural proofs barrier as a Lean theorem — constructivity and largeness as genuine definitions (largeness already real in `NaturalProofsEvasion.lean`), PRG hypothesis abstract, conditional conclusion proved. To our knowledge a proof-assistant first. Honest gate: the constructivity condition needs a time-bounded computation model, which no Lean library provides; scope is the statement-level conditional theorem. The `obstruction_property_not_large` axiom stays as consistent scaffolding until this lands, then gets retired.
 
 ### Alongside the paper — cheap
 
