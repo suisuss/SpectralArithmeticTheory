@@ -45,6 +45,7 @@
 -/
 
 import SpectralArithmetic.Obstruction.Bisimulation
+import Mathlib.Data.Nat.Pairing
 
 namespace SpectralMonoid
 
@@ -405,5 +406,205 @@ theorem quotation_overhead_superpolynomial (c : CompositionalCoding)
     Open: a bisimulation-flavored statement on a common carrier for
     non-compositional codings, and the connection between this cost
     gap and proof-length lower bounds (issues #33, #38). -/
+
+/-! ## Part 7: Necessity of Compositionality — the Non-Compositional
+    Case Refuted
+
+    The original conjecture quantified over ALL primitive recursive
+    injections. This part refutes that quantification in its only
+    precise quantitative reading: there EXISTS an injective coding
+    whose codes along the canonical trajectory are LINEAR in the
+    stage — logarithmic in the semantic value 2^j — so no growth
+    separation can hold without the compositionality hypothesis.
+
+    Construction: enumerate the trajectory first (stage j gets code
+    2j), everything else by an explicit injective structural code on
+    the odds. The definition uses classical choice only to decide
+    trajectory membership; trajectory_index_le shows membership is
+    decidable by bounded search (any hit has index at most twice the
+    f₁ count), so the coding is computable in principle — the
+    counterexample is fair against the "primitive recursive" reading
+    of the conjecture. -/
+
+/-- An explicit injective structural code, used off the trajectory.
+    Leaves get 0, 1, 2; composite constructors get tagged Cantor
+    pairs, offset to avoid the leaves. -/
+def encodeT : Term → ℕ
+  | .f₀ => 0
+  | .f₁ => 1
+  | .z => 2
+  | .compose a b => 6 * Nat.pair (encodeT a) (encodeT b) + 3
+  | .oplus a b => 6 * Nat.pair (encodeT a) (encodeT b) + 4
+  | .obs a => 6 * encodeT a + 5
+
+/-- The structural code is injective. -/
+theorem encodeT_injective : Function.Injective encodeT := by
+  intro t1 t2 h
+  induction t1 generalizing t2 with
+  | f₀ =>
+    cases t2 <;> simp only [encodeT] at h <;> first | rfl | omega
+  | f₁ =>
+    cases t2 <;> simp only [encodeT] at h <;> first | rfl | omega
+  | z =>
+    cases t2 <;> simp only [encodeT] at h <;> first | rfl | omega
+  | compose a b iha ihb =>
+    cases t2 with
+    | compose c d =>
+      simp only [encodeT] at h
+      have hp : Nat.pair (encodeT a) (encodeT b) =
+          Nat.pair (encodeT c) (encodeT d) := by omega
+      have hu := congrArg Nat.unpair hp
+      rw [Nat.unpair_pair, Nat.unpair_pair] at hu
+      rw [iha (congrArg Prod.fst hu), ihb (congrArg Prod.snd hu)]
+    | _ => simp only [encodeT] at h; omega
+  | oplus a b iha ihb =>
+    cases t2 with
+    | oplus c d =>
+      simp only [encodeT] at h
+      have hp : Nat.pair (encodeT a) (encodeT b) =
+          Nat.pair (encodeT c) (encodeT d) := by omega
+      have hu := congrArg Nat.unpair hp
+      rw [Nat.unpair_pair, Nat.unpair_pair] at hu
+      rw [iha (congrArg Prod.fst hu), ihb (congrArg Prod.snd hu)]
+    | _ => simp only [encodeT] at h; omega
+  | obs a iha =>
+    cases t2 with
+    | obs c =>
+      simp only [encodeT] at h
+      have : encodeT a = encodeT c := by omega
+      rw [iha this]
+    | _ => simp only [encodeT] at h; omega
+
+/-- One Leibniz unfolding of an observation never loses f₁ leaves. -/
+theorem f₁count_obsRewrite_obs_ge (w : Term) :
+    f₁count w ≤ f₁count (obsRewrite (.obs w)) := by
+  cases w <;> simp [obsRewrite, f₁count]
+
+/-- Deep rewriting never loses f₁ leaves. -/
+theorem f₁count_deepRewrite_ge (t : Term) :
+    f₁count t ≤ f₁count (deepRewrite t) := by
+  induction t with
+  | obs u ih =>
+    calc f₁count (.obs u) = f₁count u := rfl
+      _ ≤ f₁count (deepRewrite u) := ih
+      _ ≤ f₁count (obsRewrite (.obs (deepRewrite u))) :=
+          f₁count_obsRewrite_obs_ge _
+      _ = f₁count (deepRewrite (.obs u)) := rfl
+  | compose a b iha ihb =>
+    simp only [deepRewrite, f₁count]
+    omega
+  | oplus a b iha ihb =>
+    simp only [deepRewrite, f₁count]
+    omega
+  | f₀ => exact le_refl _
+  | f₁ => exact le_refl _
+  | z => exact le_refl _
+
+/-- The syntactic step never loses f₁ leaves. -/
+theorem f₁count_synStep_ge (t : Term) :
+    f₁count t ≤ f₁count (synStep t) := by
+  have h := f₁count_deepRewrite_ge (.obs t)
+  simpa [synStep, f₁count] using h
+
+/-- The f₁ count is monotone along the trajectory. -/
+theorem f₁count_trajectory_mono {i j : ℕ} (hij : i ≤ j) :
+    f₁count (trajectory i) ≤ f₁count (trajectory j) := by
+  induction j with
+  | zero => simp [Nat.le_zero.mp hij]
+  | succ j ih =>
+    rcases Nat.lt_or_ge i (j + 1) with hlt | hge
+    · exact le_trans (ih (by omega)) (f₁count_synStep_ge (trajectory j))
+    · have : i = j + 1 := by omega
+      simp [this]
+
+/-- **BOUNDED SEARCH:** a trajectory hit's index is at most twice the
+    f₁ count of the term. This makes trajectory membership decidable
+    by bounded search, hence the compressed coding below computable
+    in principle. -/
+theorem trajectory_index_le (j : ℕ) :
+    j ≤ 2 * f₁count (trajectory j) := by
+  have h1 : 2 * (j / 2) ≤ j := by omega
+  have h2 := f₁count_trajectory_mono h1
+  rw [f₁count_trajectory] at h2
+  have h3 : j / 2 + 1 ≤ 2 ^ (j / 2 + 1) :=
+    Nat.le_of_lt (lt_two_pow_self' _)
+  omega
+
+open Classical in
+/-- The compressed coding: trajectory stages on the evens (stage j
+    gets at most 2j), everything else on the odds via encodeT. -/
+noncomputable def compressedCode (t : Term) : ℕ :=
+  if h : ∃ j, trajectory j = t then 2 * Nat.find h
+  else 2 * encodeT t + 1
+
+/-- The compressed coding is injective — no compositionality, but a
+    perfectly faithful code. -/
+theorem compressedCode_injective : Function.Injective compressedCode := by
+  intro t1 t2 h
+  unfold compressedCode at h
+  split_ifs at h with h1 h2 h2
+  · have hf : Nat.find h1 = Nat.find h2 := by omega
+    have e1 := Nat.find_spec h1
+    have e2 := Nat.find_spec h2
+    rw [← e1, ← e2, hf]
+  · omega
+  · omega
+  · have : encodeT t1 = encodeT t2 := by omega
+    exact encodeT_injective this
+
+/-- **COMPRESSION:** the compressed coding is linear along the
+    trajectory — while the semantic value at stage j is 2^j. The
+    quotation overhead of this injective coding is LOGARITHMIC in
+    the meaning. -/
+theorem compressedCode_trajectory_le (j : ℕ) :
+    compressedCode (trajectory j) ≤ 2 * j := by
+  have hex : ∃ i, trajectory i = trajectory j := ⟨j, rfl⟩
+  rw [compressedCode, dif_pos hex]
+  have := Nat.find_min' hex (rfl : trajectory j = trajectory j)
+  omega
+
+/-- **THE NON-COMPOSITIONAL CASE, REFUTED:** there is an injective
+    coding of terms with linear codes along the canonical trajectory.
+    Packaged form of the compression. -/
+theorem compression_exists :
+    ∃ ε : Term → ℕ, Function.Injective ε ∧
+      ∀ j, ε (trajectory j) ≤ 2 * j :=
+  ⟨compressedCode, compressedCode_injective, compressedCode_trajectory_le⟩
+
+/-- **COMPOSITIONALITY IS NECESSARY:** the superpolynomial overhead
+    theorem is FALSE when generalized from compositional codings to
+    arbitrary injective codings — the compressed coding violates it
+    already at coefficient 2, degree 1. The growth separation of
+    Part 5 genuinely needs the compositionality hypothesis; the
+    original conjecture's quantification over all primitive recursive
+    injections cannot be repaired by any growth argument along a
+    fixed trajectory. -/
+theorem compositionality_necessary :
+    ¬ ∀ ε : Term → ℕ, Function.Injective ε →
+        ∀ a d : ℕ, ∃ m, a * (2 ^ (2 * m)) ^ d < ε (trajectory (2 * m)) := by
+  intro hall
+  obtain ⟨m, hm⟩ := hall compressedCode compressedCode_injective 2 1
+  have hle := compressedCode_trajectory_le (2 * m)
+  have h2m : 2 * m < 2 ^ (2 * m) := lt_two_pow_self' _
+  rw [pow_one] at hm
+  omega
+
+/-! ## Part 8: Final Summary
+
+    The growth question for the eval-quote square is now closed in
+    both directions:
+
+    | Coding class | Overhead along the trajectory | Theorem |
+    |---|---|---|
+    | Compositional | Superpolynomial in the meaning | quotation_overhead_superpolynomial |
+    | Arbitrary injective | Linear in the stage is possible | compression_exists |
+
+    Compositionality is exactly the boundary: it is what forces a
+    code to pay for syntactic structure. An injective code free to
+    ignore structure can name the trajectory as cheaply as counting
+    its stages — quotation overhead is a property of HOW codes are
+    built, not of coding per se. Together with Bisimulation.lean
+    (extensionality is the qualitative boundary) this completes the
+    answer to issue #55's open remainder. -/
 
 end SpectralMonoid
