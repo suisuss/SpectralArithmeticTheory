@@ -420,10 +420,10 @@ def CodedFormula : Type := {φ : PAFormula // decodeFormula φ.code = φ}
 
 /-- Decoding lands in CodedFormula, because decode is idempotent
     through `code` (by `decodeFormula_code`). -/
-noncomputable def decodeCoded (n : ℕ) : CodedFormula :=
+def decodeCoded (n : ℕ) : CodedFormula :=
   ⟨decodeFormula n, by rw [decodeFormula_code]⟩
 
-noncomputable instance : Inhabited CodedFormula := ⟨decodeCoded 0⟩
+instance : Inhabited CodedFormula := ⟨decodeCoded 0⟩
 
 /-! ## Part 5: The Diagonal Function
 
@@ -593,7 +593,7 @@ noncomputable def paGodelSystem : Diagonal.GodelSystem PATerm where
     | diagN | Diagonal function definition |
     | diagN_spec | diagN computes self-substitution code |
     | decodeCoded_code_val | decode inverts fcode on CodedFormula |
-    | compose_diag_provable, compose_diag_neg_provable | Diagonal equivalences from compose_diag_apply |
+    | compose_diag_provable (+ neg) | Diagonal equivalences from compose_diag_apply |
 
     OPAQUE DATA (unspecified, nothing assumed beyond the axioms below):
 
