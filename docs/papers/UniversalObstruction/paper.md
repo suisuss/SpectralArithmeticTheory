@@ -5,12 +5,13 @@
 > **REVISION STATUS (2026-06-10, final pass complete).** All sections
 > now reflect the June results; figures measured at the repository
 > head (17 core modules, 5,721 lines, six axioms, zero sorries).
-> REMAINING BEFORE SUBMISSION — author obligations: (a) §11 is now
-> DRAFTED from verified sources (2026-06-10), with its own remaining
-> list: page-level reading of Lawvere/Yanofsky/Popescu-Traytel,
-> Orevkov bibliographic data, and the §11.9 full-abstraction
-> proximity check; (b) §3 informal review still TODO; (c) an author
-> voice pass over the whole; (d) venue formatting and the
+> REMAINING BEFORE SUBMISSION — author obligations: (a) §11 drafted
+> from verified sources, and the §11.9 proximity check is DONE
+> (verdict recorded in 11.9; §5b attribution added) — remaining
+> there: page-level reading of Lawvere/Yanofsky/Popescu-Traytel and
+> Rutten (to fix the graph lemma's exact citation), plus Orevkov
+> bibliographic data; (b) §3 informal review still TODO; (c) an
+> author voice pass over the whole; (d) venue formatting and the
 > artifact-evaluation package; (e) re-run the CLAUDE.md greps at
 > submission time and refresh the measured figures.
 
@@ -365,7 +366,7 @@ The sections that follow instantiate this pattern six times. The burden on each 
 
 **Tier 2 (the boundary).** That qualifier is exact. An observable `o` of syntax supports a bisimulation relating every term to its evaluation if and only if `o` is extensional, i.e. factors through `eval` (`supportsBisim_iff_extensional`). Strictness is machine-checked at both inclusions of the hierarchy extensional ⊊ rewrite-invariant ⊊ all observables: the root constructor is not even rewrite-invariant (the form-change phenomenon of §4, relocated to the observable side); syntactic equality with `f₀` is rewrite-invariant but separates terms every model identifies; and any injective coding fails extensionality outright (`injective_no_bisim`). Injectivity is precisely maximal intensionality. The same characterization holds at the generality of §4 — over every constant signature and every Leibniz algebra (`supportsBisimF_iff_extensionalF`) — where the witness pair is free: a term and its Leibniz rewrite are distinct yet evaluation-equal in every algebra.
 
-**What this changes.** The encoding obstruction of §§4-5 is no longer a fact about codes failing to be clever: it is the extreme point of a characterized boundary. The impossibility results of §§6-9 instantiate the intensional side of that boundary. This is the theorem that makes the abstraction load-bearing rather than descriptive.
+**What this changes — and what is borrowed.** The mathematics here is deliberately elementary and largely standard: Tier 1 instantiates Rutten's graph-of-a-homomorphism lemma, and the characterization's proof is short once the systems are set up (§11.9 records the proximity check against universal coalgebra, the van Benthem invariance genre, and full abstraction). The contribution is what the instantiation is *of*: Gödel codings treated as observables, the eval-quote question answered exactly, a strict three-level hierarchy with machine-checked witnesses, and — in §5c — a price. The encoding obstruction of §§4-5 is thereby no longer a fact about codes failing to be clever: it is the extreme point of a characterized boundary, and the impossibility results of §§6-9 instantiate its intensional side. This is what makes the abstraction load-bearing rather than descriptive.
 
 ## 5c. Quotation Cost: the Quantitative Boundary
 
@@ -1118,9 +1119,9 @@ Haken, "The intractability of resolution" (Theoretical Computer Science 39, 1985
 
 Cook and Reckhow, "The relative efficiency of propositional proof systems" (Journal of Symbolic Logic 44(1), 1979, 36-50), defines the proof-system abstraction and the simulation order under which proof complexity is organized. Our length-lower-bound framework operates below that abstraction — on the rewrite dynamics of a single system's proof states — and makes no simulation claims. The Cook-Reckhow frame becomes load-bearing only in §12.3's program, where limitation theorems over reasoning calculi are the stated horizon.
 
-### 11.9 Coalgebraic logic and the full-abstraction proximity check
+### 11.9 Coalgebraic logic: the proximity check, performed
 
-Rutten's universal coalgebra (Theoretical Computer Science 249(1), 2000, 3-80) supplies the bisimulation vocabulary of §5b; Turi and Plotkin's bialgebraic semantics (LICS 1997) is the classical synthesis of syntax-as-algebra with semantics-as-coalgebra; Abramsky and Shah's comonadic semantics relates structure to power along a different axis. The boundary theorem's shape — observations compatible with semantics are exactly those that factor through evaluation — has a family resemblance to full-abstraction results in programming language semantics, where definable observations characterize observational equivalence. We flag this as the section's open verification obligation: before submission, the claim of novelty for §5b must be checked against the full-abstraction literature in detail. Our present understanding of the difference: full abstraction characterizes when a *model* matches a fixed notion of observation; the boundary theorem characterizes which *observations* of a fixed syntax-semantics pair admit a bisimulation at all, with the Gödel coding as one such observation — but family resemblances of this kind are exactly where novelty claims die, and this one gets verified, not assumed.
+Rutten's universal coalgebra (Theoretical Computer Science 249(1), 2000, 3-80) supplies the bisimulation vocabulary of §5b, and more than the vocabulary: the proximity check this section previously flagged was performed (2026-06-10), and its verdict is recorded here rather than smoothed over. **The boundary theorem's mathematics is standard universal coalgebra.** Tier 1 — the graph of `eval` is a bisimulation — instantiates Rutten's lemma that the graph of a function is a bisimulation precisely when the function is a coalgebra homomorphism; and since bisimulation is sound and complete for behavioral equivalence in this setting, the characterization's two directions are elementary (output agreement is definitional; the converse is the graph lemma plus factoring). The *genre* of the result — characterizing the observations invariant under a behavioral equivalence — is likewise established: van Benthem's theorem characterizes modal logic as the bisimulation-invariant fragment of first-order logic, with coalgebraic and quantitative generalizations. Full abstraction, by contrast, is confirmed to be a different question: it asks when a model's equalities match contextual equivalence under a *fixed* class of observations, with definability as the hard content; we fix the model map and characterize the observation class. What the searches did not find, in any combination tried, is the application: Gödel codings treated as observables of a self-encoding syntax, the eval-quote square assessed up to bisimulation, the strict three-level hierarchy (extensional ⊊ rewrite-invariant ⊊ all) with machine-checked witnesses, or any quantitative companion of the quotation-cost kind. The paper's claim for §5b is therefore calibrated accordingly — the contribution is the question, the application, the hierarchy, and the price, not the lemma — and §5b carries the attribution explicitly. Absence of search hits is evidence, not proof; the page-level pass over Rutten remains on the author's reading list to fix the lemma's exact citation.
 
 ### 11.10 Differential algebra
 
