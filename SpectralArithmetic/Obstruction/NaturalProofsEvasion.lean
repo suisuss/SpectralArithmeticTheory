@@ -2,8 +2,23 @@
   Natural Proofs Barrier Evasion (Issue #39)
   ===========================================
 
-  Scaffolding for the claim that the encoding obstruction evades
-  the natural proofs barrier (Razborov-Rudich 1997).
+  RE-SCOPED (2026-06-10). Issue #39's deliverable is no longer the
+  evasion claim scaffolded below — it is a formalization of the
+  Razborov-Rudich limitation theorem ITSELF (statement-level
+  conditional: constructivity and largeness as definitions, the PRG
+  hypothesis abstract, the conclusion a theorem). The barriers are
+  limitation theorems about formalized technique-classes; formalizing
+  one requires no claims about this framework's power, which is why
+  it replaces the evasion target. The definitions below (BoolFn,
+  Property, IsLarge — already a genuine counting definition) are the
+  starting point; the `obstruction_property_not_large` axiom remains
+  as consistent scaffolding and is retired when the re-scope lands.
+  Gate: the constructivity condition needs a time-bounded model of
+  computation, which no current Lean library provides.
+
+  Original framing (retained below for context): scaffolding for the
+  claim that the encoding obstruction evades the natural proofs
+  barrier (Razborov-Rudich 1997).
 
   The natural proofs barrier: a proof of a circuit lower bound for
   some class C of functions is "natural" if the property P being

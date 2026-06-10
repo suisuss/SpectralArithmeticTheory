@@ -42,7 +42,7 @@ Common checks:
 Mirrors the bins in `docs/theory/direction/focus.md`. Apply the tier that reflects where the issue sits relative to the current thesis and paper critical path.
 
 - `critical-path` — paper-critical, weeks-scale, clear scope. Currently: paper drafting, the Foundation library spike, and the bisimulation theorem (see `docs/theory/direction/focus.md`, 2026-06-10).
-- `medium-term` — 3–6 months, substantive scientific contribution on the paper's critical path. Currently: `#37` (full Haken), `#39` (natural proofs evasion).
+- `medium-term` — 3–6 months, substantive scientific contribution on the paper's critical path. Currently: `#37` (full Haken), `#39` (formalize the Razborov-Rudich barrier; re-scoped 2026-06-10).
 - `deferred` — interesting and aligned with the thesis but not needed to ship the paper. Revisit after publication. Currently: `#38`, `#40`, `#41`–`#45`.
 - `parked` — genuinely interesting but orthogonal to the thesis. Currently: `Rotation/` engineering (`#20`, `#29`–`#32`).
 - `stale` — pre-obstruction era, not actively being worked. Kept open for reference only. Currently: `#6`, `#8`, `#9`, `#10`, `#11`, `#15`, `#16`.
@@ -80,6 +80,8 @@ Build cache: worktrees should symlink `.lake` to the main directory's `.lake` so
 ```
 ln -s /home/suisuss/.programming/sandbox/SpectralArithmeticTheory/.lake .worktrees/<name>/.lake
 ```
+
+**NEVER run `lake update` in a worktree that shares `.lake`.** It mutates the shared package store (upgrading transitive deps incoherently against the pinned mathlib) and breaks every checkout that uses it — this happened 2026-06-10 and required restoring eight packages by hand. Dependency changes belong in a dedicated worktree with its own isolated `.lake` directory (no symlink), accepting the one-time full rebuild.
 
 ## When writing Lean
 
