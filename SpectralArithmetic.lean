@@ -23,6 +23,8 @@ import SpectralArithmetic.Obstruction.UniversalBisimulation
 import SpectralArithmetic.Obstruction.Trilemma
 -- Tier 3: quotation cost separation (compositional codings)
 import SpectralArithmetic.Obstruction.QuotationCost
+-- Forced loss: faithful semantics freezes computation (#68)
+import SpectralArithmetic.Obstruction.ForcedLoss
 -- Convergence conjecture (open)
 import SpectralArithmetic.Obstruction.Convergence
 -- Complexity asymmetry (P vs NP structural analogy)
