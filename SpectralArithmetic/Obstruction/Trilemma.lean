@@ -35,6 +35,14 @@
      support none, into any codomain (injective_no_bisim'); the
      boundary makes the sides disjoint
      (no_injective_homomorphism_via_boundary).
+  6. The compression reading: extensionality is a kernel-order
+     statement — o factors through eval iff ker(eval) ⊆ ker(o)
+     (extensionalF_iff_ker_le), so the boundary says an observable
+     supports a bisimulation iff it compresses at least as much as
+     the semantics (supportsBisimF_iff_ker_le). Homomorphic
+     encodings are the exact semantic compression, injective ones
+     are lossless, and the dilemma is: no lossless compression to
+     the semantic quotient (no_lossless_semantic_compression).
 -/
 
 import SpectralArithmetic.Obstruction.UniversalBisimulation
@@ -217,7 +225,73 @@ theorem no_injective_homomorphism_via_boundary (A : LeibnizAlgebra C S)
     (hhom : Homomorphic A ε) : False :=
   injective_no_bisim' A t₀ hinj hhom.supportsBisimF
 
-/-! ## Part 6: Summary
+/-! ## Part 6: The Compression Reading
+
+    ExtensionalF is a kernel-order statement in disguise: o factors
+    through eval exactly when o identifies whatever eval identifies.
+    Read the kernel of an observable as the compression it performs —
+    which distinctions it discards. Then extensional observables are
+    those that compress at least as much as the semantics, a
+    homomorphic encoding is the exact semantic compression (the
+    quotient map), an injective encoding is lossless, and the dilemma
+    says lossless compression to the semantic quotient is impossible
+    because the Leibniz rule keeps the quotient non-trivial. -/
+
+/-- The kernel of an observable: the pairs it identifies — the
+    compression it performs. -/
+def Ker (o : TermF C → O) (t₁ t₂ : TermF C) : Prop :=
+  o t₁ = o t₂
+
+/-- **EXTENSIONALITY IS COMPRESSION DOMINANCE:** an observable is
+    extensional iff its kernel contains eval's kernel — iff it
+    compresses at least as much as the semantics does. -/
+theorem extensionalF_iff_ker_le (A : LeibnizAlgebra C S) (t₀ : TermF C)
+    (o : TermF C → O) :
+    ExtensionalF A o ↔ ∀ t₁ t₂, Ker (eval A) t₁ t₂ → Ker o t₁ t₂ := by
+  classical
+  constructor
+  · intro h t₁ t₂ hk
+    exact h.eval_congr hk
+  · intro h
+    refine ⟨fun s => if hs : ∃ t, eval A t = s then o hs.choose else o t₀,
+      fun t => ?_⟩
+    have hex : ∃ t', eval A t' = eval A t := ⟨t, rfl⟩
+    simp only [dif_pos hex]
+    exact (h _ _ hex.choose_spec).symm
+
+/-- **THE BOUNDARY IS A COMPRESSION STATEMENT:** an observable
+    supports a bisimulation with the semantics iff it compresses at
+    least as much as eval. -/
+theorem supportsBisimF_iff_ker_le (A : LeibnizAlgebra C S) (t₀ : TermF C)
+    (o : TermF C → O) :
+    SupportsBisimF A o ↔ ∀ t₁ t₂, Ker (eval A) t₁ t₂ → Ker o t₁ t₂ :=
+  (supportsBisimF_iff_extensionalF A o).trans
+    (extensionalF_iff_ker_le A t₀ o)
+
+/-- A homomorphic encoding is the EXACT semantic compression: its
+    kernel is eval's kernel. -/
+theorem Homomorphic.ker_iff {A : LeibnizAlgebra C S} {ε : TermF C → S}
+    (h : Homomorphic A ε) (t₁ t₂ : TermF C) :
+    Ker ε t₁ t₂ ↔ Ker (eval A) t₁ t₂ := by
+  unfold Ker
+  rw [h.eq_eval t₁, h.eq_eval t₂]
+
+/-- An injective encoding is LOSSLESS: its kernel is equality. -/
+theorem injective_ker_iff {ε : TermF C → O} (hε : Function.Injective ε)
+    (t₁ t₂ : TermF C) : Ker ε t₁ t₂ ↔ t₁ = t₂ :=
+  ⟨fun h => hε h, fun h => congrArg ε h⟩
+
+/-- **NO LOSSLESS COMPRESSION TO THE SEMANTIC QUOTIENT:** the dilemma
+    in compression vocabulary. eval's kernel is non-trivial in every
+    algebra (the universal witness pair), so no lossless encoding —
+    into any codomain — can dominate it. -/
+theorem no_lossless_semantic_compression (A : LeibnizAlgebra C S)
+    (t₀ : TermF C) {ε : TermF C → O} (hε : Function.Injective ε)
+    (hdom : ∀ t₁ t₂, Ker (eval A) t₁ t₂ → Ker ε t₁ t₂) : False :=
+  leibniz_changes_form t₀ t₀
+    (hε (hdom _ _ (leibnizRewrite_preserves_eval A t₀ t₀)))
+
+/-! ## Part 7: Summary
 
     PROVED (sorry-free, no axioms), universally over all signatures C
     and all Leibniz algebras:
@@ -234,6 +308,11 @@ theorem no_injective_homomorphism_via_boundary (A : LeibnizAlgebra C S)
     | Homomorphic.supportsBisimF | Homomorphic is extensional-side |
     | injective_no_bisim' | Injective is intensional-side, any codomain |
     | no_injective_homomorphism_via_boundary | The trilemma factors through the boundary |
+    | extensionalF_iff_ker_le | Extensional = compresses at least as much as eval |
+    | supportsBisimF_iff_ker_le | The boundary as a compression statement |
+    | Homomorphic.ker_iff | Homomorphic = the exact semantic compression |
+    | injective_ker_iff | Injective = lossless |
+    | no_lossless_semantic_compression | The dilemma in compression vocabulary |
 
     Resolution of the extraction repo's claim: the trilemma is true
     but understated. Non-trivial semantics is not an assumption to
