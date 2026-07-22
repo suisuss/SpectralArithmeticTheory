@@ -38,7 +38,7 @@ Two formalization threads carry the program:
 
 ## Current state (one-line facts)
 
-- **106 Lean files** on main: Core 6, Verification 4, Lambda 6, Obstruction 29, Rotation 59.
+- **114 Lean files** on main (measured 2026-07-23; prior counts had drifted): Core 6, Verification 4, Lambda 6, Obstruction 34, Rotation 63, Bench 1.
 - **`Obstruction/*` is sorry-free.** Rotation/* has 6 residual sorries in 4 files — not paper-critical.
 - **6 named axioms** (2026-06-10 census): PAGodelSystem 2, HakenBottleneck 2, Resolution 1, NaturalProofsEvasion 1, Complexity 0. The Phase 1 arithmetic axioms were discharged as theorems (#35). Unspecified *data* (decode, provability, negation, clause counts) is `opaque` rather than axiomatized; only genuine propositions are axioms, each satisfiable. Three scaffolding axioms that were inconsistent as stated (`phase2_decode_inverse`, `obstruction_property_not_large` over a `True`-placeholder `IsLarge`, `haken_bottleneck_exists` with a placeholder hypothesis) were repaired 2026-06-10.
 - **46 GitHub issues**, 32 open / 14 closed. Closed cluster is the pre-obstruction SAT-solver / tree-arrangement exploration.
@@ -63,7 +63,7 @@ SpectralArithmetic/
 │   ├── Model.lean         Forward model (AddMonoidAlgebra R R)
 │   └── Countermodels.lean F1/F2/F3 non-triviality
 ├── Lambda/            Part 2 substrate. Lambda/SK embedding.
-├── Obstruction/       Part 2. 29 files, sorry-free.
+├── Obstruction/       Part 2. 34 files, sorry-free.
 │                       Seven EvalRewriteWitness instances:
 │                       term algebras (Universal), PA arithmetic (EvalRewrite),
 │                       diagonal (Diagonal), halting (Halting),
@@ -73,7 +73,7 @@ SpectralArithmetic/
 │                       NaturalProofsEvasion, VerificationArithmetic,
 │                       ProofComplexity, RootConstructorChange,
 │                       Incompleteness, and earlier material.
-└── Rotation/          Exploratory. SAT solvers, CDCL, width trajectories.
+└── Rotation/          Exploratory (63 files). SAT solvers, CDCL, width trajectories.
                        Not linked to the paper thesis; see issue #21.
 ```
 
