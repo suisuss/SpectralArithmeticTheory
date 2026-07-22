@@ -23,6 +23,7 @@ Current limitation theorems, all machine-checked in Lean 4:
 
 - **The bisimulation boundary** (`Bisimulation.lean`, `UniversalBisimulation.lean`): an observable of a self-encoding term algebra supports a bisimulation between syntax and semantics iff it is extensional; injective codings are maximally intensional. Proved over every signature and Leibniz algebra.
 - **The quotation cost pair** (`QuotationCost.lean`): every compositional Gödel coding pays super-polynomial quotation overhead along observation trajectories; an exact counterexample shows arbitrary injective codings need not. Compositionality, not injectivity, is the boundary.
+- **The encoding trilemma, resolved** (`Trilemma.lean`, #68): injectivity, homomorphism, non-trivial semantics — stated as one theorem over every signature and Leibniz algebra. Non-triviality is itself a theorem (the universal witness pair), so the trilemma collapses to a dilemma: an injective homomorphism exists iff the term algebra is empty. Both non-empty cells carry witnesses, and the whole configuration is a corollary of the bisimulation boundary (homomorphic = extensional side, injective = intensional side).
 - **The framework-internal DynSemiring impossibility** (narrow class; breadth — whether recognized techniques embed — is the stated open question).
 
 Two formalization threads carry the program:
@@ -35,7 +36,7 @@ Two formalization threads carry the program:
 
 ## Current state (one-line facts)
 
-- **103 Lean files** on main: Core 6, Verification 4, Lambda 6, Obstruction 26, Rotation 59.
+- **104 Lean files** on main: Core 6, Verification 4, Lambda 6, Obstruction 27, Rotation 59.
 - **`Obstruction/*` is sorry-free.** Rotation/* has 6 residual sorries in 4 files — not paper-critical.
 - **6 named axioms** (2026-06-10 census): PAGodelSystem 2, HakenBottleneck 2, Resolution 1, NaturalProofsEvasion 1, Complexity 0. The Phase 1 arithmetic axioms were discharged as theorems (#35). Unspecified *data* (decode, provability, negation, clause counts) is `opaque` rather than axiomatized; only genuine propositions are axioms, each satisfiable. Three scaffolding axioms that were inconsistent as stated (`phase2_decode_inverse`, `obstruction_property_not_large` over a `True`-placeholder `IsLarge`, `haken_bottleneck_exists` with a placeholder hypothesis) were repaired 2026-06-10.
 - **46 GitHub issues**, 32 open / 14 closed. Closed cluster is the pre-obstruction SAT-solver / tree-arrangement exploration.
@@ -60,7 +61,7 @@ SpectralArithmetic/
 │   ├── Model.lean         Forward model (AddMonoidAlgebra R R)
 │   └── Countermodels.lean F1/F2/F3 non-triviality
 ├── Lambda/            Part 2 substrate. Lambda/SK embedding.
-├── Obstruction/       Part 2. 26 files, sorry-free.
+├── Obstruction/       Part 2. 27 files, sorry-free.
 │                       Seven EvalRewriteWitness instances:
 │                       term algebras (Universal), PA arithmetic (EvalRewrite),
 │                       diagonal (Diagonal), halting (Halting),
