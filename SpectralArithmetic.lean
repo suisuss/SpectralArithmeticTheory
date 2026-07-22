@@ -21,6 +21,8 @@ import SpectralArithmetic.Obstruction.Bisimulation
 import SpectralArithmetic.Obstruction.UniversalBisimulation
 -- The encoding trilemma, resolved as a corollary of the boundary (#68)
 import SpectralArithmetic.Obstruction.Trilemma
+-- Kernel lattice: degrees of intensionality as an order (#68)
+import SpectralArithmetic.Obstruction.KernelLattice
 -- Tier 3: quotation cost separation (compositional codings)
 import SpectralArithmetic.Obstruction.QuotationCost
 -- Forced loss: faithful semantics freezes computation (#68)
