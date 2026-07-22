@@ -19,6 +19,8 @@ import SpectralArithmetic.Obstruction.Main
 import SpectralArithmetic.Obstruction.Bisimulation
 -- Universal bisimulation boundary over all signatures (#55)
 import SpectralArithmetic.Obstruction.UniversalBisimulation
+-- The encoding trilemma, resolved as a corollary of the boundary (#68)
+import SpectralArithmetic.Obstruction.Trilemma
 -- Tier 3: quotation cost separation (compositional codings)
 import SpectralArithmetic.Obstruction.QuotationCost
 -- Convergence conjecture (open)
