@@ -73,6 +73,7 @@
 -/
 
 import SpectralArithmetic.Obstruction.Trilemma
+import SpectralArithmetic.Obstruction.ForcedLossCore
 
 namespace UniversalObstruction
 
@@ -80,33 +81,12 @@ namespace ForcedLoss
 
 variable {T : Type*} {S : Type*}
 
-/-! ## Part 1: The Slogan Layer, and Why It Is a Tautology -/
+/-! ## Part 1: The Slogan Layer, and Why It Is a Tautology
 
-/-- A rewrite preserves meaning when evaluation cannot see it. This
-    is simultaneously "the semantics respects the dynamics" (eval is
-    invariant along steps) and "the rewrite is sound for eval". -/
-def MeaningPreserving (eval : T → S) (r : T → T) : Prop :=
-  ∀ t, eval (r t) = eval t
-
-/-- Semantic loss: the kernel of eval is non-trivial — two distinct
-    expressions share a meaning. The plain-type form of
-    NontrivialSemantics. -/
-def SemanticLoss (eval : T → S) : Prop :=
-  ∃ t₁ t₂ : T, t₁ ≠ t₂ ∧ eval t₁ = eval t₂
-
-/-- A rewrite is frozen when it never moves: it is pointwise the
-    identity. -/
-def Frozen (r : T → T) : Prop :=
-  ∀ t, r t = t
-
-/-- **(a) LOSS FROM A MOVING REWRITE:** a meaning-preserving rewrite
-    that moves some term exhibits semantic loss. One line — the
-    slogan at this generality is a tautology, and is labeled as
-    such. -/
-theorem MeaningPreserving.loss_of_move {eval : T → S} {r : T → T}
-    (h : MeaningPreserving eval r) {t : T} (ht : r t ≠ t) :
-    SemanticLoss eval :=
-  ⟨r t, t, ht, h t⟩
+    MeaningPreserving, SemanticLoss, Frozen, and loss_of_move live
+    in ForcedLossCore.lean (import-free) so FoundationBridge can
+    instantiate them on real PA terms; this file re-exports them by
+    the import above. -/
 
 /-- **(b) FAITHFUL SEMANTICS FREEZES REWRITES:** if eval is
     injective, every meaning-preserving rewrite is the identity.

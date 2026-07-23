@@ -1,6 +1,6 @@
 /-
-  Foundation Bridge (Issues #35, #40, #55)
-  =========================================
+  Foundation Bridge (Issues #35, #40, #55, #68)
+  ==============================================
 
   First contact between this project's abstract incompleteness
   development and the FormalizedFormalLogic Foundation library
@@ -47,6 +47,7 @@
 -/
 
 import SpectralArithmetic.Obstruction.TheoryInterfaces
+import SpectralArithmetic.Obstruction.ForcedLossCore
 import SpectralArithmetic.Obstruction.Diagonal
 import Foundation.FirstOrder.Incompleteness.GödelRosser
 import Foundation.FirstOrder.Incompleteness.Examples
@@ -183,5 +184,109 @@ theorem pa_diagonal_lemma (β : Semisentence ℒₒᵣ 1) :
     (𝗣𝗔 ⊢ β/[((⌜Diagonal.GodelSystem.godelConstruction paGodelSystemF β⌝ : ℕ) :
         Semiterm ℒₒᵣ Empty 0)]) :=
   Diagonal.GodelSystem.diagonal_lemma paGodelSystemF β
+
+/-! ## Part 4: Forced Loss on Real PA Terms (#68)
+
+    The real-PA instance of ForcedLossCore's MeaningPreserving: the
+    one-step unfolding of PA's own recursion for multiplication,
+    S(a) * b = a * b + b — written in ℒₒᵣ, where S(a) is a + 1 — is
+    a meaning-preserving moving rewrite on closed terms under the
+    standard-model valuation. Preservation is succ-mul arithmetic;
+    movement is root-symbol discrimination (mul vs add). This
+    replaces the weakest informal link of Universal.lean Part 10
+    ("PA's own evaluation rules already do this") with a
+    machine-checked instance on genuine syntax: real PA term
+    semantics has forced loss, its valuation is not injective, and
+    no injective Godel coding of closed PA terms factors through
+    ℕ-evaluation. -/
+
+open UniversalObstruction.ForcedLoss
+
+/-- Closed terms of the language of arithmetic. -/
+abbrev PAClosedTerm : Type := Semiterm ℒₒᵣ Empty 0
+
+/-- Standard-model evaluation of closed PA terms. -/
+def valNat (t : PAClosedTerm) : ℕ :=
+  Semiterm.val (standardModel ℕ) ![] Empty.elim t
+
+/-- The closed term 0. -/
+def paZero : PAClosedTerm := Semiterm.func Language.ORing.Func.zero ![]
+
+/-- The redex (a + 1) * b: the left side of PA's multiplication
+    recursion, with successor written as + 1 in ℒₒᵣ. -/
+def sMulRedex (a b : PAClosedTerm) : PAClosedTerm :=
+  Semiterm.func Language.ORing.Func.mul
+    ![Semiterm.func Language.ORing.Func.add ![a, Semiterm.func Language.ORing.Func.one ![]], b]
+
+/-- The contractum a * b + b: the right side of the recursion. -/
+def sMulContract (a b : PAClosedTerm) : PAClosedTerm :=
+  Semiterm.func Language.ORing.Func.add ![Semiterm.func Language.ORing.Func.mul ![a, b], b]
+
+@[simp] lemma valNat_sMulRedex (a b : PAClosedTerm) :
+    valNat (sMulRedex a b) = (valNat a + 1) * valNat b := by
+  simp [valNat, sMulRedex, standardModel]
+
+@[simp] lemma valNat_sMulContract (a b : PAClosedTerm) :
+    valNat (sMulContract a b) = valNat a * valNat b + valNat b := by
+  simp [valNat, sMulContract, standardModel]
+
+/-- Preservation: PA's recursion step is invisible to the standard
+    valuation. -/
+lemma valNat_sMulContract_eq (a b : PAClosedTerm) :
+    valNat (sMulContract a b) = valNat (sMulRedex a b) := by
+  rw [valNat_sMulContract, valNat_sMulRedex, Nat.add_mul, Nat.one_mul]
+
+/-- Movement: the contractum is add-rooted, the redex mul-rooted —
+    root-symbol discrimination on genuine ℒₒᵣ syntax. -/
+lemma sMulContract_ne_sMulRedex (x y a b : PAClosedTerm) :
+    sMulContract x y ≠ sMulRedex a b := by
+  simp [sMulContract, sMulRedex]
+
+open Classical in
+/-- One root step of PA's multiplication recursion: contract the
+    redex (a + 1) * b wherever the whole term has that shape; leave
+    every other term unchanged. -/
+noncomputable def sMulStep (t : PAClosedTerm) : PAClosedTerm :=
+  if h : ∃ p : PAClosedTerm × PAClosedTerm, t = sMulRedex p.1 p.2 then
+    sMulContract h.choose.1 h.choose.2
+  else t
+
+/-- **REAL PA HAS A MEANING-PRESERVING REWRITE:** the recursion step
+    is invisible to standard-model evaluation — ForcedLossCore's
+    MeaningPreserving, instantiated on genuine PA syntax. -/
+theorem sMulStep_meaningPreserving : MeaningPreserving valNat sMulStep := by
+  intro t
+  unfold sMulStep
+  split
+  · next h => rw [valNat_sMulContract_eq, ← h.choose_spec]
+  · rfl
+
+/-- **AND IT MOVES:** on every redex the step changes the term. -/
+theorem sMulStep_moves (a b : PAClosedTerm) :
+    sMulStep (sMulRedex a b) ≠ sMulRedex a b := by
+  unfold sMulStep
+  rw [dif_pos ⟨(a, b), rfl⟩]
+  exact sMulContract_ne_sMulRedex _ _ a b
+
+/-- **FORCED LOSS ON REAL PA:** the standard-model semantics of
+    genuine PA syntax identifies distinct closed terms —
+    loss_of_move at the recursion redex. -/
+theorem pa_semanticLoss : SemanticLoss valNat :=
+  sMulStep_meaningPreserving.loss_of_move (sMulStep_moves paZero paZero)
+
+/-- The standard valuation of closed PA terms is not injective. -/
+theorem valNat_not_injective : ¬ Function.Injective valNat := fun hinj =>
+  sMulStep_moves paZero paZero (hinj (sMulStep_meaningPreserving _))
+
+/-- **NO INJECTIVE GODEL CODING IS EXTENSIONAL FOR ℕ-EVALUATION:**
+    no injective map on closed PA terms factors through the standard
+    valuation — the encoding obstruction calibrated against real
+    syntax. -/
+theorem pa_no_injective_extensional {O : Type*} (ε : PAClosedTerm → O)
+    (hε : Function.Injective ε) :
+    ¬ ∃ oS : ℕ → O, ∀ t, ε t = oS (valNat t) := by
+  rintro ⟨oS, hfac⟩
+  obtain ⟨t₁, t₂, hne, heq⟩ := pa_semanticLoss
+  exact hne (hε (by rw [hfac t₁, hfac t₂, heq]))
 
 end FoundationBridge
